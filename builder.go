@@ -513,7 +513,7 @@ type HTTPServer struct {
 	server   *http.Server
 	mux      *http.ServeMux
 	handlers map[string]*lua.LFunction
-	L        *lua.LState
+	L        *lua.LState  // Main Lua state for registration  
 	mu       sync.RWMutex
 }
 
@@ -560,8 +560,11 @@ func serverIndex(L *lua.LState) int {
 			addr := fmt.Sprintf(":%d", port)
 			
 			server.server = &http.Server{
-				Addr:    addr,
-				Handler: server.mux,
+				Addr:         addr,
+				Handler:      server.mux,
+				ReadTimeout:  30 * time.Second,
+				WriteTimeout: 30 * time.Second,
+				IdleTimeout:  120 * time.Second,
 			}
 			
 			// Start server in goroutine
@@ -595,6 +598,11 @@ func (s *HTTPServer) handleRequest(w http.ResponseWriter, r *http.Request, path 
 		http.NotFound(w, r)
 		return
 	}
+	
+	// Use a mutex to protect the Lua state from concurrent access
+	// This ensures thread-safety for the shared Lua interpreter
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	
 	// Create request object for Lua
 	reqObj := s.L.NewTable()
