@@ -16,6 +16,27 @@ Hype is a powerful tool that packages Lua scripts into standalone executables wi
 
 ## Installation
 
+### Option 1: Download Pre-built Binaries (Recommended)
+
+**macOS (Easy Install):**
+```bash
+curl -sSL https://raw.githubusercontent.com/twilson63/hype/main/install-mac.sh | bash
+```
+
+**Manual Download:**
+1. Download the appropriate binary from [GitHub Releases](https://github.com/twilson63/hype/releases)
+2. For macOS: `hype-darwin-amd64` (Intel) or `hype-darwin-arm64` (Apple Silicon)
+3. Make executable: `chmod +x hype-*`
+4. Move to PATH: `mv hype-* /usr/local/bin/hype`
+
+**macOS Gatekeeper Fix:**
+If macOS blocks the binary, run:
+```bash
+xattr -d com.apple.quarantine /path/to/hype
+```
+
+### Option 2: Build from Source
+
 ```bash
 git clone https://github.com/twilson63/hype.git
 cd hype
