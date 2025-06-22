@@ -204,8 +204,7 @@ func appIndex(L *lua.LState) int {
 		L.Push(L.NewFunction(func(L *lua.LState) int {
 			primitiveUD := L.CheckUserData(2)
 			app.SetFocus(primitiveUD.Value.(tview.Primitive))
-			L.Push(ud)
-			return 1
+			return 0
 		}))
 	case "SetInputCapture":
 		L.Push(L.NewFunction(func(L *lua.LState) int {
@@ -268,6 +267,13 @@ func textViewIndex(L *lua.LState) int {
 		L.Push(L.NewFunction(func(L *lua.LState) int {
 			wordWrap := L.CheckBool(2)
 			textView.SetWordWrap(wordWrap)
+			L.Push(ud)
+			return 1
+		}))
+	case "SetTitle":
+		L.Push(L.NewFunction(func(L *lua.LState) int {
+			title := L.CheckString(2)
+			textView.SetTitle(title)
 			L.Push(ud)
 			return 1
 		}))

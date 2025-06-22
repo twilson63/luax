@@ -59,7 +59,7 @@ func setupCommandLineArgs(L *lua.LState, scriptPath string, scriptArgs []string)
 	// Create arg table (following Lua convention)
 	argTable := L.NewTable()
 	
-	// arg[0] is the script name
+	// arg[0] is the script name (standard Lua convention)
 	argTable.RawSetInt(0, lua.LString(scriptPath))
 	
 	// arg[1], arg[2], etc. are the script arguments
@@ -108,6 +108,10 @@ func setupTUIMetatables(L *lua.LState) {
 	// Flex metatable
 	flexMT := L.NewTypeMetatable("Flex")
 	L.SetField(flexMT, "__index", L.NewFunction(flexIndex))
+	
+	// Event metatable
+	eventMT := L.NewTypeMetatable("Event")
+	L.SetField(eventMT, "__index", L.NewFunction(eventIndex))
 }
 
 // TUI Constructor Functions
@@ -206,6 +210,12 @@ func appIndex(L *lua.LState) int {
 			app.QueueUpdateDraw(func() {})
 			return 0
 		}))
+	case "SetFocus":
+		L.Push(L.NewFunction(func(L *lua.LState) int {
+			primitiveUD := L.CheckUserData(2)
+			app.SetFocus(primitiveUD.Value.(tview.Primitive))
+			return 0
+		}))
 	case "SetInputCapture":
 		L.Push(L.NewFunction(func(L *lua.LState) int {
 			fn := L.CheckFunction(2)
@@ -213,6 +223,7 @@ func appIndex(L *lua.LState) int {
 				L.Push(fn)
 				ud := L.NewUserData()
 				ud.Value = event
+				L.SetMetatable(ud, L.GetTypeMetatable("Event"))
 				L.Push(ud)
 				L.Call(1, 1)
 				result := L.Get(-1)
@@ -389,6 +400,29 @@ func flexIndex(L *lua.LState) int {
 	return 1
 }
 
+func eventIndex(L *lua.LState) int {
+	ud := L.CheckUserData(1)
+	event := ud.Value.(*tcell.EventKey)
+	method := L.CheckString(2)
+	
+	switch method {
+	case "Key":
+		L.Push(L.NewFunction(func(L *lua.LState) int {
+			key := event.Key()
+			L.Push(lua.LNumber(key))
+			return 1
+		}))
+	case "Rune":
+		L.Push(L.NewFunction(func(L *lua.LState) int {
+			r := event.Rune()
+			L.Push(lua.LNumber(r))
+			return 1
+		}))
+	}
+	
+	return 1
+}
+
 // HTTP Module
 func registerHTTPModule(L *lua.LState) {
 	L.PreloadModule("http", func(L *lua.LState) int {
@@ -543,6 +577,13 @@ func responseIndex(L *lua.LState) int {
 		L.Push(L.NewFunction(func(L *lua.LState) int {
 			content := L.CheckString(2)
 			w.Write([]byte(content))
+			return 0
+		}))
+	case "header":
+		L.Push(L.NewFunction(func(L *lua.LState) int {
+			key := L.CheckString(2)
+			value := L.CheckString(3)
+			w.Header().Set(key, value)
 			return 0
 		}))
 	case "json":

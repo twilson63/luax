@@ -1,4 +1,4 @@
--- LuaX Feature Showcase
+-- Hype Feature Showcase
 -- Demonstrates TUI, HTTP, and Database functionality in one app
 
 local kv = require('kv')
@@ -16,7 +16,7 @@ db:open_db("logs")
 local app = tui.newApp()
 local flex = tui.newFlex()
 local logView = tui.newTextView("")
-local statusBar = tui.newTextView("LuaX Showcase - HTTP Server + Database + TUI")
+local statusBar = tui.newTextView("Hype Showcase - HTTP Server + Database + TUI")
 
 -- Configure TUI components
 logView:SetWrap(true)
@@ -30,7 +30,10 @@ local function log(message)
     local logEntry = timestamp .. " - " .. message
     
     -- Display in TUI
-    local currentText = logView:GetText()
+    local currentText = ""
+    if logView.GetText then
+        currentText = logView:GetText()
+    end
     logView:SetText(currentText .. logEntry .. "\n")
     
     -- Store in database
@@ -39,7 +42,6 @@ local function log(message)
     
     -- Update status
     statusBar:SetText("Last: " .. message)
-    app:Draw()
 end
 
 -- HTTP Server setup
@@ -76,7 +78,7 @@ server:handle("/status", function(req, res)
     end)
     
     res:json({
-        server = "LuaX Showcase",
+        server = "Hype Showcase",
         status = "running",
         logs_stored = logCount,
         uptime = os.time()
@@ -87,7 +89,7 @@ end)
 -- Root endpoint with welcome message
 server:handle("/", function(req, res)
     res:write([[
-LuaX Showcase Server
+Hype Showcase Server
 
 Available endpoints:
 - GET  /status  - Server status and statistics
@@ -100,7 +102,7 @@ This server demonstrates:
 - Real-time TUI interface with server logs
 - Cross-platform executable deployment
 
-Built with LuaX - Lua Script to Executable Packager
+Built with Hype - Lua Script to Executable Packager
 ]])
     log("Root page served")
 end)
@@ -143,4 +145,4 @@ app:Run()
 -- Cleanup on exit
 server:stop()
 db:close()
-print("LuaX Showcase completed!")
+print("Hype Showcase completed!")

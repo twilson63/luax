@@ -68,13 +68,13 @@ server:handle("/", function(req, res)
         local ext = string.match(filepath, "%.([^%.]+)$")
         if ext then
             if ext == "html" or ext == "htm" then
-                res.headers = { ["Content-Type"] = "text/html" }
+                res:header("Content-Type", "text/html")
             elseif ext == "css" then
-                res.headers = { ["Content-Type"] = "text/css" }
+                res:header("Content-Type", "text/css")
             elseif ext == "js" then
-                res.headers = { ["Content-Type"] = "application/javascript" }
+                res:header("Content-Type", "application/javascript")
             elseif ext == "json" then
-                res.headers = { ["Content-Type"] = "application/json" }
+                res:header("Content-Type", "application/json")
             end
         end
         

@@ -52,7 +52,7 @@ addressBar:SetDoneFunc(function(key)
         local response, err = http.get(url, {
             timeout = 10,
             headers = {
-                ["User-Agent"] = "LuaX-Browser/1.0"
+                ["User-Agent"] = "Hype-Browser/1.0"
             }
         })
         
@@ -124,7 +124,7 @@ app:SetRoot(flex, true)
 
 -- Show initial help
 contentView:SetText([[
-Welcome to LuaX Plain Text Browser!
+Welcome to Hype Plain Text Browser!
 
 This is a simple text-based web browser built with Lua and TUI.
 
