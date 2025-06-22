@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Reference - Hype</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <h2>🚀 Hype</h2>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="index.html" class="nav-link">Home</a></li>
+                <li><a href="api.html" class="nav-link active">API Reference</a></li>
+                <li><a href="examples.html" class="nav-link">Examples</a></li>
+                <li><a href="https://github.com/twilson63/hype" class="nav-link">GitHub</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <section class="hero">
+            <div class="container">
+                <h1>API Reference</h1>
+                <p class="hero-subtitle">Complete API Documentation</p>
+                <p class="hero-description">
+                    Comprehensive reference for all built-in modules and functions available in Hype,
+                    including TUI components, HTTP client/server, and key-value database operations.
+                </p>
+            </div>
+        </section>
+
+        <section class="api-overview">
+            <div class="container">
+                <h2>Core Modules</h2>
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <div class="feature-icon">🖥️</div>
+                        <h3>TUI Module</h3>
+                        <p>Terminal User Interface components for building interactive console applications</p>
+                        <a href="#tui-api" class="btn btn-secondary">View API</a>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">🌐</div>
+                        <h3>HTTP Module</h3>
+                        <p>HTTP client and server functionality for web services and APIs</p>
+                        <a href="#http-api" class="btn btn-secondary">View API</a>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">🗄️</div>
+                        <h3>Key-Value Module</h3>
+                        <p>Embedded BoltDB database for persistent data storage</p>
+                        <a href="#kv-api" class="btn btn-secondary">View API</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TUI API Section -->
+        <section id="tui-api" class="api-section">
+            <div class="container">
+                <h2>TUI Module</h2>
+                <p>The TUI module provides terminal-based user interface components using the tview library.</p>
+                
+                <div class="api-group">
+                    <h3>Application Management</h3>
+                    <div class="code-block">
+                        <pre><code>local app = tui.newApp()</code></pre>
+                    </div>
+                    
+                    <h4>App Methods</h4>
+                    <ul class="api-list">
+                        <li><code>app:SetRoot(primitive, fullscreen)</code> - Set the root component</li>
+                        <li><code>app:Run()</code> - Start the application event loop</li>
+                        <li><code>app:Stop()</code> - Stop the application</li>
+                        <li><code>app:SetFocus(primitive)</code> - Set focus to a specific component</li>
+                        <li><code>app:Draw()</code> - Queue a redraw</li>
+                        <li><code>app:SetInputCapture(function)</code> - Set global key handler</li>
+                    </ul>
+                </div>
+
+                <div class="api-group">
+                    <h3>UI Components</h3>
+                    
+                    <h4>TextView</h4>
+                    <p>Display text content with formatting and scrolling capabilities.</p>
+                    <div class="code-block">
+                        <pre><code>local textView = tui.newTextView(text)</code></pre>
+                    </div>
+                    <ul class="api-list">
+                        <li><code>textView:SetText(text)</code> - Set display text</li>
+                        <li><code>textView:GetText()</code> - Get current text</li>
+                        <li><code>textView:SetWrap(bool)</code> - Enable/disable text wrapping</li>
+                        <li><code>textView:SetWordWrap(bool)</code> - Enable/disable word wrapping</li>
+                        <li><code>textView:SetTitle(title)</code> - Set component title</li>
+                        <li><code>textView:SetTextColor(color)</code> - Set text color</li>
+                    </ul>
+
+                    <h4>InputField</h4>
+                    <p>Text input component for user data entry.</p>
+                    <div class="code-block">
+                        <pre><code>local inputField = tui.newInputField()</code></pre>
+                    </div>
+                    <ul class="api-list">
+                        <li><code>inputField:SetLabel(label)</code> - Set field label</li>
+                        <li><code>inputField:SetPlaceholder(text)</code> - Set placeholder text</li>
+                        <li><code>inputField:GetText()</code> - Get current input text</li>
+                        <li><code>inputField:SetText(text)</code> - Set input text</li>
+                        <li><code>inputField:SetDoneFunc(callback)</code> - Set completion callback</li>
+                    </ul>
+
+                    <h4>Button</h4>
+                    <p>Clickable button component for user actions.</p>
+                    <div class="code-block">
+                        <pre><code>local button = tui.newButton(label)</code></pre>
+                    </div>
+                    <ul class="api-list">
+                        <li><code>button:SetLabel(label)</code> - Set button label</li>
+                        <li><code>button:SetSelectedFunc(callback)</code> - Set click handler</li>
+                    </ul>
+
+                    <h4>Flex</h4>
+                    <p>Flexible layout container for organizing components.</p>
+                    <div class="code-block">
+                        <pre><code>local flex = tui.newFlex()</code></pre>
+                    </div>
+                    <ul class="api-list">
+                        <li><code>flex:SetDirection(direction)</code> - Set layout direction (0=vertical, 1=horizontal)</li>
+                        <li><code>flex:AddItem(primitive, fixedSize, proportion, focus)</code> - Add component to layout</li>
+                    </ul>
+                </div>
+
+                <div class="api-group">
+                    <h3>Event Handling</h3>
+                    <p>Event objects in input capture callbacks provide:</p>
+                    <ul class="api-list">
+                        <li><code>event:Key()</code> - Get key code</li>
+                        <li><code>event:Rune()</code> - Get character rune</li>
+                    </ul>
+                    
+                    <div class="example-card">
+                        <h4>Example: Simple TUI App</h4>
+                        <div class="code-block">
+                            <pre><code>local app = tui.newApp()
+local textView = tui.newTextView("Hello from Hype!")
+textView:SetTitle("My First App")
+
+app:SetInputCapture(function(event)
+    if event:Key() == 27 then -- ESC key
+        app:Stop()
+        return nil
+    end
+    return event
+end)
+
+app:SetRoot(textView, true)
+app:Run()</code></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- HTTP API Section -->
+        <section id="http-api" class="api-section">
+            <div class="container">
+                <h2>HTTP Module</h2>
+                <p>Provides HTTP client and server functionality for web services and API development.</p>
+                
+                <div class="api-group">
+                    <h3>HTTP Client</h3>
+                    <div class="code-block">
+                        <pre><code>local http = require('http')</code></pre>
+                    </div>
+                    
+                    <h4>GET Requests</h4>
+                    <div class="code-block">
+                        <pre><code>local response, err = http.get(url, options)</code></pre>
+                    </div>
+                    <p><strong>Parameters:</strong></p>
+                    <ul class="api-list">
+                        <li><code>url</code> - Target URL string</li>
+                        <li><code>options</code> - Optional table with:
+                            <ul>
+                                <li><code>timeout</code> - Request timeout in seconds</li>
+                                <li><code>headers</code> - Custom headers table</li>
+                            </ul>
+                        </li>
+                    </ul>
+                    
+                    <p><strong>Response Structure:</strong></p>
+                    <div class="code-block">
+                        <pre><code>{
+  status = 200,
+  body = "response body",
+  headers = { ["Content-Type"] = "application/json" }
+}</code></pre>
+                    </div>
+                    
+                    <div class="example-card">
+                        <h4>Example: HTTP Client Usage</h4>
+                        <div class="code-block">
+                            <pre><code>local http = require('http')
+local response, err = http.get("https://api.example.com/data", {
+    timeout = 10,
+    headers = {["User-Agent"] = "MyApp/1.0"}
+})
+
+if response then
+    print("Status:", response.status)
+    print("Body:", response.body)
+else
+    print("Error:", err)
+end</code></pre>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="api-group">
+                    <h3>HTTP Server</h3>
+                    <div class="code-block">
+                        <pre><code>local server = http.newServer()</code></pre>
+                    </div>
+                    
+                    <h4>Server Methods</h4>
+                    <ul class="api-list">
+                        <li><code>server:handle(pattern, handler)</code> - Register route handler</li>
+                        <li><code>server:listen(port)</code> - Start server on port</li>
+                        <li><code>server:stop()</code> - Stop server</li>
+                    </ul>
+                    
+                    <h4>Handler Function</h4>
+                    <p>Handler functions receive request and response objects:</p>
+                    <div class="code-block">
+                        <pre><code>server:handle("/api/users", function(req, res)
+    -- Request object (req) contains:
+    -- req.method, req.url, req.path, req.headers, req.query, req.body
+    
+    -- Response object (res) methods:
+    res:write(content)           -- Write text response
+    res:json(table)              -- Write JSON response
+    res:status(code)             -- Set HTTP status code
+    res:header(key, value)       -- Set response header
+end)</code></pre>
+                    </div>
+                    
+                    <div class="example-card">
+                        <h4>Example: HTTP Server</h4>
+                        <div class="code-block">
+                            <pre><code>local http = require('http')
+local server = http.newServer()
+
+server:handle("/", function(req, res)
+    res:json({ message = "Hello World!" })
+end)
+
+server:handle("/api/echo", function(req, res)
+    res:json({ 
+        method = req.method,
+        path = req.path,
+        query = req.query,
+        body = req.body
+    })
+end)
+
+server:listen(8080)
+print("Server running on :8080")</code></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Key-Value API Section -->
+        <section id="kv-api" class="api-section">
+            <div class="container">
+                <h2>Key-Value Module</h2>
+                <p>BoltDB-based embedded database for persistent storage with ACID transactions.</p>
+                
+                <div class="api-group">
+                    <h3>Database Connection</h3>
+                    <div class="code-block">
+                        <pre><code>local kv = require('kv')
+local db, err = kv.open(path, options)</code></pre>
+                    </div>
+                    <p><strong>Parameters:</strong></p>
+                    <ul class="api-list">
+                        <li><code>path</code> - Database file path</li>
+                        <li><code>options</code> - Optional configuration table</li>
+                    </ul>
+                </div>
+
+                <div class="api-group">
+                    <h3>Bucket Management</h3>
+                    <ul class="api-list">
+                        <li><code>db:open_db(bucketName)</code> - Create/open bucket</li>
+                    </ul>
+                    <p>Buckets are like tables in traditional databases, used to organize key-value pairs.</p>
+                </div>
+
+                <div class="api-group">
+                    <h3>Basic Operations</h3>
+                    <ul class="api-list">
+                        <li><code>db:put(bucket, key, value)</code> - Store key-value pair</li>
+                        <li><code>db:get(bucket, key)</code> - Retrieve value by key</li>
+                        <li><code>db:delete(bucket, key)</code> - Delete key</li>
+                        <li><code>db:close()</code> - Close database connection</li>
+                    </ul>
+                    
+                    <div class="example-card">
+                        <h4>Example: Basic Usage</h4>
+                        <div class="code-block">
+                            <pre><code>local kv = require('kv')
+local db, err = kv.open("./data.db")
+
+if not db then
+    print("Error opening database:", err)
+    return
+end
+
+-- Create/open bucket
+db:open_db("users")
+
+-- Store data
+db:put("users", "john", "John Doe")
+db:put("users", "jane", "Jane Smith")
+
+-- Retrieve data
+local name = db:get("users", "john")
+print("User:", name)  -- Output: User: John Doe
+
+-- Delete data
+db:delete("users", "john")
+
+-- Close database
+db:close()</code></pre>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="api-group">
+                    <h3>Batch Operations</h3>
+                    <ul class="api-list">
+                        <li><code>db:keys(bucket, prefix)</code> - Get all keys (optionally with prefix)</li>
+                        <li><code>db:foreach(bucket, callback)</code> - Iterate over all key-value pairs</li>
+                    </ul>
+                    
+                    <div class="example-card">
+                        <h4>Example: Batch Operations</h4>
+                        <div class="code-block">
+                            <pre><code>-- Get all keys
+local keys = db:keys("users")
+for i, key in ipairs(keys) do
+    print("Key:", key)
+end
+
+-- Get keys with prefix
+local userKeys = db:keys("users", "user_")
+
+-- Iterate over all key-value pairs
+db:foreach("users", function(key, value)
+    print(key .. " = " .. value)
+    return true  -- Continue iteration
+end)</code></pre>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="api-group">
+                    <h3>Transaction Support</h3>
+                    <p>Transactions provide ACID guarantees for multiple operations.</p>
+                    <div class="code-block">
+                        <pre><code>local txn, err = db:begin_txn(readonly)</code></pre>
+                    </div>
+                    
+                    <h4>Transaction Methods</h4>
+                    <ul class="api-list">
+                        <li><code>txn:put(bucket, key, value)</code> - Store in transaction</li>
+                        <li><code>txn:get(bucket, key)</code> - Retrieve in transaction</li>
+                        <li><code>txn:delete(bucket, key)</code> - Delete in transaction</li>
+                        <li><code>txn:commit()</code> - Commit transaction</li>
+                        <li><code>txn:abort()</code> - Abort transaction</li>
+                    </ul>
+                    
+                    <div class="example-card">
+                        <h4>Example: Transactions</h4>
+                        <div class="code-block">
+                            <pre><code>-- Begin read-write transaction
+local txn, err = db:begin_txn(false)
+if not txn then
+    print("Error starting transaction:", err)
+    return
+end
+
+-- Perform multiple operations
+txn:put("users", "alice", "Alice Johnson")
+txn:put("users", "bob", "Bob Wilson")
+
+-- Get data within transaction
+local alice = txn:get("users", "alice")
+print("Alice:", alice)
+
+-- Commit all changes
+local success, err = txn:commit()
+if not success then
+    print("Transaction failed:", err)
+    txn:abort()
+end</code></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Command Line Interface -->
+        <section id="cli-api" class="api-section">
+            <div class="container">
+                <h2>Command Line Interface</h2>
+                <p>Build and execution options for Hype applications.</p>
+                
+                <div class="api-group">
+                    <h3>Build Command</h3>
+                    <div class="code-block">
+                        <pre><code>hype build script.lua [options]</code></pre>
+                    </div>
+                    
+                    <h4>Options</h4>
+                    <ul class="api-list">
+                        <li><code>-o, --output NAME</code> - Set executable name</li>
+                        <li><code>--target PLATFORM</code> - Target platform (current, linux, windows, darwin)</li>
+                    </ul>
+                    
+                    <div class="example-card">
+                        <h4>Build Examples</h4>
+                        <div class="code-block">
+                            <pre><code># Build for current platform
+hype build myapp.lua
+
+# Specify output name
+hype build myapp.lua -o myserver
+
+# Cross-compile for different platforms
+hype build myapp.lua --target linux
+hype build myapp.lua --target windows
+hype build myapp.lua --target darwin</code></pre>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="api-group">
+                    <h3>Eval Command</h3>
+                    <p>Run Lua scripts directly for development and testing.</p>
+                    <div class="code-block">
+                        <pre><code>hype eval script.lua [-- args...]</code></pre>
+                    </div>
+                    
+                    <div class="example-card">
+                        <h4>Eval Examples</h4>
+                        <div class="code-block">
+                            <pre><code># Run script directly
+hype eval server.lua
+
+# Pass command line arguments
+hype eval myapp.lua -- --port 3000 --debug</code></pre>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="api-group">
+                    <h3>Command Line Arguments</h3>
+                    <p>Access arguments in your Lua scripts via the global <code>arg</code> table:</p>
+                    <ul class="api-list">
+                        <li><code>arg[0]</code> - Script/executable name</li>
+                        <li><code>arg[1], arg[2], ...</code> - Command line arguments</li>
+                    </ul>
+                    
+                    <div class="example-card">
+                        <h4>Example: Argument Handling</h4>
+                        <div class="code-block">
+                            <pre><code>-- args.lua
+print("Script name:", arg[0])
+print("Number of arguments:", #arg)
+
+for i = 1, #arg do
+    print("Arg " .. i .. ":", arg[i])
+end
+
+-- Usage: hype eval args.lua -- hello world 123
+-- Output:
+-- Script name: args.lua
+-- Number of arguments: 3
+-- Arg 1: hello
+-- Arg 2: world
+-- Arg 3: 123</code></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Standard Libraries -->
+        <section class="api-section">
+            <div class="container">
+                <h2>Standard Lua Libraries</h2>
+                <p>All standard Lua libraries are available in Hype applications:</p>
+                
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <div class="feature-icon">🌐</div>
+                        <h3>Global Environment</h3>
+                        <p>Access to <code>_G</code> and global functions</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">📦</div>
+                        <h3>Package System</h3>
+                        <p>Module loading with <code>require()</code> and <code>package</code></p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">🔄</div>
+                        <h3>Coroutines</h3>
+                        <p>Cooperative multitasking with <code>coroutine</code></p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">📋</div>
+                        <h3>Table Operations</h3>
+                        <p>Data structure manipulation with <code>table</code></p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">📄</div>
+                        <h3>File I/O</h3>
+                        <p>File operations with <code>io</code> library</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">⚙️</div>
+                        <h3>System Access</h3>
+                        <p>Operating system interface with <code>os</code></p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">🔤</div>
+                        <h3>String Processing</h3>
+                        <p>Text manipulation with <code>string</code></p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">🔢</div>
+                        <h3>Mathematics</h3>
+                        <p>Mathematical functions with <code>math</code></p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h4>Hype</h4>
+                    <p>Lua Script to Executable Packager</p>
+                    <p>Built with ❤️ for developers</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Links</h4>
+                    <ul>
+                        <li><a href="https://github.com/twilson63/hype">GitHub Repository</a></li>
+                        <li><a href="https://github.com/twilson63/hype/releases">Releases</a></li>
+                        <li><a href="https://github.com/twilson63/hype/issues">Issues</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Documentation</h4>
+                    <ul>
+                        <li><a href="api.html">API Reference</a></li>
+                        <li><a href="examples.html">Examples</a></li>
+                        <li><a href="index.html#installation">Installation</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 Hype. Open source project.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+    
+    <style>
+        .api-section {
+            background: var(--terminal-bg-light);
+        }
+        
+        .api-section:nth-child(even) {
+            background: var(--terminal-bg);
+        }
+        
+        .api-group {
+            margin-bottom: 3rem;
+        }
+        
+        .api-group h4 {
+            color: var(--terminal-accent);
+            margin: 2rem 0 1rem;
+            font-size: 1.1rem;
+        }
+        
+        .api-group h4::before {
+            content: '### ';
+            color: var(--terminal-accent-dim);
+        }
+        
+        .api-list {
+            list-style: none;
+            margin-left: 0;
+        }
+        
+        .api-list li {
+            margin-bottom: 0.5rem;
+            padding-left: 1.5rem;
+            position: relative;
+        }
+        
+        .api-list li::before {
+            content: '• ';
+            color: var(--terminal-accent);
+            position: absolute;
+            left: 0;
+        }
+        
+        .api-list li code {
+            background: var(--terminal-bg);
+            padding: 2px 6px;
+            border-radius: 3px;
+            color: var(--terminal-accent);
+            font-size: 0.9rem;
+        }
+        
+        .api-list ul {
+            margin-top: 0.5rem;
+            margin-left: 1rem;
+        }
+        
+        .api-list ul li::before {
+            content: '◦ ';
+        }
+    </style>
+</body>
+</html>

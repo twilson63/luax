@@ -64,21 +64,32 @@ server:handle("/", function(req, res)
         local content = file:read("*all")
         file:close()
         
-        -- Set content type based on extension
-        local ext = string.match(filepath, "%.([^%.]+)$")
-        if ext then
-            if ext == "html" or ext == "htm" then
-                res:header("Content-Type", "text/html")
-            elseif ext == "css" then
-                res:header("Content-Type", "text/css")
-            elseif ext == "js" then
-                res:header("Content-Type", "application/javascript")
-            elseif ext == "json" then
-                res:header("Content-Type", "application/json")
+        -- Check if content was successfully read
+        if content then
+            -- Set content type based on extension
+            local ext = string.match(filepath, "%.([^%.]+)$")
+            if ext then
+                if ext == "html" or ext == "htm" then
+                    res:header("Content-Type", "text/html")
+                elseif ext == "css" then
+                    res:header("Content-Type", "text/css")
+                elseif ext == "js" then
+                    res:header("Content-Type", "application/javascript")
+                elseif ext == "json" then
+                    res:header("Content-Type", "application/json")
+                end
             end
+            
+            res:write(content)
+        else
+            -- File exists but couldn't be read
+            res:status(500)
+            res:json({ 
+                error = "Could not read file", 
+                path = path,
+                code = 500 
+            })
         end
-        
-        res:write(content)
     else
         -- File not found
         res:json({ 

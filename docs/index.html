@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hype - Lua Script to Executable Packager</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <h2>🚀 Hype</h2>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="index.html" class="nav-link active">Home</a></li>
+                <li><a href="api.html" class="nav-link">API Reference</a></li>
+                <li><a href="examples.html" class="nav-link">Examples</a></li>
+                <li><a href="https://github.com/twilson63/hype" class="nav-link">GitHub</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <section class="hero">
+            <div class="container">
+                <h1>Hype</h1>
+                <p class="hero-subtitle">Lua Script to Executable Packager</p>
+                <p class="hero-description">
+                    Package Lua scripts into standalone executables with TUI (Terminal User Interface), 
+                    HTTP, and embedded database support. Create cross-platform applications with zero 
+                    external dependencies.
+                </p>
+                <div class="hero-buttons">
+                    <a href="#installation" class="btn btn-primary">Get Started</a>
+                    <a href="api.html" class="btn btn-secondary">API Reference</a>
+                </div>
+            </div>
+        </section>
+
+        <section class="features">
+            <div class="container">
+                <h2>Features</h2>
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <div class="feature-icon">📦</div>
+                        <h3>Package Scripts</h3>
+                        <p>Transform Lua scripts into standalone executables for any platform</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">🌍</div>
+                        <h3>Cross-Platform</h3>
+                        <p>Support for Linux, macOS, and Windows with single binary distribution</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">🖥️</div>
+                        <h3>Built-in TUI</h3>
+                        <p>Create beautiful terminal applications with the integrated TUI library</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">🌐</div>
+                        <h3>HTTP Support</h3>
+                        <p>Build web servers and clients with full HTTP functionality</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">🗄️</div>
+                        <h3>Embedded Database</h3>
+                        <p>Key-value store with ACID transactions using BoltDB</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">✨</div>
+                        <h3>Zero Dependencies</h3>
+                        <p>Final executables have no external dependencies</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="installation" class="installation">
+            <div class="container">
+                <h2>Installation</h2>
+                
+                <div class="install-options">
+                    <div class="install-option">
+                        <h3>📱 macOS (Recommended)</h3>
+                        <p>One-line installer with automatic architecture detection:</p>
+                        <div class="code-block">
+                            <code>curl -sSL https://raw.githubusercontent.com/twilson63/hype/main/install-mac.sh | bash</code>
+                            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                        </div>
+                    </div>
+
+                    <div class="install-option">
+                        <h3>🔧 Manual Installation</h3>
+                        <ol>
+                            <li>Download the appropriate binary from <a href="https://github.com/twilson63/hype/releases" target="_blank">GitHub Releases</a></li>
+                            <li>For macOS: <code>hype-darwin-amd64</code> (Intel) or <code>hype-darwin-arm64</code> (Apple Silicon)</li>
+                            <li>Make executable: <code>chmod +x hype-*</code></li>
+                            <li>Move to PATH: <code>mv hype-* /usr/local/bin/hype</code></li>
+                        </ol>
+                    </div>
+
+                    <div class="install-option">
+                        <h3>🍎 macOS Gatekeeper Fix</h3>
+                        <p>If macOS blocks the binary:</p>
+                        <div class="code-block">
+                            <code>xattr -d com.apple.quarantine /path/to/hype</code>
+                            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                        </div>
+                    </div>
+
+                    <div class="install-option">
+                        <h3>🛠️ Build from Source</h3>
+                        <div class="code-block">
+                            <code>git clone https://github.com/twilson63/hype.git<br>cd hype<br>go build -o hype .</code>
+                            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="quick-start">
+            <div class="container">
+                <h2>Quick Start</h2>
+                
+                <div class="example-grid">
+                    <div class="example-card">
+                        <h3>🖥️ Simple TUI App</h3>
+                        <div class="code-block">
+                            <pre><code>-- hello.lua
+local app = tui.newApp()
+local text = tui.newTextView("Hello from Hype!")
+text:SetTitle("My First App")
+app:SetRoot(text, true)
+app:Run()</code></pre>
+                        </div>
+                        <div class="code-block">
+                            <code>./hype build hello.lua -o hello<br>./hello</code>
+                            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                        </div>
+                    </div>
+
+                    <div class="example-card">
+                        <h3>🌐 HTTP Server</h3>
+                        <div class="code-block">
+                            <pre><code>-- server.lua
+local http = require('http')
+local server = http.newServer()
+
+server:handle("/", function(req, res)
+    res:json({ message = "Hello World!" })
+end)
+
+server:listen(8080)
+print("Server running on :8080")</code></pre>
+                        </div>
+                        <div class="code-block">
+                            <code>./hype build server.lua -o server<br>./server</code>
+                            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                        </div>
+                    </div>
+
+                    <div class="example-card">
+                        <h3>🗄️ Database App</h3>
+                        <div class="code-block">
+                            <pre><code>-- db.lua
+local kv = require('kv')
+local db = kv.open("./data.db")
+db:open_db("users")
+
+-- Store data
+db:put("users", "john", "John Doe")
+
+-- Retrieve data
+local name = db:get("users", "john")
+print("User: " .. name)
+
+db:close()</code></pre>
+                        </div>
+                        <div class="code-block">
+                            <code>./hype build db.lua -o db<br>./db</code>
+                            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="usage">
+            <div class="container">
+                <h2>Usage</h2>
+                
+                <div class="usage-options">
+                    <div class="usage-option">
+                        <h3>📦 Build Mode</h3>
+                        <p>Compile Lua scripts into standalone executables:</p>
+                        <div class="code-block">
+                            <code># Build for current platform<br>
+./hype build script.lua<br><br>
+# Specify output name<br>
+./hype build script.lua -o myapp<br><br>
+# Cross-compile for different platforms<br>
+./hype build script.lua --target linux<br>
+./hype build script.lua --target windows<br>
+./hype build script.lua --target darwin</code>
+                        </div>
+                    </div>
+
+                    <div class="usage-option">
+                        <h3>⚡ Eval Mode</h3>
+                        <p>Run Lua scripts directly for development:</p>
+                        <div class="code-block">
+                            <code># Run script directly<br>
+./hype eval script.lua<br><br>
+# Pass command line arguments<br>
+./hype eval script.lua -- arg1 arg2 arg3</code>
+                        </div>
+                    </div>
+
+                    <div class="usage-option">
+                        <h3>📊 Command Line Arguments</h3>
+                        <p>Access arguments in your Lua scripts:</p>
+                        <div class="code-block">
+                            <pre><code>-- args.lua
+print("Script name:", arg[0])
+for i = 1, #arg do
+    print("Arg " .. i .. ":", arg[i])
+end</code></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="performance">
+            <div class="container">
+                <h2>Performance</h2>
+                <div class="performance-stats">
+                    <div class="stat-card">
+                        <h3>15,000+</h3>
+                        <p>HTTP requests handled<br>with 100 concurrent connections</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Zero</h3>
+                        <p>External dependencies<br>in final executables</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>3 Platforms</h3>
+                        <p>Linux, macOS, Windows<br>from single source</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>~16MB</h3>
+                        <p>Average executable size<br>with full runtime included</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h4>Hype</h4>
+                    <p>Lua Script to Executable Packager</p>
+                    <p>Built with ❤️ for developers</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Links</h4>
+                    <ul>
+                        <li><a href="https://github.com/twilson63/hype">GitHub Repository</a></li>
+                        <li><a href="https://github.com/twilson63/hype/releases">Releases</a></li>
+                        <li><a href="https://github.com/twilson63/hype/issues">Issues</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Documentation</h4>
+                    <ul>
+                        <li><a href="api.html">API Reference</a></li>
+                        <li><a href="examples.html">Examples</a></li>
+                        <li><a href="#installation">Installation</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 Hype. Open source project.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>

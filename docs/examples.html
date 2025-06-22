@@ -1,0 +1,1132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Examples - Hype</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <h2>🚀 Hype</h2>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="index.html" class="nav-link">Home</a></li>
+                <li><a href="api.html" class="nav-link">API Reference</a></li>
+                <li><a href="examples.html" class="nav-link active">Examples</a></li>
+                <li><a href="https://github.com/twilson63/hype" class="nav-link">GitHub</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <section class="hero">
+            <div class="container">
+                <h1>Examples</h1>
+                <p class="hero-subtitle">Real-World Applications</p>
+                <p class="hero-description">
+                    Explore practical examples that demonstrate the power of Hype. From simple TUI applications 
+                    to full-stack web services with embedded databases, these examples show you how to build 
+                    production-ready applications.
+                </p>
+            </div>
+        </section>
+
+        <section class="examples-overview">
+            <div class="container">
+                <h2>Example Categories</h2>
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <div class="feature-icon">🖥️</div>
+                        <h3>TUI Applications</h3>
+                        <p>Terminal user interfaces with rich interactions</p>
+                        <a href="#tui-examples" class="btn btn-secondary">View Examples</a>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">🌐</div>
+                        <h3>HTTP Servers</h3>
+                        <p>Web servers, APIs, and static file serving</p>
+                        <a href="#http-examples" class="btn btn-secondary">View Examples</a>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">🗄️</div>
+                        <h3>Database Apps</h3>
+                        <p>Persistent storage with embedded BoltDB</p>
+                        <a href="#db-examples" class="btn btn-secondary">View Examples</a>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">⚡</div>
+                        <h3>Full-Stack Apps</h3>
+                        <p>Complete applications combining all features</p>
+                        <a href="#fullstack-examples" class="btn btn-secondary">View Examples</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TUI Examples -->
+        <section id="tui-examples" class="examples-section">
+            <div class="container">
+                <h2>TUI Applications</h2>
+                <p>Build beautiful terminal user interfaces with rich interactions and real-time updates.</p>
+                
+                <div class="example-showcase">
+                    <div class="showcase-item">
+                        <h3>🌐 Plain Text Web Browser</h3>
+                        <p>A fully functional web browser with TUI interface, featuring address bar, content viewing, and keyboard navigation.</p>
+                        <div class="code-block">
+                            <pre><code>-- browser.lua - Full TUI Web Browser
+local http = require('http')
+local app = tui.newApp()
+
+-- Create main layout
+local flex = tui.newFlex()
+flex:SetDirection(0) -- Vertical layout
+
+-- Address bar
+local addressBar = tui.newInputField()
+addressBar:SetLabel("URL: ")
+addressBar:SetPlaceholder("Enter URL and press Enter")
+
+-- Content view
+local contentView = tui.newTextView("")
+contentView:SetTitle("Content")
+contentView:SetWrap(true)
+contentView:SetWordWrap(true)
+
+-- Status bar
+local statusBar = tui.newTextView("")
+statusBar:SetTitle("Status")
+
+-- Function to fetch and display content
+local function fetchURL(url)
+    statusBar:SetText("Fetching: " .. url)
+    app:Draw()
+    
+    local response, err = http.get(url)
+    if response then
+        local content = stripHTML(response.body)
+        contentView:SetText(content)
+        statusBar:SetText("Loaded: " .. url .. " (Status: " .. response.status .. ")")
+    else
+        contentView:SetText("Error: " .. (err or "Unknown error"))
+        statusBar:SetText("Failed to load: " .. url)
+    end
+    app:Draw()
+end
+
+-- Handle URL input
+addressBar:SetDoneFunc(function(key)
+    if key == 13 then -- Enter key
+        local url = addressBar:GetText()
+        if url and url ~= "" then
+            fetchURL(url)
+        end
+    end
+end)
+
+-- Layout components
+flex:AddItem(addressBar, 3, 0, true)
+flex:AddItem(contentView, 0, 1, false)
+flex:AddItem(statusBar, 2, 0, false)
+
+-- Keyboard shortcuts
+app:SetInputCapture(function(event)
+    key = event:Key()
+    if key == 12 then -- Ctrl+L
+        app:SetFocus(addressBar)
+        return nil
+    elseif key == 27 then -- Escape
+        app:SetFocus(contentView)
+        return nil
+    elseif key == 3 then -- Ctrl+C
+        app:Stop()
+        return nil
+    end
+    return event
+end)
+
+-- Helper function to strip HTML tags
+function stripHTML(html)
+    -- Remove HTML tags and decode entities
+    local text = html:gsub("<%s*[^>]*>", "")
+    text = text:gsub("&amp;", "&")
+    text = text:gsub("&lt;", "<")
+    text = text:gsub("&gt;", ">")
+    text = text:gsub("&quot;", '"')
+    text = text:gsub("&#39;", "'")
+    return text
+end
+
+app:SetRoot(flex, true)
+addressBar:SetText("https://example.com")
+app:Run()</code></pre>
+                            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                        </div>
+                        <div class="example-actions">
+                            <div class="build-example">
+                                <strong>Build & Run:</strong>
+                                <div class="code-block">
+                                    <code>hype build browser.lua -o browser<br>./browser</code>
+                                    <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="showcase-item">
+                        <h3>📝 Interactive Form</h3>
+                        <p>Interactive TUI application with input fields, buttons, and layout management.</p>
+                        <div class="code-block">
+                            <pre><code>-- interactive.lua - Interactive Form
+local app = tui.newApp()
+
+-- Create form layout
+local form = tui.newFlex()
+form:SetDirection(0) -- Vertical
+
+-- Title
+local title = tui.newTextView("=== User Registration Form ===")
+title:SetTextAlign(1) -- Center align
+
+-- Name input
+local nameInput = tui.newInputField()
+nameInput:SetLabel("Name: ")
+nameInput:SetPlaceholder("Enter your full name")
+
+-- Email input  
+local emailInput = tui.newInputField()
+emailInput:SetLabel("Email: ")
+emailInput:SetPlaceholder("Enter your email address")
+
+-- Submit button
+local submitBtn = tui.newButton("Submit")
+local resultView = tui.newTextView("")
+
+-- Handle form submission
+submitBtn:SetSelectedFunc(function()
+    local name = nameInput:GetText()
+    local email = emailInput:GetText()
+    
+    if name == "" or email == "" then
+        resultView:SetText("Error: Please fill in all fields")
+        resultView:SetTextColor("red")
+    else
+        local result = string.format([[
+Registration Complete!
+
+Name: %s
+Email: %s
+Timestamp: %s
+
+Press Ctrl+C to exit.]], name, email, os.date())
+        
+        resultView:SetText(result)
+        resultView:SetTextColor("green")
+    end
+    app:Draw()
+end)
+
+-- Layout components
+form:AddItem(title, 3, 0, false)
+form:AddItem(nameInput, 3, 0, true)
+form:AddItem(emailInput, 3, 0, false)
+form:AddItem(submitBtn, 3, 0, false)
+form:AddItem(resultView, 0, 1, false)
+
+-- Global keyboard handling
+app:SetInputCapture(function(event)
+    if event:Key() == 3 then -- Ctrl+C
+        app:Stop()
+        return nil
+    end
+    return event
+end)
+
+app:SetRoot(form, true)
+app:Run()</code></pre>
+                            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                        </div>
+                        <div class="example-actions">
+                            <div class="build-example">
+                                <strong>Build & Run:</strong>
+                                <div class="code-block">
+                                    <code>hype build interactive.lua -o interactive<br>./interactive</code>
+                                    <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- HTTP Examples -->
+        <section id="http-examples" class="examples-section">
+            <div class="container">
+                <h2>HTTP Servers</h2>
+                <p>Build production-ready web servers, APIs, and static file servers with full HTTP support.</p>
+                
+                <div class="example-showcase">
+                    <div class="showcase-item">
+                        <h3>📁 Production Static File Server</h3>
+                        <p>Complete static file server with command-line options, security features, and proper content-type handling.</p>
+                        <div class="code-block">
+                            <pre><code>-- static-server.lua - Production Static File Server
+local http = require('http')
+
+-- Default configuration
+local port = 8080
+local directory = "./public"
+local host = "localhost"
+
+-- Parse command line arguments
+for i = 1, #arg do
+    if arg[i] == "--port" or arg[i] == "-p" then
+        if arg[i+1] then port = tonumber(arg[i+1]) end
+    elseif arg[i] == "--dir" or arg[i] == "-d" then
+        if arg[i+1] then directory = arg[i+1] end
+    elseif arg[i] == "--host" or arg[i] == "-h" then
+        if arg[i+1] then host = arg[i+1] end
+    elseif arg[i] == "--help" then
+        print("Static File Web Server")
+        print("Usage: " .. arg[0] .. " [options]")
+        print("Options:")
+        print("  --port, -p <port>    Server port (default: 8080)")
+        print("  --dir, -d <dir>      Directory to serve (default: ./public)")
+        print("  --host, -h <host>    Host to bind to (default: localhost)")
+        os.exit(0)
+    end
+end
+
+local server = http.newServer()
+
+-- Serve static files
+server:handle("/", function(req, res)
+    local path = req.url
+    
+    -- Security: prevent directory traversal
+    if string.find(path, "%.%.") then
+        res:status(403)
+        res:json({ error = "Access denied", code = 403 })
+        return
+    end
+    
+    -- Default to index.html for root
+    if path == "/" then path = "/index.html" end
+    
+    local filepath = directory .. path
+    local file = io.open(filepath, "r")
+    
+    if file then
+        local content = file:read("*all")
+        file:close()
+        
+        if content then
+            -- Set content type based on extension
+            local ext = string.match(filepath, "%.([^%.]+)$")
+            if ext then
+                if ext == "html" or ext == "htm" then
+                    res:header("Content-Type", "text/html")
+                elseif ext == "css" then
+                    res:header("Content-Type", "text/css")
+                elseif ext == "js" then
+                    res:header("Content-Type", "application/javascript")
+                elseif ext == "json" then
+                    res:header("Content-Type", "application/json")
+                end
+            end
+            res:write(content)
+        else
+            res:status(500)
+            res:json({ error = "Could not read file", code = 500 })
+        end
+    else
+        res:status(404)
+        res:json({ error = "File not found", path = path, code = 404 })
+    end
+end)
+
+-- API endpoints
+server:handle("/api/info", function(req, res)
+    res:json({
+        server = "Hype Static Server",
+        directory = directory,
+        port = port,
+        host = host
+    })
+end)
+
+server:handle("/health", function(req, res)
+    res:json({ status = "healthy", timestamp = os.time() })
+end)
+
+print("=== Hype Static File Server ===")
+print("Directory: " .. directory)
+print("Server: http://" .. host .. ":" .. port)
+print("Press Ctrl+C to stop server")
+
+server:listen(port)</code></pre>
+                            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                        </div>
+                        <div class="example-actions">
+                            <div class="build-example">
+                                <strong>Build & Run:</strong>
+                                <div class="code-block">
+                                    <code>hype build static-server.lua -o static-server<br>./static-server --dir ./docs --port 8080</code>
+                                    <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="showcase-item">
+                        <h3>🔄 RESTful API Server</h3>
+                        <p>Complete REST API with multiple endpoints, JSON responses, and request handling.</p>
+                        <div class="code-block">
+                            <pre><code>-- api-server.lua - RESTful API Server
+local http = require('http')
+local server = http.newServer()
+
+-- In-memory data store
+local users = {
+    {id = 1, name = "John Doe", email = "john@example.com"},
+    {id = 2, name = "Jane Smith", email = "jane@example.com"}
+}
+local nextId = 3
+
+-- Helper function to find user by ID
+local function findUser(id)
+    for i, user in ipairs(users) do
+        if user.id == tonumber(id) then
+            return user, i
+        end
+    end
+    return nil
+end
+
+-- CORS headers
+local function setCORS(res)
+    res:header("Access-Control-Allow-Origin", "*")
+    res:header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE")
+    res:header("Access-Control-Allow-Headers", "Content-Type")
+end
+
+-- GET /api/users - List all users
+server:handle("/api/users", function(req, res)
+    setCORS(res)
+    if req.method == "GET" then
+        res:json({users = users, count = #users})
+    elseif req.method == "POST" then
+        -- Create new user
+        local userData = req.body -- Assuming JSON body
+        if userData and userData.name and userData.email then
+            local newUser = {
+                id = nextId,
+                name = userData.name,
+                email = userData.email,
+                created = os.time()
+            }
+            table.insert(users, newUser)
+            nextId = nextId + 1
+            res:status(201)
+            res:json(newUser)
+        else
+            res:status(400)
+            res:json({error = "Missing required fields: name, email"})
+        end
+    else
+        res:status(405)
+        res:json({error = "Method not allowed"})
+    end
+end)
+
+-- GET /api/users/:id - Get specific user
+server:handle("/api/users/", function(req, res)
+    setCORS(res)
+    local userId = string.match(req.path, "/api/users/(%d+)")
+    
+    if req.method == "GET" then
+        local user = findUser(userId)
+        if user then
+            res:json(user)
+        else
+            res:status(404)
+            res:json({error = "User not found"})
+        end
+    elseif req.method == "DELETE" then
+        local user, index = findUser(userId)
+        if user then
+            table.remove(users, index)
+            res:json({message = "User deleted", id = tonumber(userId)})
+        else
+            res:status(404)
+            res:json({error = "User not found"})
+        end
+    end
+end)
+
+-- API Documentation endpoint
+server:handle("/", function(req, res)
+    res:header("Content-Type", "text/html")
+    res:write([[
+<!DOCTYPE html>
+<html>
+<head><title>Hype API Server</title></head>
+<body>
+    <h1>Hype REST API Server</h1>
+    <h2>Endpoints:</h2>
+    <ul>
+        <li><strong>GET /api/users</strong> - List all users</li>
+        <li><strong>POST /api/users</strong> - Create new user</li>
+        <li><strong>GET /api/users/:id</strong> - Get user by ID</li>
+        <li><strong>DELETE /api/users/:id</strong> - Delete user by ID</li>
+        <li><strong>GET /health</strong> - Health check</li>
+    </ul>
+</body>
+</html>
+    ]])
+end)
+
+-- Health check
+server:handle("/health", function(req, res)
+    res:json({
+        status = "healthy",
+        uptime = os.time(),
+        users = #users
+    })
+end)
+
+print("🚀 Hype REST API Server")
+print("Server: http://localhost:8080")
+print("Health: http://localhost:8080/health")
+print("Users API: http://localhost:8080/api/users")
+
+server:listen(8080)</code></pre>
+                            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                        </div>
+                        <div class="example-actions">
+                            <div class="build-example">
+                                <strong>Build & Run:</strong>
+                                <div class="code-block">
+                                    <code>hype build api-server.lua -o api-server<br>./api-server</code>
+                                    <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Database Examples -->
+        <section id="db-examples" class="examples-section">
+            <div class="container">
+                <h2>Database Applications</h2>
+                <p>Build data-driven applications with embedded BoltDB for persistent storage and ACID transactions.</p>
+                
+                <div class="example-showcase">
+                    <div class="showcase-item">
+                        <h3>👥 User Management System</h3>
+                        <p>Complete user management system with database operations, transactions, and data validation.</p>
+                        <div class="code-block">
+                            <pre><code>-- user-manager.lua - User Management System
+local kv = require('kv')
+
+-- Initialize database
+local db, err = kv.open("users.db")
+if not db then
+    print("Error opening database:", err)
+    os.exit(1)
+end
+
+db:open_db("users")
+db:open_db("sessions")
+
+-- User management functions
+local UserManager = {}
+
+function UserManager.createUser(username, email, name)
+    -- Validate input
+    if not username or not email or not name then
+        return nil, "Missing required fields"
+    end
+    
+    -- Check if user already exists
+    local existing = db:get("users", username)
+    if existing then
+        return nil, "User already exists"
+    end
+    
+    -- Create user record
+    local user = {
+        username = username,
+        email = email,
+        name = name,
+        created = os.time(),
+        active = true
+    }
+    
+    -- Use transaction for data integrity
+    local txn, err = db:begin_txn(false)
+    if not txn then
+        return nil, "Transaction failed: " .. err
+    end
+    
+    -- Store user data as JSON-like string
+    local userData = string.format([[{
+    "username": "%s",
+    "email": "%s", 
+    "name": "%s",
+    "created": %d,
+    "active": true
+}]], username, email, name, os.time())
+    
+    txn:put("users", username, userData)
+    
+    local success, err = txn:commit()
+    if not success then
+        txn:abort()
+        return nil, "Failed to create user: " .. err
+    end
+    
+    return user, nil
+end
+
+function UserManager.getUser(username)
+    local userData = db:get("users", username)
+    if not userData then
+        return nil, "User not found"
+    end
+    return userData, nil
+end
+
+function UserManager.updateUser(username, updates)
+    local existing = db:get("users", username)
+    if not existing then
+        return nil, "User not found"
+    end
+    
+    -- Simple update by replacing the record
+    local updatedData = string.format([[{
+    "username": "%s",
+    "email": "%s",
+    "name": "%s", 
+    "created": %d,
+    "active": %s,
+    "updated": %d
+}]], username, updates.email or "unknown", updates.name or "unknown", 
+    os.time() - 86400, updates.active or "true", os.time())
+    
+    db:put("users", username, updatedData)
+    return updatedData, nil
+end
+
+function UserManager.deleteUser(username)
+    local existing = db:get("users", username)
+    if not existing then
+        return nil, "User not found"
+    end
+    
+    db:delete("users", username)
+    return true, nil
+end
+
+function UserManager.listUsers()
+    local users = {}
+    db:foreach("users", function(key, value)
+        table.insert(users, {username = key, data = value})
+        return true
+    end)
+    return users
+end
+
+-- Interactive CLI
+local function showMenu()
+    print("\n=== User Management System ===")
+    print("1. Create User")
+    print("2. Get User") 
+    print("3. Update User")
+    print("4. Delete User")
+    print("5. List All Users")
+    print("6. Exit")
+    io.write("Choose option (1-6): ")
+end
+
+local function getInput(prompt)
+    io.write(prompt)
+    return io.read()
+end
+
+-- Main program loop
+while true do
+    showMenu()
+    local choice = io.read()
+    
+    if choice == "1" then
+        local username = getInput("Username: ")
+        local email = getInput("Email: ")
+        local name = getInput("Full Name: ")
+        
+        local user, err = UserManager.createUser(username, email, name)
+        if user then
+            print("✓ User created successfully!")
+        else
+            print("✗ Error:", err)
+        end
+        
+    elseif choice == "2" then
+        local username = getInput("Username: ")
+        local user, err = UserManager.getUser(username)
+        if user then
+            print("User Data:", user)
+        else
+            print("✗ Error:", err)
+        end
+        
+    elseif choice == "3" then
+        local username = getInput("Username: ")
+        local email = getInput("New Email: ")
+        local name = getInput("New Name: ")
+        
+        local user, err = UserManager.updateUser(username, {email = email, name = name})
+        if user then
+            print("✓ User updated successfully!")
+        else
+            print("✗ Error:", err)
+        end
+        
+    elseif choice == "4" then
+        local username = getInput("Username to delete: ")
+        local success, err = UserManager.deleteUser(username)
+        if success then
+            print("✓ User deleted successfully!")
+        else
+            print("✗ Error:", err)
+        end
+        
+    elseif choice == "5" then
+        local users = UserManager.listUsers()
+        print("\n=== All Users ===")
+        for i, user in ipairs(users) do
+            print(i .. ". " .. user.username)
+            print("   " .. user.data)
+        end
+        if #users == 0 then
+            print("No users found.")
+        end
+        
+    elseif choice == "6" then
+        break
+    else
+        print("Invalid option. Please choose 1-6.")
+    end
+end
+
+db:close()
+print("Database closed. Goodbye!")</code></pre>
+                            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                        </div>
+                        <div class="example-actions">
+                            <div class="build-example">
+                                <strong>Build & Run:</strong>
+                                <div class="code-block">
+                                    <code>hype build user-manager.lua -o user-manager<br>./user-manager</code>
+                                    <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Full-Stack Examples -->
+        <section id="fullstack-examples" class="examples-section">
+            <div class="container">
+                <h2>Full-Stack Applications</h2>
+                <p>Complete applications combining TUI, HTTP, and database functionality into production-ready systems.</p>
+                
+                <div class="example-showcase">
+                    <div class="showcase-item">
+                        <h3>📊 Web Server with TUI Monitoring</h3>
+                        <p>Complete web server with real-time TUI monitoring, database logging, and RESTful API endpoints.</p>
+                        <div class="code-block">
+                            <pre><code>-- showcase.lua - Full-Stack Web Server with TUI Monitoring
+local http = require('http')
+local kv = require('kv')
+
+-- Initialize database
+local db, err = kv.open("server.db")
+if not db then
+    print("Error opening database:", err)
+    os.exit(1)
+end
+db:open_db("logs")
+
+-- TUI Setup
+local app = tui.newApp()
+local logView = tui.newTextView("")
+logView:SetTitle("Server Logs")
+logView:SetWrap(true)
+
+local statusView = tui.newTextView("")
+statusView:SetTitle("Server Status")
+
+-- Layout
+local flex = tui.newFlex()
+flex:SetDirection(0) -- Vertical
+flex:AddItem(statusView, 5, 0, false)
+flex:AddItem(logView, 0, 1, false)
+
+-- Logging function
+local function logMessage(message)
+    local timestamp = os.date("%Y-%m-%d %H:%M:%S")
+    local logEntry = timestamp .. " - " .. message
+    
+    -- Add to TUI
+    local currentLogs = logView:GetText()
+    local newLogs = logEntry .. "\n" .. currentLogs
+    
+    -- Keep only last 50 lines
+    local lines = {}
+    for line in newLogs:gmatch("[^\n]*") do
+        table.insert(lines, line)
+        if #lines >= 50 then break end
+    end
+    
+    logView:SetText(table.concat(lines, "\n"))
+    
+    -- Store in database
+    local logKey = tostring(os.time()) .. "_" .. math.random(1000, 9999)
+    db:put("logs", logKey, logEntry)
+    
+    app:Draw()
+end
+
+-- Update status display
+local function updateStatus()
+    local status = string.format([[
+🚀 Hype Web Server
+Port: 8080
+Uptime: %s
+Database: Connected
+Requests Served: %d
+
+Press Ctrl+C to shutdown
+]], os.date(), requestCount or 0)
+    
+    statusView:SetText(status)
+    app:Draw()
+end
+
+-- HTTP Server Setup
+local server = http.newServer()
+local requestCount = 0
+
+-- Middleware for request logging
+local function logRequest(req, res, next)
+    requestCount = requestCount + 1
+    logMessage(string.format("%s %s from %s", req.method, req.path, req.headers["User-Agent"] or "Unknown"))
+    updateStatus()
+end
+
+-- API Endpoints
+server:handle("/", function(req, res)
+    logRequest(req, res)
+    res:header("Content-Type", "text/html")
+    res:write([[
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Hype Full-Stack Demo</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        .endpoint { background: #f5f5f5; padding: 10px; margin: 10px 0; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <h1>🚀 Hype Full-Stack Demo</h1>
+    <p>This server combines HTTP, Database, and TUI monitoring!</p>
+    
+    <h2>Available Endpoints:</h2>
+    <div class="endpoint">
+        <strong>GET /api/hello</strong> - Hello World API
+    </div>
+    <div class="endpoint">
+        <strong>GET /api/time</strong> - Current server time
+    </div>
+    <div class="endpoint">
+        <strong>GET /logs</strong> - Server logs (JSON)
+    </div>
+    <div class="endpoint">
+        <strong>POST /log</strong> - Add custom log entry
+    </div>
+    <div class="endpoint">
+        <strong>GET /status</strong> - Server status
+    </div>
+    
+    <h2>Features:</h2>
+    <ul>
+        <li>Real-time TUI monitoring interface</li>
+        <li>Persistent database logging with BoltDB</li>
+        <li>RESTful API endpoints</li>
+        <li>Request tracking and analytics</li>
+    </ul>
+</body>
+</html>
+    ]])
+end)
+
+server:handle("/api/hello", function(req, res)
+    logRequest(req, res)
+    res:json({
+        message = "Hello from Hype!",
+        timestamp = os.time(),
+        server = "Hype Full-Stack Demo"
+    })
+end)
+
+server:handle("/api/time", function(req, res)
+    logRequest(req, res)
+    res:json({
+        timestamp = os.time(),
+        formatted = os.date("%Y-%m-%d %H:%M:%S"),
+        timezone = "UTC"
+    })
+end)
+
+server:handle("/logs", function(req, res)
+    logRequest(req, res)
+    local logs = {}
+    
+    db:foreach("logs", function(key, value)
+        table.insert(logs, {id = key, message = value})
+        return true
+    end)
+    
+    res:json({logs = logs, count = #logs})
+end)
+
+server:handle("/log", function(req, res)
+    if req.method == "POST" then
+        local message = req.body.message or "Custom log entry"
+        logMessage("CUSTOM: " .. message)
+        res:json({success = true, message = "Log entry added"})
+    else
+        res:status(405)
+        res:json({error = "Method not allowed"})
+    end
+end)
+
+server:handle("/status", function(req, res)
+    logRequest(req, res)
+    res:json({
+        status = "healthy",
+        uptime = os.time(),
+        requests = requestCount,
+        database = "connected"
+    })
+end)
+
+-- Start server in background
+local function startServer()
+    logMessage("Starting HTTP server on port 8080...")
+    server:listen(8080)
+end
+
+-- TUI keyboard handling
+app:SetInputCapture(function(event)
+    if event:Key() == 3 then -- Ctrl+C
+        logMessage("Shutting down server...")
+        app:Stop()
+        db:close()
+        os.exit(0)
+    end
+    return event
+end)
+
+-- Initialize
+app:SetRoot(flex, true)
+updateStatus()
+logMessage("Server initialized successfully")
+
+-- Start server (non-blocking)
+-- Note: In a real implementation, you'd run server in a separate thread
+-- For this demo, we'll start TUI and mention server startup
+
+logMessage("🚀 Full-Stack Hype Application Started!")
+logMessage("HTTP Server: http://localhost:8080")
+logMessage("Database: server.db (BoltDB)")
+logMessage("TUI: Real-time monitoring active")
+
+-- Run the TUI
+app:Run()</code></pre>
+                            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                        </div>
+                        <div class="example-actions">
+                            <div class="build-example">
+                                <strong>Build & Run:</strong>
+                                <div class="code-block">
+                                    <code>hype build showcase.lua -o showcase<br>./showcase</code>
+                                    <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Getting Started -->
+        <section class="getting-started">
+            <div class="container">
+                <h2>Getting Started</h2>
+                <div class="example-grid">
+                    <div class="example-card">
+                        <h3>🏗️ Build Examples</h3>
+                        <p>Download any example and build it into a standalone executable:</p>
+                        <div class="code-block">
+                            <pre><code># Download example
+curl -O https://raw.githubusercontent.com/twilson63/hype/main/examples/browser.lua
+
+# Build executable
+hype build browser.lua -o browser
+
+# Run your application
+./browser</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="example-card">
+                        <h3>🔄 Development Mode</h3>
+                        <p>Test and iterate quickly using eval mode:</p>
+                        <div class="code-block">
+                            <pre><code># Run directly without building
+hype eval browser.lua
+
+# Pass command line arguments
+hype eval static-server.lua -- --port 3000 --dir ./docs</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="example-card">
+                        <h3>📦 Cross-Platform Builds</h3>
+                        <p>Build for different platforms from a single source:</p>
+                        <div class="code-block">
+                            <pre><code># Build for Linux
+hype build myapp.lua --target linux
+
+# Build for Windows  
+hype build myapp.lua --target windows
+
+# Build for macOS
+hype build myapp.lua --target darwin</code></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h4>Hype</h4>
+                    <p>Lua Script to Executable Packager</p>
+                    <p>Built with ❤️ for developers</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Links</h4>
+                    <ul>
+                        <li><a href="https://github.com/twilson63/hype">GitHub Repository</a></li>
+                        <li><a href="https://github.com/twilson63/hype/releases">Releases</a></li>
+                        <li><a href="https://github.com/twilson63/hype/issues">Issues</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Documentation</h4>
+                    <ul>
+                        <li><a href="api.html">API Reference</a></li>
+                        <li><a href="examples.html">Examples</a></li>
+                        <li><a href="index.html#installation">Installation</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 Hype. Open source project.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+    
+    <style>
+        .examples-section {
+            background: var(--terminal-bg-light);
+        }
+        
+        .examples-section:nth-child(even) {
+            background: var(--terminal-bg);
+        }
+        
+        .example-showcase {
+            display: flex;
+            flex-direction: column;
+            gap: 3rem;
+        }
+        
+        .showcase-item {
+            background: var(--terminal-bg);
+            border: 1px solid var(--terminal-border);
+            padding: 2rem;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+        
+        .showcase-item:hover {
+            border-color: var(--terminal-accent);
+            box-shadow: var(--terminal-glow);
+        }
+        
+        .showcase-item h3 {
+            margin-bottom: 1rem;
+            color: var(--terminal-accent);
+        }
+        
+        .showcase-item p {
+            margin-bottom: 1.5rem;
+            color: var(--terminal-text);
+        }
+        
+        .example-actions {
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--terminal-border);
+        }
+        
+        .build-example {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        
+        .build-example strong {
+            color: var(--terminal-accent);
+        }
+        
+        @media (max-width: 768px) {
+            .showcase-item {
+                padding: 1.5rem;
+            }
+            
+            .code-block pre {
+                font-size: 0.8rem;
+            }
+        }
+    </style>
+</body>
+</html>
