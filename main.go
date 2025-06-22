@@ -31,10 +31,26 @@ var buildCmd = &cobra.Command{
 	},
 }
 
+var evalCmd = &cobra.Command{
+	Use:   "eval [lua-script]",
+	Short: "Evaluate and run a Lua script directly",
+	Long:  `Run a Lua script directly without building an executable. Useful for development and testing.`,
+	Args:  cobra.ExactArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		scriptPath := args[0]
+		
+		if err := evalScript(scriptPath); err != nil {
+			fmt.Fprintf(os.Stderr, "Error running script: %v\n", err)
+			os.Exit(1)
+		}
+	},
+}
+
 func init() {
 	buildCmd.Flags().StringP("output", "o", "", "Output executable name")
 	buildCmd.Flags().StringP("target", "t", "current", "Target platform (current, linux, windows, darwin)")
 	rootCmd.AddCommand(buildCmd)
+	rootCmd.AddCommand(evalCmd)
 }
 
 func main() {

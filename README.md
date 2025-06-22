@@ -51,7 +51,33 @@ app:Run()' > hello.lua
 ./luax build script.lua -t linux
 ./luax build script.lua -t windows
 ./luax build script.lua -t darwin
+
+# Run a Lua script directly (development/testing)
+./luax eval script.lua
 ```
+
+## Development Mode
+
+For faster development and testing, LuaX provides an `eval` command that runs Lua scripts directly without building executables:
+
+```bash
+# Run script directly (great for development)
+./luax eval myapp.lua
+
+# All LuaX APIs work the same way
+./luax eval examples/showcase.lua
+```
+
+**Benefits of eval mode:**
+- ⚡ **Instant execution** - no build step required
+- 🔄 **Rapid iteration** - test changes immediately  
+- 🐛 **Easy debugging** - direct error output
+- 📦 **Same APIs** - identical behavior to built executables
+- 🛠️ **Development workflow** - perfect for prototyping
+
+**When to use eval vs build:**
+- Use `eval` during development and testing
+- Use `build` for production deployments and distribution
 
 ## API Reference
 
@@ -331,7 +357,14 @@ end
 # Build the luax tool
 go build -o luax .
 
-# Test with example scripts
+# Test with example scripts using eval (faster for development)
+./luax eval examples/hello.lua
+./luax eval examples/kv-test.lua
+./luax eval examples/browser.lua
+./luax eval examples/webserver.lua
+./luax eval examples/showcase.lua
+
+# Or build standalone executables
 ./luax build examples/hello.lua -o hello && ./hello
 ./luax build examples/kv-test.lua -o kv-test && ./kv-test
 ./luax build examples/browser.lua -o browser && ./browser
