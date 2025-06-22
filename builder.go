@@ -62,6 +62,7 @@ func generateRuntimeCode(tempDir string, config *BuildConfig) error {
 	runtimeTemplate := `package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -70,6 +71,7 @@ import (
 	"github.com/yuin/gopher-lua"
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
+	"go.etcd.io/bbolt"
 	"io"
 	"net/http"
 	"time"
@@ -94,6 +96,9 @@ func main() {
 	
 	// Register HTTP module
 	registerHTTPModule(L)
+
+	// Register KV module
+	registerKVModule(L)
 
 	// Register TUI functions
 	registerTUIFunctions(L)
@@ -676,6 +681,509 @@ func luaValueToGo(L *lua.LState, value lua.LValue) interface{} {
 		return value.String()
 	}
 }
+
+func registerKVModule(L *lua.LState) {
+	L.PreloadModule("kv", func(L *lua.LState) int {
+		kvModule := L.NewTable()
+		L.SetField(kvModule, "open", L.NewFunction(kvOpen))
+		L.Push(kvModule)
+		return 1
+	})
+	
+	// Set up database metatable
+	dbMT := L.NewTypeMetatable("KVDB")
+	L.SetField(dbMT, "__index", L.NewFunction(kvIndex))
+	L.SetField(dbMT, "__gc", L.NewFunction(kvGC))
+	
+	// Set up transaction metatable
+	txnMT := L.NewTypeMetatable("KVTxn")
+	L.SetField(txnMT, "__index", L.NewFunction(kvTxnIndex))
+	L.SetField(txnMT, "__gc", L.NewFunction(kvTxnGC))
+	
+	// Set up cursor metatable
+	cursorMT := L.NewTypeMetatable("KVCursor")
+	L.SetField(cursorMT, "__index", L.NewFunction(kvCursorIndex))
+	L.SetField(cursorMT, "__gc", L.NewFunction(kvCursorGC))
+}
+
+type KVDB struct {
+	db   *bbolt.DB
+	path string
+}
+
+type KVTxn struct {
+	tx     *bbolt.Tx
+	db     *KVDB
+	bucket *bbolt.Bucket
+}
+
+type KVCursor struct {
+	cursor *bbolt.Cursor
+	tx     *bbolt.Tx
+	db     *KVDB
+}
+
+func kvOpen(L *lua.LState) int {
+	path := L.CheckString(1)
+	
+	// Optional options table (for compatibility)
+	var readonly bool = false
+	
+	if L.GetTop() >= 2 {
+		options := L.CheckTable(2)
+		if readonlyVal := L.GetField(options, "readonly"); readonlyVal != lua.LNil {
+			if readonlyBool, ok := readonlyVal.(lua.LBool); ok {
+				readonly = bool(readonlyBool)
+			}
+		}
+	}
+	
+	options := &bbolt.Options{
+		ReadOnly: readonly,
+	}
+	
+	db, err := bbolt.Open(path, 0644, options)
+	if err != nil {
+		L.Push(lua.LNil)
+		L.Push(lua.LString(err.Error()))
+		return 2
+	}
+	
+	kvdb := &KVDB{
+		db:   db,
+		path: path,
+	}
+	
+	ud := L.NewUserData()
+	ud.Value = kvdb
+	L.SetMetatable(ud, L.GetTypeMetatable("KVDB"))
+	L.Push(ud)
+	L.Push(lua.LNil)
+	return 2
+}
+
+func kvIndex(L *lua.LState) int {
+	ud := L.CheckUserData(1)
+	db := ud.Value.(*KVDB)
+	method := L.CheckString(2)
+	
+	switch method {
+	case "open_db":
+		L.Push(L.NewFunction(func(L *lua.LState) int {
+			bucketName := L.OptString(2, "default")
+			
+			// Create bucket if it doesn't exist
+			err := db.db.Update(func(tx *bbolt.Tx) error {
+				_, err := tx.CreateBucketIfNotExists([]byte(bucketName))
+				return err
+			})
+			
+			if err != nil {
+				L.Push(lua.LString(err.Error()))
+				return 1
+			}
+			
+			L.Push(lua.LNil) // No error
+			return 1
+		}))
+	case "begin_txn":
+		L.Push(L.NewFunction(func(L *lua.LState) int {
+			readonly := L.OptBool(2, false)
+			
+			var tx *bbolt.Tx
+			var err error
+			
+			if readonly {
+				tx, err = db.db.Begin(false)
+			} else {
+				tx, err = db.db.Begin(true)
+			}
+			
+			if err != nil {
+				L.Push(lua.LNil)
+				L.Push(lua.LString(err.Error()))
+				return 2
+			}
+			
+			kvTxn := &KVTxn{tx: tx, db: db}
+			
+			ud := L.NewUserData()
+			ud.Value = kvTxn
+			L.SetMetatable(ud, L.GetTypeMetatable("KVTxn"))
+			L.Push(ud)
+			L.Push(lua.LNil)
+			return 2
+		}))
+	case "get":
+		L.Push(L.NewFunction(func(L *lua.LState) int {
+			bucketName := L.OptString(2, "default")
+			key := L.CheckString(3)
+			
+			var val []byte
+			err := db.db.View(func(tx *bbolt.Tx) error {
+				bucket := tx.Bucket([]byte(bucketName))
+				if bucket == nil {
+					return fmt.Errorf("bucket not found: %s", bucketName)
+				}
+				val = bucket.Get([]byte(key))
+				return nil
+			})
+			
+			if err != nil {
+				L.Push(lua.LNil)
+				L.Push(lua.LString(err.Error()))
+				return 2
+			}
+			
+			if val == nil {
+				L.Push(lua.LNil)
+				L.Push(lua.LNil)
+				return 2
+			}
+			
+			L.Push(lua.LString(string(val)))
+			L.Push(lua.LNil)
+			return 2
+		}))
+	case "put":
+		L.Push(L.NewFunction(func(L *lua.LState) int {
+			bucketName := L.OptString(2, "default")
+			key := L.CheckString(3)
+			value := L.CheckString(4)
+			
+			err := db.db.Update(func(tx *bbolt.Tx) error {
+				bucket := tx.Bucket([]byte(bucketName))
+				if bucket == nil {
+					return fmt.Errorf("bucket not found: %s", bucketName)
+				}
+				return bucket.Put([]byte(key), []byte(value))
+			})
+			
+			if err != nil {
+				L.Push(lua.LString(err.Error()))
+				return 1
+			}
+			
+			L.Push(lua.LNil)
+			return 1
+		}))
+	case "delete":
+		L.Push(L.NewFunction(func(L *lua.LState) int {
+			bucketName := L.OptString(2, "default")
+			key := L.CheckString(3)
+			
+			err := db.db.Update(func(tx *bbolt.Tx) error {
+				bucket := tx.Bucket([]byte(bucketName))
+				if bucket == nil {
+					return fmt.Errorf("bucket not found: %s", bucketName)
+				}
+				return bucket.Delete([]byte(key))
+			})
+			
+			if err != nil {
+				L.Push(lua.LString(err.Error()))
+				return 1
+			}
+			
+			L.Push(lua.LNil)
+			return 1
+		}))
+	case "keys":
+		L.Push(L.NewFunction(func(L *lua.LState) int {
+			bucketName := L.OptString(2, "default")
+			prefix := L.OptString(3, "")
+			
+			var keys []string
+			err := db.db.View(func(tx *bbolt.Tx) error {
+				bucket := tx.Bucket([]byte(bucketName))
+				if bucket == nil {
+					return fmt.Errorf("bucket not found: %s", bucketName)
+				}
+				
+				c := bucket.Cursor()
+				if prefix != "" {
+					// Prefix search
+					prefixBytes := []byte(prefix)
+					for k, _ := c.Seek(prefixBytes); k != nil && bytes.HasPrefix(k, prefixBytes); k, _ = c.Next() {
+						keys = append(keys, string(k))
+					}
+				} else {
+					// All keys
+					for k, _ := c.First(); k != nil; k, _ = c.Next() {
+						keys = append(keys, string(k))
+					}
+				}
+				return nil
+			})
+			
+			if err != nil {
+				L.Push(lua.LNil)
+				L.Push(lua.LString(err.Error()))
+				return 2
+			}
+			
+			// Create Lua table with keys
+			table := L.NewTable()
+			for i, key := range keys {
+				table.RawSetInt(i+1, lua.LString(key))
+			}
+			L.Push(table)
+			L.Push(lua.LNil)
+			return 2
+		}))
+	case "foreach":
+		L.Push(L.NewFunction(func(L *lua.LState) int {
+			bucketName := L.OptString(2, "default")
+			callback := L.CheckFunction(3)
+			
+			err := db.db.View(func(tx *bbolt.Tx) error {
+				bucket := tx.Bucket([]byte(bucketName))
+				if bucket == nil {
+					return fmt.Errorf("bucket not found: %s", bucketName)
+				}
+				
+				c := bucket.Cursor()
+				for k, v := c.First(); k != nil; k, v = c.Next() {
+					L.Push(callback)
+					L.Push(lua.LString(string(k)))
+					L.Push(lua.LString(string(v)))
+					if err := L.PCall(2, 1, nil); err != nil {
+						return fmt.Errorf("callback error: %v", err)
+					}
+					
+					// Check if callback returned false to break
+					result := L.Get(-1)
+					L.Pop(1)
+					if result == lua.LFalse {
+						break
+					}
+				}
+				return nil
+			})
+			
+			if err != nil {
+				L.Push(lua.LString(err.Error()))
+				return 1
+			}
+			
+			L.Push(lua.LNil)
+			return 1
+		}))
+	case "close":
+		L.Push(L.NewFunction(func(L *lua.LState) int {
+			db.db.Close()
+			return 0
+		}))
+	}
+	return 1
+}
+
+func kvGC(L *lua.LState) int {
+	ud := L.CheckUserData(1)
+	if db, ok := ud.Value.(*KVDB); ok {
+		db.db.Close()
+	}
+	return 0
+}
+
+func kvTxnIndex(L *lua.LState) int {
+	ud := L.CheckUserData(1)
+	txn := ud.Value.(*KVTxn)
+	method := L.CheckString(2)
+	
+	switch method {
+	case "get":
+		L.Push(L.NewFunction(func(L *lua.LState) int {
+			bucketName := L.OptString(2, "default")
+			key := L.CheckString(3)
+			
+			bucket := txn.tx.Bucket([]byte(bucketName))
+			if bucket == nil {
+				L.Push(lua.LNil)
+				L.Push(lua.LString("bucket not found"))
+				return 2
+			}
+			
+			val := bucket.Get([]byte(key))
+			if val == nil {
+				L.Push(lua.LNil)
+				L.Push(lua.LNil)
+				return 2
+			}
+			
+			L.Push(lua.LString(string(val)))
+			L.Push(lua.LNil)
+			return 2
+		}))
+	case "put":
+		L.Push(L.NewFunction(func(L *lua.LState) int {
+			bucketName := L.OptString(2, "default")
+			key := L.CheckString(3)
+			value := L.CheckString(4)
+			
+			bucket := txn.tx.Bucket([]byte(bucketName))
+			if bucket == nil {
+				L.Push(lua.LString("bucket not found"))
+				return 1
+			}
+			
+			err := bucket.Put([]byte(key), []byte(value))
+			if err != nil {
+				L.Push(lua.LString(err.Error()))
+				return 1
+			}
+			
+			L.Push(lua.LNil)
+			return 1
+		}))
+	case "delete":
+		L.Push(L.NewFunction(func(L *lua.LState) int {
+			bucketName := L.OptString(2, "default")
+			key := L.CheckString(3)
+			
+			bucket := txn.tx.Bucket([]byte(bucketName))
+			if bucket == nil {
+				L.Push(lua.LString("bucket not found"))
+				return 1
+			}
+			
+			err := bucket.Delete([]byte(key))
+			if err != nil {
+				L.Push(lua.LString(err.Error()))
+				return 1
+			}
+			
+			L.Push(lua.LNil)
+			return 1
+		}))
+	case "commit":
+		L.Push(L.NewFunction(func(L *lua.LState) int {
+			err := txn.tx.Commit()
+			if err != nil {
+				L.Push(lua.LString(err.Error()))
+				return 1
+			}
+			L.Push(lua.LNil)
+			return 1
+		}))
+	case "abort":
+		L.Push(L.NewFunction(func(L *lua.LState) int {
+			txn.tx.Rollback()
+			return 0
+		}))
+	}
+	return 1
+}
+
+func kvTxnGC(L *lua.LState) int {
+	ud := L.CheckUserData(1)
+	if txn, ok := ud.Value.(*KVTxn); ok {
+		txn.tx.Rollback()
+	}
+	return 0
+}
+
+func kvCursorIndex(L *lua.LState) int {
+	ud := L.CheckUserData(1)
+	cursor := ud.Value.(*KVCursor)
+	method := L.CheckString(2)
+	
+	switch method {
+	case "first":
+		L.Push(L.NewFunction(func(L *lua.LState) int {
+			var key, value []byte
+			err := cursor.db.db.View(func(tx *bbolt.Tx) error {
+				c := tx.Bucket([]byte("default")).Cursor() // TODO: make bucket configurable
+				key, value = c.First()
+				return nil
+			})
+			
+			if err != nil {
+				L.Push(lua.LNil)
+				L.Push(lua.LNil)
+				L.Push(lua.LString(err.Error()))
+				return 3
+			}
+			
+			if key == nil {
+				L.Push(lua.LNil)
+				L.Push(lua.LNil)
+				L.Push(lua.LNil)
+				return 3
+			}
+			
+			L.Push(lua.LString(string(key)))
+			L.Push(lua.LString(string(value)))
+			L.Push(lua.LNil)
+			return 3
+		}))
+	case "last":
+		L.Push(L.NewFunction(func(L *lua.LState) int {
+			var key, value []byte
+			err := cursor.db.db.View(func(tx *bbolt.Tx) error {
+				c := tx.Bucket([]byte("default")).Cursor()
+				key, value = c.Last()
+				return nil
+			})
+			
+			if err != nil {
+				L.Push(lua.LNil)
+				L.Push(lua.LNil)
+				L.Push(lua.LString(err.Error()))
+				return 3
+			}
+			
+			if key == nil {
+				L.Push(lua.LNil)
+				L.Push(lua.LNil)
+				L.Push(lua.LNil)
+				return 3
+			}
+			
+			L.Push(lua.LString(string(key)))
+			L.Push(lua.LString(string(value)))
+			L.Push(lua.LNil)
+			return 3
+		}))
+	case "seek":
+		L.Push(L.NewFunction(func(L *lua.LState) int {
+			seekKey := L.CheckString(2)
+			
+			var key, value []byte
+			err := cursor.db.db.View(func(tx *bbolt.Tx) error {
+				c := tx.Bucket([]byte("default")).Cursor()
+				key, value = c.Seek([]byte(seekKey))
+				return nil
+			})
+			
+			if err != nil {
+				L.Push(lua.LNil)
+				L.Push(lua.LNil)
+				L.Push(lua.LString(err.Error()))
+				return 3
+			}
+			
+			if key == nil {
+				L.Push(lua.LNil)
+				L.Push(lua.LNil)
+				L.Push(lua.LNil)
+				return 3
+			}
+			
+			L.Push(lua.LString(string(key)))
+			L.Push(lua.LString(string(value)))
+			L.Push(lua.LNil)
+			return 3
+		}))
+	}
+	return 1
+}
+
+func kvCursorGC(L *lua.LState) int {
+	// Cursors are automatically cleaned up when transaction ends
+	return 0
+}
+
 `
 
 	tmpl, err := template.New("runtime").Parse(runtimeTemplate)
@@ -702,6 +1210,7 @@ require (
 	github.com/yuin/gopher-lua v1.1.1
 	github.com/gdamore/tcell/v2 v2.7.0
 	github.com/rivo/tview v0.0.0-20240101144852-b3bd1aa5e9f2
+	go.etcd.io/bbolt v1.4.1
 )
 `
 
