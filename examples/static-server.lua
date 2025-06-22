@@ -92,7 +92,7 @@ end)
 -- API endpoint for server info
 server:handle("/api/info", function(req, res)
     res:json({
-        server = "LuaX Static Server",
+        server = "Hype Static Server",
         directory = directory,
         port = port,
         host = host,
@@ -106,7 +106,7 @@ server:handle("/health", function(req, res)
 end)
 
 -- Start server
-print("=== LuaX Static File Server ===")
+print("=== Hype Static File Server ===")
 print("Directory: " .. directory)
 print("Server: http://" .. host .. ":" .. port)
 print("Health: http://" .. host .. ":" .. port .. "/health")

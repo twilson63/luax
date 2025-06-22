@@ -1,4 +1,4 @@
-module luax
+module hype
 
 go 1.23
 

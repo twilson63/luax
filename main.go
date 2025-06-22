@@ -8,9 +8,9 @@ import (
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "luax",
+	Use:   "hype",
 	Short: "Package Lua scripts into standalone executables",
-	Long:  `luax is a tool that combines a Lua runtime with your Lua scripts to create cross-platform executable applications with TUI support.`,
+	Long:  `hype is a tool that combines a Lua runtime with your Lua scripts to create cross-platform executable applications with TUI support.`,
 }
 
 var buildCmd = &cobra.Command{
@@ -39,8 +39,8 @@ var evalCmd = &cobra.Command{
 Any arguments after '--' are passed to the Lua script as command line arguments.
 
 Examples:
-  luax eval server.lua
-  luax eval server.lua -- --port 8080 --dir ./public`,
+  hype eval server.lua
+  hype eval server.lua -- --port 8080 --dir ./public`,
 	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		scriptPath := args[0]

@@ -1,6 +1,6 @@
-# LuaX - Lua Script to Executable Packager
+# Hype - Lua Script to Executable Packager
 
-LuaX is a powerful tool that packages Lua scripts into standalone executables with TUI (Terminal User Interface), HTTP, and embedded database support. It combines a Lua runtime with your scripts to create cross-platform applications with zero external dependencies.
+Hype is a powerful tool that packages Lua scripts into standalone executables with TUI (Terminal User Interface), HTTP, and embedded database support. It combines a Lua runtime with your scripts to create cross-platform applications with zero external dependencies.
 
 ## Features
 
@@ -17,9 +17,9 @@ LuaX is a powerful tool that packages Lua scripts into standalone executables wi
 ## Installation
 
 ```bash
-git clone https://github.com/twilson63/luax.git
-cd luax
-go build -o luax .
+git clone https://github.com/twilson63/hype.git
+cd hype
+go build -o hype .
 ```
 
 ## Quick Start
@@ -27,12 +27,12 @@ go build -o luax .
 ```bash
 # Create a simple TUI app
 echo 'local app = tui.newApp()
-local text = tui.newTextView("Hello from LuaX!")
+local text = tui.newTextView("Hello from Hype!")
 app:SetRoot(text, true)
 app:Run()' > hello.lua
 
 # Build and run
-./luax build hello.lua -o hello
+./hype build hello.lua -o hello
 ./hello
 ```
 
@@ -42,33 +42,33 @@ app:Run()' > hello.lua
 
 ```bash
 # Build a Lua script into an executable
-./luax build script.lua
+./hype build script.lua
 
 # Specify output name
-./luax build script.lua -o myapp
+./hype build script.lua -o myapp
 
 # Build for different platforms
-./luax build script.lua -t linux
-./luax build script.lua -t windows
-./luax build script.lua -t darwin
+./hype build script.lua -t linux
+./hype build script.lua -t windows
+./hype build script.lua -t darwin
 
 # Run a Lua script directly (development/testing)
-./luax eval script.lua
+./hype eval script.lua
 
 # Pass arguments to Lua scripts
-./luax eval server.lua -- --port 8080 --dir ./public
+./hype eval server.lua -- --port 8080 --dir ./public
 ```
 
 ## Development Mode
 
-For faster development and testing, LuaX provides an `eval` command that runs Lua scripts directly without building executables:
+For faster development and testing, Hype provides an `eval` command that runs Lua scripts directly without building executables:
 
 ```bash
 # Run script directly (great for development)
-./luax eval myapp.lua
+./hype eval myapp.lua
 
-# All LuaX APIs work the same way
-./luax eval examples/showcase.lua
+# All Hype APIs work the same way
+./hype eval examples/showcase.lua
 ```
 
 **Benefits of eval mode:**
@@ -84,7 +84,7 @@ For faster development and testing, LuaX provides an `eval` command that runs Lu
 
 ## Command Line Arguments
 
-LuaX scripts can access command line arguments through the global `arg` table:
+Hype scripts can access command line arguments through the global `arg` table:
 
 ```lua
 -- Access command line arguments
@@ -110,7 +110,7 @@ print("Server will run on port", port, "serving", directory)
 **Usage:**
 ```bash
 # In eval mode (use -- to separate script args)
-./luax eval server.lua -- --port 3000 --dir /var/www
+./hype eval server.lua -- --port 3000 --dir /var/www
 
 # In built executables (direct arguments)
 ./server --port 3000 --dir /var/www
@@ -156,7 +156,7 @@ end
 -- GET with options (headers, timeout)
 local response, err = http.get("https://api.example.com/data", {
     timeout = 30,
-    headers = { ["User-Agent"] = "LuaX/1.0", ["Authorization"] = "Bearer token" }
+    headers = { ["User-Agent"] = "Hype/1.0", ["Authorization"] = "Bearer token" }
 })
 ```
 
@@ -169,13 +169,13 @@ local server = http.newServer()
 
 -- Basic route handler
 server:handle("/", function(req, res)
-    res:write("Hello from LuaX server!")
+    res:write("Hello from Hype server!")
 end)
 
 -- JSON API endpoint
 server:handle("/api/users", function(req, res)
     res:json({ 
-        message = "Hello from LuaX API!",
+        message = "Hello from Hype API!",
         method = req.method,
         url = req.url 
     })
@@ -257,7 +257,7 @@ db:close()
 
 ```lua
 local app = tui.newApp()
-local textView = tui.newTextView("Hello, World from LuaX!\n\nPress Ctrl+C to exit.")
+local textView = tui.newTextView("Hello, World from Hype!\n\nPress Ctrl+C to exit.")
 
 textView:SetWrap(true)
 textView:SetWordWrap(true)
@@ -377,10 +377,10 @@ end
 **Usage:**
 ```bash
 # Default settings (port 8080, ./public directory)
-./luax eval server.lua
+./hype eval server.lua
 
 # Custom port and directory
-./luax eval server.lua -- --port 3000 --dir /var/www
+./hype eval server.lua -- --port 3000 --dir /var/www
 ```
 
 ### Plain Text Browser
@@ -510,36 +510,36 @@ end
 ## Building and Testing
 
 ```bash
-# Build the luax tool
-go build -o luax .
+# Build the hype tool
+go build -o hype .
 
 # Test with example scripts using eval (faster for development)
-./luax eval examples/hello.lua
-./luax eval examples/kv-test.lua
-./luax eval examples/browser.lua
-./luax eval examples/webserver.lua
-./luax eval examples/static-server.lua -- --port 3000
-./luax eval examples/showcase.lua
+./hype eval examples/hello.lua
+./hype eval examples/kv-test.lua
+./hype eval examples/browser.lua
+./hype eval examples/webserver.lua
+./hype eval examples/static-server.lua -- --port 3000
+./hype eval examples/showcase.lua
 
 # Or build standalone executables
-./luax build examples/hello.lua -o hello && ./hello
-./luax build examples/kv-test.lua -o kv-test && ./kv-test
-./luax build examples/browser.lua -o browser && ./browser
-./luax build examples/webserver.lua -o webserver && ./webserver
-./luax build examples/showcase.lua -o showcase && ./showcase
+./hype build examples/hello.lua -o hello && ./hello
+./hype build examples/kv-test.lua -o kv-test && ./kv-test
+./hype build examples/browser.lua -o browser && ./browser
+./hype build examples/webserver.lua -o webserver && ./webserver
+./hype build examples/showcase.lua -o showcase && ./showcase
 ```
 
 ## Cross-Platform Builds
 
 ```bash
 # Build for Linux
-./luax build myapp.lua -t linux -o myapp-linux
+./hype build myapp.lua -t linux -o myapp-linux
 
 # Build for Windows  
-./luax build myapp.lua -t windows -o myapp-windows
+./hype build myapp.lua -t windows -o myapp-windows
 
 # Build for macOS
-./luax build myapp.lua -t darwin -o myapp-macos
+./hype build myapp.lua -t darwin -o myapp-macos
 ```
 
 ## Use Cases
@@ -550,7 +550,7 @@ go build -o luax .
 - 📦 **Distributed Software**: Single-binary deployments, embedded systems
 - 🔧 **DevOps Tools**: Build scripts, deployment automation, monitoring tools
 
-## Why LuaX?
+## Why Hype?
 
 - **Zero Dependencies**: No external libraries or runtimes needed
 - **Small Binaries**: Efficient packaging with reasonable file sizes  
