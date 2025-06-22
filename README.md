@@ -54,6 +54,9 @@ app:Run()' > hello.lua
 
 # Run a Lua script directly (development/testing)
 ./luax eval script.lua
+
+# Pass arguments to Lua scripts
+./luax eval server.lua -- --port 8080 --dir ./public
 ```
 
 ## Development Mode
@@ -79,6 +82,40 @@ For faster development and testing, LuaX provides an `eval` command that runs Lu
 - Use `eval` during development and testing
 - Use `build` for production deployments and distribution
 
+## Command Line Arguments
+
+LuaX scripts can access command line arguments through the global `arg` table:
+
+```lua
+-- Access command line arguments
+print("Script name:", arg[0])
+print("First argument:", arg[1])
+print("Second argument:", arg[2])
+
+-- Parse common patterns
+local port = 8080
+local directory = "./public"
+
+for i = 1, #arg do
+    if arg[i] == "--port" and arg[i+1] then
+        port = tonumber(arg[i+1])
+    elseif arg[i] == "--dir" and arg[i+1] then
+        directory = arg[i+1]
+    end
+end
+
+print("Server will run on port", port, "serving", directory)
+```
+
+**Usage:**
+```bash
+# In eval mode (use -- to separate script args)
+./luax eval server.lua -- --port 3000 --dir /var/www
+
+# In built executables (direct arguments)
+./server --port 3000 --dir /var/www
+```
+
 ## API Reference
 
 ### TUI Module
@@ -98,24 +135,90 @@ local flex = tui.newFlex()            -- Layout container
 
 ### HTTP Module
 
-Build web applications and APIs:
+Build web applications and APIs with full HTTP client and server support:
 
 ```lua
 local http = require('http')
+```
 
--- HTTP Client
+#### HTTP Client
+
+Make HTTP requests with support for headers and timeouts:
+
+```lua
+-- Simple GET request
+local response, err = http.get("https://api.example.com/data")
+if not err then
+    print("Status:", response.status)
+    print("Body:", response.body)
+end
+
+-- GET with options (headers, timeout)
 local response, err = http.get("https://api.example.com/data", {
     timeout = 30,
-    headers = { ["User-Agent"] = "LuaX/1.0" }
+    headers = { ["User-Agent"] = "LuaX/1.0", ["Authorization"] = "Bearer token" }
 })
-
--- HTTP Server
-local server = http.newServer()
-server:handle("/api/users", function(req, res)
-    res:json({ message = "Hello from LuaX server!" })
-end)
-server:listen(8080)
 ```
+
+#### HTTP Server
+
+Create powerful web servers with routing and JSON responses:
+
+```lua
+local server = http.newServer()
+
+-- Basic route handler
+server:handle("/", function(req, res)
+    res:write("Hello from LuaX server!")
+end)
+
+-- JSON API endpoint
+server:handle("/api/users", function(req, res)
+    res:json({ 
+        message = "Hello from LuaX API!",
+        method = req.method,
+        url = req.url 
+    })
+end)
+
+-- Handle different HTTP methods
+server:handle("/api/data", function(req, res)
+    if req.method == "GET" then
+        res:json({ data = "Here's your data" })
+    elseif req.method == "POST" then
+        -- Access request body
+        local body = req.body
+        res:json({ received = body, status = "created" })
+    else
+        res:json({ error = "Method not allowed" })
+    end
+end)
+
+-- Start server
+server:listen(8080)
+print("Server running on http://localhost:8080")
+
+-- Keep server running (for standalone scripts)
+while true do
+    os.execute("sleep 1")
+end
+```
+
+#### Server Methods
+
+**Response Methods:**
+- `res:write(text)` - Send plain text response
+- `res:json(table)` - Send JSON response (auto-sets Content-Type)
+
+**Request Properties:**
+- `req.method` - HTTP method (GET, POST, etc.)
+- `req.url` - Request URL path
+- `req.body` - Request body content
+
+**Server Methods:**
+- `server:handle(path, handler)` - Add route handler
+- `server:listen(port)` - Start server on port
+- `server:stop()` - Stop server gracefully
 
 ### Key-Value Database
 
@@ -225,6 +328,59 @@ server:listen(8080)
 while true do
     os.execute("sleep 1")
 end
+```
+
+### Static File Web Server
+
+```lua
+-- Static file server with command line arguments
+local http = require('http')
+
+-- Parse command line arguments
+local port = 8080
+local directory = "./public"
+
+for i = 1, #arg do
+    if arg[i] == "--port" and arg[i+1] then
+        port = tonumber(arg[i+1])
+    elseif arg[i] == "--dir" and arg[i+1] then
+        directory = arg[i+1]
+    end
+end
+
+local server = http.newServer()
+
+-- Serve static files
+server:handle("/", function(req, res)
+    local path = req.url == "/" and "/index.html" or req.url
+    local filepath = directory .. path
+    
+    local file = io.open(filepath, "r")
+    if file then
+        local content = file:read("*all")
+        file:close()
+        res:write(content)
+    else
+        res:json({ error = "File not found", path = path })
+    end
+end)
+
+print("Server running on http://localhost:" .. port)
+server:listen(port)
+
+-- Keep running
+while true do
+    os.execute("sleep 1")
+end
+```
+
+**Usage:**
+```bash
+# Default settings (port 8080, ./public directory)
+./luax eval server.lua
+
+# Custom port and directory
+./luax eval server.lua -- --port 3000 --dir /var/www
 ```
 
 ### Plain Text Browser
@@ -362,6 +518,7 @@ go build -o luax .
 ./luax eval examples/kv-test.lua
 ./luax eval examples/browser.lua
 ./luax eval examples/webserver.lua
+./luax eval examples/static-server.lua -- --port 3000
 ./luax eval examples/showcase.lua
 
 # Or build standalone executables

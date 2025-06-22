@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LuaX Static Server</title>
+    <style>
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px; 
+            margin: 50px auto; 
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .header { 
+            text-align: center; 
+            color: #333;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 20px;
+        }
+        .info {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .code {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            overflow-x: auto;
+        }
+        a { color: #3182ce; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🚀 LuaX Static Server</h1>
+        <p>Your static file server is running successfully!</p>
+    </div>
+
+    <div class="info">
+        <h3>✨ What is LuaX?</h3>
+        <p>LuaX is a tool that packages Lua scripts into standalone executables with TUI, HTTP, and database support.</p>
+    </div>
+
+    <h3>🔗 API Endpoints</h3>
+    <ul>
+        <li><a href="/api/info">Server Info</a> - Get server configuration</li>
+        <li><a href="/health">Health Check</a> - Server health status</li>
+    </ul>
+
+    <h3>🛠️ Command Line Options</h3>
+    <div class="code">
+# Run with default settings (port 8080, ./public directory)
+./luax eval examples/static-server.lua
+
+# Custom port and directory
+./luax eval examples/static-server.lua -- --port 3000 --dir /var/www
+
+# Show help
+./luax eval examples/static-server.lua -- --help
+    </div>
+
+    <h3>🔧 Features Demonstrated</h3>
+    <ul>
+        <li>HTTP server with routing</li>
+        <li>Static file serving</li>
+        <li>Command line argument parsing</li>
+        <li>JSON API endpoints</li>
+        <li>Content-Type detection</li>
+        <li>Security (directory traversal prevention)</li>
+    </ul>
+
+    <div class="info">
+        <p><strong>Powered by LuaX</strong> - Learn more at the <a href="https://github.com/twilson63/luax">GitHub repository</a></p>
+    </div>
+</body>
+</html>

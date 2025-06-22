@@ -16,7 +16,7 @@ import (
 	"go.etcd.io/bbolt"
 )
 
-func evalScript(scriptPath string) error {
+func evalScript(scriptPath string, scriptArgs []string) error {
 	scriptContent, err := os.ReadFile(scriptPath)
 	if err != nil {
 		return fmt.Errorf("failed to read script file: %w", err)
@@ -36,6 +36,9 @@ func evalScript(scriptPath string) error {
 	L.PreloadModule("math", lua.OpenMath)
 	L.PreloadModule("debug", lua.OpenDebug)
 	
+	// Set up command line arguments
+	setupCommandLineArgs(L, scriptPath, scriptArgs)
+	
 	// Register HTTP module
 	registerHTTPModule(L)
 
@@ -50,6 +53,22 @@ func evalScript(scriptPath string) error {
 	}
 
 	return nil
+}
+
+func setupCommandLineArgs(L *lua.LState, scriptPath string, scriptArgs []string) {
+	// Create arg table (following Lua convention)
+	argTable := L.NewTable()
+	
+	// arg[0] is the script name
+	argTable.RawSetInt(0, lua.LString(scriptPath))
+	
+	// arg[1], arg[2], etc. are the script arguments
+	for i, arg := range scriptArgs {
+		argTable.RawSetInt(i+1, lua.LString(arg))
+	}
+	
+	// Set global arg table
+	L.SetGlobal("arg", argTable)
 }
 
 func registerTUIFunctions(L *lua.LState) {

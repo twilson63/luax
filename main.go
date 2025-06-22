@@ -32,14 +32,21 @@ var buildCmd = &cobra.Command{
 }
 
 var evalCmd = &cobra.Command{
-	Use:   "eval [lua-script]",
+	Use:   "eval [lua-script] -- [script-args...]",
 	Short: "Evaluate and run a Lua script directly",
-	Long:  `Run a Lua script directly without building an executable. Useful for development and testing.`,
-	Args:  cobra.ExactArgs(1),
+	Long:  `Run a Lua script directly without building an executable. Useful for development and testing.
+
+Any arguments after '--' are passed to the Lua script as command line arguments.
+
+Examples:
+  luax eval server.lua
+  luax eval server.lua -- --port 8080 --dir ./public`,
+	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		scriptPath := args[0]
+		scriptArgs := args[1:] // Pass remaining args to script
 		
-		if err := evalScript(scriptPath); err != nil {
+		if err := evalScript(scriptPath, scriptArgs); err != nil {
 			fmt.Fprintf(os.Stderr, "Error running script: %v\n", err)
 			os.Exit(1)
 		}

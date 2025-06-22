@@ -95,6 +95,9 @@ func main() {
 	L.PreloadModule("math", lua.OpenMath)
 	L.PreloadModule("debug", lua.OpenDebug)
 	
+	// Set up command line arguments
+	setupCommandLineArgs(L)
+	
 	// Register HTTP module
 	registerHTTPModule(L)
 
@@ -108,6 +111,27 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Error running Lua script: %v\n", err)
 		os.Exit(1)
 	}
+}
+
+func setupCommandLineArgs(L *lua.LState) {
+	// Create arg table (following Lua convention)
+	argTable := L.NewTable()
+	
+	// Get command line arguments from os.Args
+	args := os.Args
+	
+	// arg[0] is the executable name (script name equivalent)
+	if len(args) > 0 {
+		argTable.RawSetInt(0, lua.LString(args[0]))
+	}
+	
+	// arg[1], arg[2], etc. are the script arguments
+	for i := 1; i < len(args); i++ {
+		argTable.RawSetInt(i, lua.LString(args[i]))
+	}
+	
+	// Set global arg table
+	L.SetGlobal("arg", argTable)
 }
 
 func registerTUIFunctions(L *lua.LState) {
