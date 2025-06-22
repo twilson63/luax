@@ -19,6 +19,7 @@ type BuildConfig struct {
 	ScriptContent string
 }
 
+
 func buildExecutable(scriptPath, outputName, target string) error {
 	config := &BuildConfig{
 		ScriptPath: scriptPath,
