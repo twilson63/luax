@@ -86,24 +86,35 @@
                     <h3>UI Components</h3>
                     
                     <h4>TextView</h4>
-                    <p>Display text content with formatting and scrolling capabilities.</p>
+                    <p>Display text content with advanced formatting, styling, and scrolling capabilities.</p>
                     <div class="code-block">
                         <pre><code>local textView = tui.newTextView(text)</code></pre>
                     </div>
+                    <p><strong>Content & Behavior:</strong></p>
                     <ul class="api-list">
                         <li><code>textView:SetText(text)</code> - Set display text</li>
                         <li><code>textView:GetText()</code> - Get current text</li>
                         <li><code>textView:SetWrap(bool)</code> - Enable/disable text wrapping</li>
                         <li><code>textView:SetWordWrap(bool)</code> - Enable/disable word wrapping</li>
+                        <li><code>textView:SetScrollable(bool)</code> - Make content scrollable</li>
+                        <li><code>textView:SetRegions(bool)</code> - Enable clickable regions</li>
+                    </ul>
+                    <p><strong>Enhanced Styling:</strong></p>
+                    <ul class="api-list">
+                        <li><code>textView:SetDynamicColors(bool)</code> - Enable color markup parsing</li>
+                        <li><code>textView:SetBorder(bool)</code> - Add border around component</li>
+                        <li><code>textView:SetBorderColor(color)</code> - Set border color</li>
+                        <li><code>textView:SetBackgroundColor(color)</code> - Set background color</li>
                         <li><code>textView:SetTitle(title)</code> - Set component title</li>
                         <li><code>textView:SetTextColor(color)</code> - Set text color</li>
                     </ul>
 
                     <h4>InputField</h4>
-                    <p>Text input component for user data entry.</p>
+                    <p>Text input component for user data entry with enhanced styling options.</p>
                     <div class="code-block">
                         <pre><code>local inputField = tui.newInputField()</code></pre>
                     </div>
+                    <p><strong>Content & Behavior:</strong></p>
                     <ul class="api-list">
                         <li><code>inputField:SetLabel(label)</code> - Set field label</li>
                         <li><code>inputField:SetPlaceholder(text)</code> - Set placeholder text</li>
@@ -111,26 +122,112 @@
                         <li><code>inputField:SetText(text)</code> - Set input text</li>
                         <li><code>inputField:SetDoneFunc(callback)</code> - Set completion callback</li>
                     </ul>
+                    <p><strong>Enhanced Styling:</strong></p>
+                    <ul class="api-list">
+                        <li><code>inputField:SetBorder(bool)</code> - Add border around input field</li>
+                        <li><code>inputField:SetBorderColor(color)</code> - Set border color</li>
+                        <li><code>inputField:SetFieldBackgroundColor(color)</code> - Set input background</li>
+                        <li><code>inputField:SetFieldTextColor(color)</code> - Set input text color</li>
+                        <li><code>inputField:SetTitle(title)</code> - Set component title</li>
+                    </ul>
 
                     <h4>Button</h4>
-                    <p>Clickable button component for user actions.</p>
+                    <p>Clickable button component for user actions with professional styling.</p>
                     <div class="code-block">
                         <pre><code>local button = tui.newButton(label)</code></pre>
                     </div>
+                    <p><strong>Content & Behavior:</strong></p>
                     <ul class="api-list">
                         <li><code>button:SetLabel(label)</code> - Set button label</li>
                         <li><code>button:SetSelectedFunc(callback)</code> - Set click handler</li>
                     </ul>
+                    <p><strong>Enhanced Styling:</strong></p>
+                    <ul class="api-list">
+                        <li><code>button:SetBorder(bool)</code> - Add border around button</li>
+                        <li><code>button:SetBorderColor(color)</code> - Set border color</li>
+                        <li><code>button:SetBackgroundColor(color)</code> - Set button background</li>
+                        <li><code>button:SetLabelColor(color)</code> - Set button text color</li>
+                        <li><code>button:SetTitle(title)</code> - Set component title</li>
+                    </ul>
 
                     <h4>Flex</h4>
-                    <p>Flexible layout container for organizing components.</p>
+                    <p>Flexible layout container for organizing components with styling support.</p>
                     <div class="code-block">
                         <pre><code>local flex = tui.newFlex()</code></pre>
                     </div>
+                    <p><strong>Layout & Behavior:</strong></p>
                     <ul class="api-list">
                         <li><code>flex:SetDirection(direction)</code> - Set layout direction (0=vertical, 1=horizontal)</li>
                         <li><code>flex:AddItem(primitive, fixedSize, proportion, focus)</code> - Add component to layout</li>
                     </ul>
+                    <p><strong>Enhanced Styling:</strong></p>
+                    <ul class="api-list">
+                        <li><code>flex:SetBorder(bool)</code> - Add border around container</li>
+                        <li><code>flex:SetBorderColor(color)</code> - Set border color</li>
+                        <li><code>flex:SetBackgroundColor(color)</code> - Set container background</li>
+                        <li><code>flex:SetTitle(title)</code> - Set container title</li>
+                    </ul>
+                </div>
+
+                <div class="api-group">
+                    <h3>Color Styling & Theming</h3>
+                    <p>Enhanced TUI components support professional color schemes and markup.</p>
+                    
+                    <h4>Color Constants (256-color palette)</h4>
+                    <div class="code-block">
+                        <pre><code>-- Common color constants for consistent theming
+local COLORS = {
+    PRIMARY = 39,      -- Bright blue
+    SUCCESS = 46,      -- Bright green  
+    WARNING = 226,     -- Bright yellow
+    DANGER = 196,      -- Bright red
+    SECONDARY = 245,   -- Light gray
+    DARK = 235,        -- Dark gray
+    DARKER = 232,      -- Very dark gray
+    LIGHT = 255,       -- White
+    ACCENT = 201,      -- Bright magenta
+    INFO = 51          -- Bright cyan
+}</code></pre>
+                    </div>
+                    
+                    <h4>Dynamic Color Markup</h4>
+                    <p>Use color markup in text content when <code>SetDynamicColors(true)</code> is enabled:</p>
+                    <div class="code-block">
+                        <pre><code>-- Color markup format: [color_code]text[reset_color]
+textView:SetDynamicColors(true)
+textView:SetText("[46]SUCCESS:[255] Operation completed!")
+
+-- Advanced example with multiple colors
+local statusText = string.format([[
+[%d]🎉 Welcome to Dashboard![%d]
+
+[%d]Status:[%d] %s
+[%d]Uptime:[%d] %s
+]], 
+    COLORS.PRIMARY, COLORS.LIGHT,
+    COLORS.INFO, COLORS.LIGHT, "Online",
+    COLORS.SUCCESS, COLORS.LIGHT, "2 days"
+)</code></pre>
+                    </div>
+                    
+                    <h4>Professional Styling Example</h4>
+                    <div class="code-block">
+                        <pre><code>-- Create a professionally styled component
+local panel = tui.newTextView("")
+panel:SetDynamicColors(true)
+panel:SetBorder(true)
+panel:SetTitle("📊 System Metrics")
+panel:SetBorderColor(COLORS.INFO)
+panel:SetBackgroundColor(COLORS.DARK)
+panel:SetScrollable(true)
+
+-- Button with custom styling
+local button = tui.newButton("🚀 Execute")
+button:SetBorder(true)
+button:SetBorderColor(COLORS.SUCCESS)
+button:SetBackgroundColor(COLORS.SUCCESS)
+button:SetLabelColor(COLORS.LIGHT)</code></pre>
+                    </div>
                 </div>
 
                 <div class="api-group">
@@ -142,11 +239,15 @@
                     </ul>
                     
                     <div class="example-card">
-                        <h4>Example: Simple TUI App</h4>
+                        <h4>Example: Enhanced TUI App</h4>
                         <div class="code-block">
                             <pre><code>local app = tui.newApp()
-local textView = tui.newTextView("Hello from Hype!")
-textView:SetTitle("My First App")
+local textView = tui.newTextView("[39]Hello from Hype![255]")
+textView:SetDynamicColors(true)
+textView:SetBorder(true)
+textView:SetTitle("🚀 My Enhanced App")
+textView:SetBorderColor(39) -- Blue border
+textView:SetBackgroundColor(235) -- Dark background
 
 app:SetInputCapture(function(event)
     if event:Key() == 27 then -- ESC key

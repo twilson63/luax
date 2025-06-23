@@ -74,94 +74,166 @@
                 
                 <div class="example-showcase">
                     <div class="showcase-item">
-                        <h3>🌐 Plain Text Web Browser</h3>
-                        <p>A fully functional web browser with TUI interface, featuring address bar, content viewing, and keyboard navigation.</p>
+                        <h3>🌐 Enhanced Plain Text Browser</h3>
+                        <p>A beautifully styled web browser with professional TUI design, enhanced HTML-to-text conversion, and intuitive two-panel layout.</p>
                         <div class="code-block">
-                            <pre><code>-- browser.lua - Full TUI Web Browser
+                            <pre><code>-- Enhanced Plain Text Browser with Advanced TUI Styling
 local http = require('http')
+
+-- Color constants for consistent theming
+local COLORS = {
+    PRIMARY = 39,      -- Bright blue
+    SUCCESS = 46,      -- Bright green  
+    WARNING = 226,     -- Bright yellow
+    DANGER = 196,      -- Bright red
+    SECONDARY = 245,   -- Light gray
+    DARK = 235,        -- Dark gray
+    DARKER = 232,      -- Very dark gray
+    LIGHT = 255,       -- White
+    ACCENT = 201,      -- Bright magenta
+    INFO = 51          -- Bright cyan
+}
+
 local app = tui.newApp()
+local mainFlex = tui.newFlex()
 
--- Create main layout
-local flex = tui.newFlex()
-flex:SetDirection(0) -- Vertical layout
-
--- Address bar
-local addressBar = tui.newInputField()
-addressBar:SetLabel("URL: ")
-addressBar:SetPlaceholder("Enter URL and press Enter")
-
--- Content view
+-- Create UI components with enhanced styling
 local contentView = tui.newTextView("")
-contentView:SetTitle("Content")
+local addressBar = tui.newInputField()
+
+-- Configure main layout - simplified to two panels
+mainFlex:SetDirection(0) -- Vertical (top to bottom)
+mainFlex:SetBorder(true)
+mainFlex:SetTitle("🌐 Enhanced Plain Text Browser")
+mainFlex:SetBorderColor(COLORS.PRIMARY)
+mainFlex:SetBackgroundColor(COLORS.DARKER)
+
+-- Configure content view (top panel)
+contentView:SetDynamicColors(true)
+contentView:SetBorder(true)
+contentView:SetTitle("📄 Web Content")
+contentView:SetBorderColor(COLORS.SUCCESS)
+contentView:SetBackgroundColor(COLORS.DARK)
 contentView:SetWrap(true)
 contentView:SetWordWrap(true)
+contentView:SetScrollable(true)
 
--- Status bar
-local statusBar = tui.newTextView("")
-statusBar:SetTitle("Status")
+-- Configure address bar (bottom panel)
+addressBar:SetLabel("🌐 URL: ")
+addressBar:SetPlaceholder("✅ Ready | Enter URL (e.g., example.com)")
+addressBar:SetBorder(true)
+addressBar:SetTitle("🔗 Address Bar - Press Enter to Load")
+addressBar:SetBorderColor(COLORS.ACCENT)
+addressBar:SetFieldBackgroundColor(COLORS.DARKER)
+addressBar:SetFieldTextColor(COLORS.LIGHT)
 
--- Function to fetch and display content
-local function fetchURL(url)
-    statusBar:SetText("Fetching: " .. url)
-    app:Draw()
-    
-    local response, err = http.get(url)
-    if response then
-        local content = stripHTML(response.body)
-        contentView:SetText(content)
-        statusBar:SetText("Loaded: " .. url .. " (Status: " .. response.status .. ")")
-    else
-        contentView:SetText("Error: " .. (err or "Unknown error"))
-        statusBar:SetText("Failed to load: " .. url)
+-- Enhanced HTML to plain text conversion
+local function htmlToPlainText(html)
+    if not html or html == "" then
+        return "No content received"
     end
-    app:Draw()
+    
+    local text = html
+    
+    -- Headers with spacing
+    text = text:gsub("<h[1-6][^>]*>(.-)</h[1-6]>", function(content)
+        return "\n\n" .. content:upper() .. "\n" .. string.rep("=", #content) .. "\n"
+    end)
+    
+    -- Paragraphs with spacing
+    text = text:gsub("<p[^>]*>(.-)</p>", "%1\n\n")
+    
+    -- Line breaks and lists
+    text = text:gsub("<br[^>]*>", "\n")
+    text = text:gsub("<li[^>]*>(.-)</li>", "• %1\n")
+    
+    -- Links (show URL)
+    text = text:gsub('<a[^>]*href="([^"]*)"[^>]*>(.-)</a>', function(url, link_text)
+        return link_text .. " [" .. url .. "]"
+    end)
+    
+    -- Remove all remaining HTML tags
+    text = text:gsub("<[^>]*>", "")
+    
+    -- Decode HTML entities
+    local entities = {
+        ["&amp;"] = "&", ["&lt;"] = "<", ["&gt;"] = ">",
+        ["&quot;"] = '"', ["&#39;"] = "'", ["&nbsp;"] = " "
+    }
+    for entity, replacement in pairs(entities) do
+        text = text:gsub(entity, replacement)
+    end
+    
+    -- Clean up whitespace
+    text = text:gsub("\n\n\n+", "\n\n")
+    text = text:gsub("^%s+", "")
+    text = text:gsub("%s+$", "")
+    
+    return text
 end
 
--- Handle URL input
+-- Load a URL with enhanced error handling
+local function loadUrl(url)
+    if url == "" then return end
+    
+    if not url:match("^https?://") then
+        url = "http://" .. url
+    end
+    
+    local response, err = http.get(url, {
+        timeout = 15,
+        headers = {
+            ["User-Agent"] = "Hype-Enhanced-Browser/2.0",
+            ["Accept"] = "text/html,application/xhtml+xml"
+        }
+    })
+    
+    if response and response.body then
+        local plainText = htmlToPlainText(response.body)
+        local pageHeader = string.format([[
+%s
+🌐 %s
+%s
+
+Status: %s | Size: %s chars | Controls: Ctrl+L=Address, Ctrl+R=Reload, Ctrl+Q=Quit
+%s
+
+]], 
+            string.rep("=", 80), url, string.rep("=", 80),
+            response.status or "200", #plainText, string.rep("=", 80)
+        )
+        contentView:SetText(pageHeader .. plainText)
+    else
+        contentView:SetText("Error loading: " .. (err or "Unknown error"))
+    end
+end
+
+-- Address bar handler
 addressBar:SetDoneFunc(function(key)
     if key == 13 then -- Enter key
-        local url = addressBar:GetText()
-        if url and url ~= "" then
-            fetchURL(url)
-        end
+        loadUrl(addressBar:GetText())
     end
 end)
 
--- Layout components
-flex:AddItem(addressBar, 3, 0, true)
-flex:AddItem(contentView, 0, 1, false)
-flex:AddItem(statusBar, 2, 0, false)
-
 -- Keyboard shortcuts
 app:SetInputCapture(function(event)
-    key = event:Key()
-    if key == 12 then -- Ctrl+L
-        app:SetFocus(addressBar)
-        return nil
-    elseif key == 27 then -- Escape
-        app:SetFocus(contentView)
-        return nil
-    elseif key == 3 then -- Ctrl+C
+    local key = event:Key()
+    if key == 17 then -- Ctrl+Q
         app:Stop()
+        return nil
+    elseif key == 12 then -- Ctrl+L
+        app:SetFocus(addressBar)
         return nil
     end
     return event
 end)
 
--- Helper function to strip HTML tags
-function stripHTML(html)
-    -- Remove HTML tags and decode entities
-    local text = html:gsub("<%s*[^>]*>", "")
-    text = text:gsub("&amp;", "&")
-    text = text:gsub("&lt;", "<")
-    text = text:gsub("&gt;", ">")
-    text = text:gsub("&quot;", '"')
-    text = text:gsub("&#39;", "'")
-    return text
-end
+-- Simple two-panel layout assembly  
+mainFlex:AddItem(contentView, 0, 1, false)    -- Content (flexible top)
+mainFlex:AddItem(addressBar, 4, 0, true)      -- Address bar (fixed bottom)
 
-app:SetRoot(flex, true)
-addressBar:SetText("https://example.com")
+app:SetFocus(addressBar)
+app:SetRoot(mainFlex, true)
 app:Run()</code></pre>
                             <button class="copy-btn" onclick="copyCode(this)">Copy</button>
                         </div>
@@ -182,85 +254,219 @@ app:Run()</code></pre>
                     </div>
 
                     <div class="showcase-item">
-                        <h3>📝 Interactive Form</h3>
-                        <p>Interactive TUI application with input fields, buttons, and layout management.</p>
+                        <h3>📈 Advanced TUI Dashboard</h3>
+                        <p>Professional dashboard showcasing all enhanced TUI features with real-time metrics, database integration, and interactive controls.</p>
                         <div class="code-block">
-                            <pre><code>-- interactive.lua - Interactive Form
+                            <pre><code>-- Advanced TUI Dashboard showcasing enhanced styling features
 local app = tui.newApp()
+local kv = require('kv')
 
--- Create form layout
-local form = tui.newFlex()
-form:SetDirection(0) -- Vertical
+-- Color constants for consistent theming
+local COLORS = {
+    PRIMARY = 39,      -- Bright blue
+    SUCCESS = 46,      -- Bright green  
+    WARNING = 226,     -- Bright yellow
+    DANGER = 196,      -- Bright red
+    SECONDARY = 245,   -- Light gray
+    DARK = 235,        -- Dark gray
+    DARKER = 232,      -- Very dark gray
+    LIGHT = 255,       -- White
+    ACCENT = 201,      -- Bright magenta
+    INFO = 51          -- Bright cyan
+}
 
--- Title
-local title = tui.newTextView("=== User Registration Form ===")
-title:SetTextAlign(1) -- Center align
+-- Application state
+local currentUser = "admin"
+local serverStatus = "online"
+local logCount = 0
 
--- Name input
-local nameInput = tui.newInputField()
-nameInput:SetLabel("Name: ")
-nameInput:SetPlaceholder("Enter your full name")
+-- Database setup
+local db = kv.open("./dashboard.db")
+db:open_db("settings")
+db:put("settings", "theme", "dark")
 
--- Email input  
-local emailInput = tui.newInputField()
-emailInput:SetLabel("Email: ")
-emailInput:SetPlaceholder("Enter your email address")
+-- Create main layout with enhanced styling
+local mainFlex = tui.newFlex()
+mainFlex:SetDirection(1) -- Vertical
+mainFlex:SetBorder(true)
+mainFlex:SetTitle("🎛️  Advanced TUI Dashboard - Enhanced Features")
+mainFlex:SetBorderColor(COLORS.PRIMARY)
+mainFlex:SetBackgroundColor(COLORS.DARKER)
 
--- Submit button
-local submitBtn = tui.newButton("Submit")
-local resultView = tui.newTextView("")
+-- Header section with multiple panels
+local headerFlex = tui.newFlex()
+headerFlex:SetDirection(0) -- Horizontal
+headerFlex:SetBorder(true)
+headerFlex:SetTitle("🏠 Dashboard Overview")
+headerFlex:SetBorderColor(COLORS.ACCENT)
+headerFlex:SetBackgroundColor(COLORS.DARK)
 
--- Handle form submission
-submitBtn:SetSelectedFunc(function()
-    local name = nameInput:GetText()
-    local email = emailInput:GetText()
+-- Welcome panel with dynamic colors
+local welcomePanel = tui.newTextView("")
+welcomePanel:SetDynamicColors(true)
+welcomePanel:SetBorder(true)
+welcomePanel:SetTitle("👋 Welcome")
+welcomePanel:SetBorderColor(COLORS.SUCCESS)
+welcomePanel:SetBackgroundColor(COLORS.DARK)
+
+-- Metrics panel with progress bars
+local metricsPanel = tui.newTextView("")
+metricsPanel:SetDynamicColors(true)
+metricsPanel:SetBorder(true)
+metricsPanel:SetTitle("📈 Live Metrics")
+metricsPanel:SetBorderColor(COLORS.INFO)
+metricsPanel:SetBackgroundColor(COLORS.DARK)
+
+-- Control panel with enhanced input styling
+local controlFlex = tui.newFlex()
+controlFlex:SetDirection(0) -- Horizontal
+controlFlex:SetBorder(true)
+controlFlex:SetTitle("⚙️ Control Panel")
+controlFlex:SetBorderColor(COLORS.SECONDARY)
+controlFlex:SetBackgroundColor(COLORS.DARK)
+
+-- Enhanced input field
+local userInput = tui.newInputField()
+userInput:SetLabel("Username: ")
+userInput:SetText(currentUser)
+userInput:SetBorder(true)
+userInput:SetTitle("👤 User Settings")
+userInput:SetBorderColor(COLORS.SECONDARY)
+userInput:SetFieldBackgroundColor(COLORS.DARKER)
+userInput:SetFieldTextColor(COLORS.LIGHT)
+
+-- Styled action buttons
+local refreshButton = tui.newButton("🔄 Refresh")
+refreshButton:SetBorder(true)
+refreshButton:SetBorderColor(COLORS.SUCCESS)
+refreshButton:SetBackgroundColor(COLORS.SUCCESS)
+refreshButton:SetLabelColor(COLORS.LIGHT)
+
+local exitButton = tui.newButton("❌ Exit")
+exitButton:SetBorder(true)
+exitButton:SetBorderColor(COLORS.DANGER)
+exitButton:SetBackgroundColor(COLORS.DANGER)
+exitButton:SetLabelColor(COLORS.LIGHT)
+
+-- Activity log with scrolling
+local logPanel = tui.newTextView("")
+logPanel:SetDynamicColors(true)
+logPanel:SetBorder(true)
+logPanel:SetTitle("📋 Activity Log")
+logPanel:SetBorderColor(COLORS.SECONDARY)
+logPanel:SetBackgroundColor(COLORS.DARK)
+logPanel:SetScrollable(true)
+
+-- Update functions using color markup
+local function updateWelcomePanel()
+    local welcomeText = string.format([[
+[%d]🎉 Welcome to Advanced Dashboard![%d]
+
+[%d]Current User:[%d] %s
+[%d]Status:[%d] %s  
+[%d]Database:[%d] Connected ✅
+
+[%d]🚀 Enhanced TUI Features:[%d]
+• Dynamic colors and markup
+• Custom borders and themes  
+• Interactive components
+]], 
+        COLORS.PRIMARY, COLORS.LIGHT,
+        COLORS.INFO, COLORS.LIGHT, currentUser,
+        COLORS.SUCCESS, COLORS.LIGHT, serverStatus,
+        COLORS.INFO, COLORS.LIGHT,
+        COLORS.ACCENT, COLORS.LIGHT
+    )
+    welcomePanel:SetText(welcomeText)
+end
+
+local function updateMetricsPanel()
+    -- Simulate metrics with progress bars
+    local cpu = math.random(20, 75)
+    local memory = math.random(35, 65)
     
-    if name == "" or email == "" then
-        resultView:SetText("Error: Please fill in all fields")
-        resultView:SetTextColor("red")
-    else
-        local result = string.format([[
-Registration Complete!
-
-Name: %s
-Email: %s
-Timestamp: %s
-
-Press Ctrl+C to exit.]], name, email, os.date())
-        
-        resultView:SetText(result)
-        resultView:SetTextColor("green")
+    local function createProgressBar(value, maxVal, width)
+        local filled = math.floor((value / maxVal) * width)
+        local bar = ""
+        for i = 1, width do
+            bar = bar .. (i <= filled and "█" or "░")
+        end
+        return string.format("%s %d%%", bar, math.floor((value/maxVal)*100))
     end
-    app:Draw()
+    
+    local metricsText = string.format([[
+[%d]📈 Performance Metrics[%d]
+
+[%d]CPU Usage:[%d]
+%s
+
+[%d]Memory Usage:[%d]
+%s
+
+[%d]Active Users:[%d] %d
+]], 
+        COLORS.ACCENT, COLORS.LIGHT,
+        COLORS.INFO, COLORS.LIGHT, createProgressBar(cpu, 100, 20),
+        COLORS.INFO, COLORS.LIGHT, createProgressBar(memory, 100, 20),
+        COLORS.SUCCESS, COLORS.LIGHT, math.random(50, 200)
+    )
+    metricsPanel:SetText(metricsText)
+end
+
+-- Button handlers
+refreshButton:SetSelectedFunc(function()
+    updateWelcomePanel()
+    updateMetricsPanel()
+    logPanel:SetText(logPanel:GetText() .. 
+        string.format("[%d][%s][%d] Dashboard refreshed\n", 
+        COLORS.INFO, os.date("%H:%M:%S"), COLORS.LIGHT))
 end)
 
--- Layout components
-form:AddItem(title, 3, 0, false)
-form:AddItem(nameInput, 3, 0, true)
-form:AddItem(emailInput, 3, 0, false)
-form:AddItem(submitBtn, 3, 0, false)
-form:AddItem(resultView, 0, 1, false)
-
--- Global keyboard handling
-app:SetInputCapture(function(event)
-    if event:Key() == 3 then -- Ctrl+C
-        app:Stop()
-        return nil
-    end
-    return event
+exitButton:SetSelectedFunc(function()
+    db:close()
+    app:Stop()
 end)
 
-app:SetRoot(form, true)
-app:Run()</code></pre>
+-- Layout assembly
+headerFlex:AddItem(welcomePanel, 0, 1, false)
+headerFlex:AddItem(metricsPanel, 0, 1, false)
+
+controlFlex:AddItem(userInput, 0, 1, true)
+controlFlex:AddItem(refreshButton, 15, 0, false)
+controlFlex:AddItem(exitButton, 12, 0, false)
+
+mainFlex:AddItem(headerFlex, 0, 2, false)
+mainFlex:AddItem(controlFlex, 5, 0, false)
+mainFlex:AddItem(logPanel, 0, 1, false)
+
+-- Initialize and run
+app:SetRoot(mainFlex, true)
+updateWelcomePanel()
+updateMetricsPanel()
+logPanel:SetText(string.format("[%d]Advanced Dashboard initialized[%d]\n", 
+    COLORS.SUCCESS, COLORS.LIGHT))
+
+app:Run()
+db:close()</code></pre>
                             <button class="copy-btn" onclick="copyCode(this)">Copy</button>
                         </div>
                         <div class="example-actions">
                             <div class="build-example">
                                 <strong>Build & Run:</strong>
                                 <div class="code-block">
-                                    <code>hype build interactive.lua -o interactive<br>./interactive</code>
+                                    <code>hype build advanced-dashboard.lua -o dashboard<br>./dashboard</code>
                                     <button class="copy-btn" onclick="copyCode(this)">Copy</button>
                                 </div>
+                                <strong>Features Demonstrated:</strong>
+                                <ul style="margin-top: 0.5rem; color: var(--terminal-text); font-size: 0.9rem;">
+                                    <li>• SetDynamicColors - Color markup in text</li>
+                                    <li>• SetBorder/SetBorderColor - Custom borders</li>
+                                    <li>• SetBackgroundColor - Themed backgrounds</li>
+                                    <li>• SetFieldBackgroundColor/SetFieldTextColor - Input styling</li>
+                                    <li>• SetLabelColor - Button text colors</li>
+                                    <li>• SetScrollable - Scrollable content</li>
+                                    <li>• Database integration with BoltDB</li>
+                                </ul>
                             </div>
                         </div>
                     </div>
