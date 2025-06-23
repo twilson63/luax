@@ -284,6 +284,48 @@ func textViewIndex(L *lua.LState) int {
 			L.Push(ud)
 			return 1
 		}))
+	case "SetDynamicColors":
+		L.Push(L.NewFunction(func(L *lua.LState) int {
+			enable := L.CheckBool(2)
+			textView.SetDynamicColors(enable)
+			L.Push(ud)
+			return 1
+		}))
+	case "SetBorder":
+		L.Push(L.NewFunction(func(L *lua.LState) int {
+			enable := L.CheckBool(2)
+			textView.SetBorder(enable)
+			L.Push(ud)
+			return 1
+		}))
+	case "SetBorderColor":
+		L.Push(L.NewFunction(func(L *lua.LState) int {
+			color := L.CheckInt(2)
+			textView.SetBorderColor(tcell.Color(color))
+			L.Push(ud)
+			return 1
+		}))
+	case "SetBackgroundColor":
+		L.Push(L.NewFunction(func(L *lua.LState) int {
+			color := L.CheckInt(2)
+			textView.SetBackgroundColor(tcell.Color(color))
+			L.Push(ud)
+			return 1
+		}))
+	case "SetRegions":
+		L.Push(L.NewFunction(func(L *lua.LState) int {
+			enable := L.CheckBool(2)
+			textView.SetRegions(enable)
+			L.Push(ud)
+			return 1
+		}))
+	case "SetScrollable":
+		L.Push(L.NewFunction(func(L *lua.LState) int {
+			enable := L.CheckBool(2)
+			textView.SetScrollable(enable)
+			L.Push(ud)
+			return 1
+		}))
 	case "GetText":
 		L.Push(L.NewFunction(func(L *lua.LState) int {
 			text := textView.GetText(false)
@@ -338,6 +380,41 @@ func inputFieldIndex(L *lua.LState) int {
 			L.Push(ud)
 			return 1
 		}))
+	case "SetBorder":
+		L.Push(L.NewFunction(func(L *lua.LState) int {
+			enable := L.CheckBool(2)
+			inputField.SetBorder(enable)
+			L.Push(ud)
+			return 1
+		}))
+	case "SetBorderColor":
+		L.Push(L.NewFunction(func(L *lua.LState) int {
+			color := L.CheckInt(2)
+			inputField.SetBorderColor(tcell.Color(color))
+			L.Push(ud)
+			return 1
+		}))
+	case "SetFieldBackgroundColor":
+		L.Push(L.NewFunction(func(L *lua.LState) int {
+			color := L.CheckInt(2)
+			inputField.SetFieldBackgroundColor(tcell.Color(color))
+			L.Push(ud)
+			return 1
+		}))
+	case "SetFieldTextColor":
+		L.Push(L.NewFunction(func(L *lua.LState) int {
+			color := L.CheckInt(2)
+			inputField.SetFieldTextColor(tcell.Color(color))
+			L.Push(ud)
+			return 1
+		}))
+	case "SetTitle":
+		L.Push(L.NewFunction(func(L *lua.LState) int {
+			title := L.CheckString(2)
+			inputField.SetTitle(title)
+			L.Push(ud)
+			return 1
+		}))
 	}
 	return 1
 }
@@ -355,6 +432,41 @@ func buttonIndex(L *lua.LState) int {
 				L.Push(fn)
 				L.Call(0, 0)
 			})
+			L.Push(ud)
+			return 1
+		}))
+	case "SetBorder":
+		L.Push(L.NewFunction(func(L *lua.LState) int {
+			enable := L.CheckBool(2)
+			button.SetBorder(enable)
+			L.Push(ud)
+			return 1
+		}))
+	case "SetBorderColor":
+		L.Push(L.NewFunction(func(L *lua.LState) int {
+			color := L.CheckInt(2)
+			button.SetBorderColor(tcell.Color(color))
+			L.Push(ud)
+			return 1
+		}))
+	case "SetBackgroundColor":
+		L.Push(L.NewFunction(func(L *lua.LState) int {
+			color := L.CheckInt(2)
+			button.SetBackgroundColor(tcell.Color(color))
+			L.Push(ud)
+			return 1
+		}))
+	case "SetLabelColor":
+		L.Push(L.NewFunction(func(L *lua.LState) int {
+			color := L.CheckInt(2)
+			button.SetLabelColor(tcell.Color(color))
+			L.Push(ud)
+			return 1
+		}))
+	case "SetTitle":
+		L.Push(L.NewFunction(func(L *lua.LState) int {
+			title := L.CheckString(2)
+			button.SetTitle(title)
 			L.Push(ud)
 			return 1
 		}))
@@ -382,6 +494,34 @@ func flexIndex(L *lua.LState) int {
 			proportion := L.CheckInt(4)
 			focus := L.CheckBool(5)
 			flex.AddItem(itemUD.Value.(tview.Primitive), fixedSize, proportion, focus)
+			L.Push(ud)
+			return 1
+		}))
+	case "SetBorder":
+		L.Push(L.NewFunction(func(L *lua.LState) int {
+			enable := L.CheckBool(2)
+			flex.SetBorder(enable)
+			L.Push(ud)
+			return 1
+		}))
+	case "SetBorderColor":
+		L.Push(L.NewFunction(func(L *lua.LState) int {
+			color := L.CheckInt(2)
+			flex.SetBorderColor(tcell.Color(color))
+			L.Push(ud)
+			return 1
+		}))
+	case "SetTitle":
+		L.Push(L.NewFunction(func(L *lua.LState) int {
+			title := L.CheckString(2)
+			flex.SetTitle(title)
+			L.Push(ud)
+			return 1
+		}))
+	case "SetBackgroundColor":
+		L.Push(L.NewFunction(func(L *lua.LState) int {
+			color := L.CheckInt(2)
+			flex.SetBackgroundColor(tcell.Color(color))
 			L.Push(ud)
 			return 1
 		}))

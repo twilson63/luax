@@ -282,6 +282,42 @@ func textViewIndex(L *lua.LState) int {
 			textView.SetTextColor(tcell.Color(color))
 			return 0
 		}))
+	case "SetDynamicColors":
+		L.Push(L.NewFunction(func(L *lua.LState) int {
+			enable := L.CheckBool(2)
+			textView.SetDynamicColors(enable)
+			return 0
+		}))
+	case "SetBorder":
+		L.Push(L.NewFunction(func(L *lua.LState) int {
+			enable := L.CheckBool(2)
+			textView.SetBorder(enable)
+			return 0
+		}))
+	case "SetBorderColor":
+		L.Push(L.NewFunction(func(L *lua.LState) int {
+			color := L.CheckInt(2)
+			textView.SetBorderColor(tcell.Color(color))
+			return 0
+		}))
+	case "SetBackgroundColor":
+		L.Push(L.NewFunction(func(L *lua.LState) int {
+			color := L.CheckInt(2)
+			textView.SetBackgroundColor(tcell.Color(color))
+			return 0
+		}))
+	case "SetRegions":
+		L.Push(L.NewFunction(func(L *lua.LState) int {
+			enable := L.CheckBool(2)
+			textView.SetRegions(enable)
+			return 0
+		}))
+	case "SetScrollable":
+		L.Push(L.NewFunction(func(L *lua.LState) int {
+			enable := L.CheckBool(2)
+			textView.SetScrollable(enable)
+			return 0
+		}))
 	}
 	
 	return 1
@@ -327,6 +363,36 @@ func inputFieldIndex(L *lua.LState) int {
 			})
 			return 0
 		}))
+	case "SetBorder":
+		L.Push(L.NewFunction(func(L *lua.LState) int {
+			enable := L.CheckBool(2)
+			inputField.SetBorder(enable)
+			return 0
+		}))
+	case "SetBorderColor":
+		L.Push(L.NewFunction(func(L *lua.LState) int {
+			color := L.CheckInt(2)
+			inputField.SetBorderColor(tcell.Color(color))
+			return 0
+		}))
+	case "SetFieldBackgroundColor":
+		L.Push(L.NewFunction(func(L *lua.LState) int {
+			color := L.CheckInt(2)
+			inputField.SetFieldBackgroundColor(tcell.Color(color))
+			return 0
+		}))
+	case "SetFieldTextColor":
+		L.Push(L.NewFunction(func(L *lua.LState) int {
+			color := L.CheckInt(2)
+			inputField.SetFieldTextColor(tcell.Color(color))
+			return 0
+		}))
+	case "SetTitle":
+		L.Push(L.NewFunction(func(L *lua.LState) int {
+			title := L.CheckString(2)
+			inputField.SetTitle(title)
+			return 0
+		}))
 	}
 	
 	return 1
@@ -351,6 +417,36 @@ func buttonIndex(L *lua.LState) int {
 				L.Push(fn)
 				L.Call(0, 0)
 			})
+			return 0
+		}))
+	case "SetBorder":
+		L.Push(L.NewFunction(func(L *lua.LState) int {
+			enable := L.CheckBool(2)
+			button.SetBorder(enable)
+			return 0
+		}))
+	case "SetBorderColor":
+		L.Push(L.NewFunction(func(L *lua.LState) int {
+			color := L.CheckInt(2)
+			button.SetBorderColor(tcell.Color(color))
+			return 0
+		}))
+	case "SetBackgroundColor":
+		L.Push(L.NewFunction(func(L *lua.LState) int {
+			color := L.CheckInt(2)
+			button.SetBackgroundColor(tcell.Color(color))
+			return 0
+		}))
+	case "SetLabelColor":
+		L.Push(L.NewFunction(func(L *lua.LState) int {
+			color := L.CheckInt(2)
+			button.SetLabelColor(tcell.Color(color))
+			return 0
+		}))
+	case "SetTitle":
+		L.Push(L.NewFunction(func(L *lua.LState) int {
+			title := L.CheckString(2)
+			button.SetTitle(title)
 			return 0
 		}))
 	}
@@ -393,6 +489,30 @@ func flexIndex(L *lua.LState) int {
 			}
 			
 			flex.AddItem(item, fixedSize, proportion, focus)
+			return 0
+		}))
+	case "SetBorder":
+		L.Push(L.NewFunction(func(L *lua.LState) int {
+			enable := L.CheckBool(2)
+			flex.SetBorder(enable)
+			return 0
+		}))
+	case "SetBorderColor":
+		L.Push(L.NewFunction(func(L *lua.LState) int {
+			color := L.CheckInt(2)
+			flex.SetBorderColor(tcell.Color(color))
+			return 0
+		}))
+	case "SetTitle":
+		L.Push(L.NewFunction(func(L *lua.LState) int {
+			title := L.CheckString(2)
+			flex.SetTitle(title)
+			return 0
+		}))
+	case "SetBackgroundColor":
+		L.Push(L.NewFunction(func(L *lua.LState) int {
+			color := L.CheckInt(2)
+			flex.SetBackgroundColor(tcell.Color(color))
 			return 0
 		}))
 	}
