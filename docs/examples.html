@@ -172,6 +172,11 @@ app:Run()</code></pre>
                                     <code>hype build browser.lua -o browser<br>./browser</code>
                                     <button class="copy-btn" onclick="copyCode(this)">Copy</button>
                                 </div>
+                                <strong>Or Run Directly:</strong>
+                                <div class="code-block">
+                                    <code>hype run browser.lua</code>
+                                    <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -1002,13 +1007,13 @@ hype build browser.lua -o browser
 
                     <div class="example-card">
                         <h3>🔄 Development Mode</h3>
-                        <p>Test and iterate quickly using eval mode:</p>
+                        <p>Test and iterate quickly using run mode:</p>
                         <div class="code-block">
                             <pre><code># Run directly without building
-hype eval browser.lua
+hype run browser.lua
 
 # Pass command line arguments
-hype eval static-server.lua -- --port 3000 --dir ./docs</code></pre>
+hype run static-server.lua -- --port 3000 --dir ./docs</code></pre>
                         </div>
                     </div>
 

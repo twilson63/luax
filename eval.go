@@ -16,7 +16,7 @@ import (
 	"go.etcd.io/bbolt"
 )
 
-func evalScript(scriptPath string, scriptArgs []string) error {
+func runScript(scriptPath string, scriptArgs []string) error {
 	scriptContent, err := os.ReadFile(scriptPath)
 	if err != nil {
 		return fmt.Errorf("failed to read script file: %w", err)

@@ -451,20 +451,20 @@ hype build myapp.lua --target darwin</code></pre>
                 </div>
 
                 <div class="api-group">
-                    <h3>Eval Command</h3>
+                    <h3>Run Command</h3>
                     <p>Run Lua scripts directly for development and testing.</p>
                     <div class="code-block">
-                        <pre><code>hype eval script.lua [-- args...]</code></pre>
+                        <pre><code>hype run script.lua [-- args...]</code></pre>
                     </div>
                     
                     <div class="example-card">
-                        <h4>Eval Examples</h4>
+                        <h4>Run Examples</h4>
                         <div class="code-block">
                             <pre><code># Run script directly
-hype eval server.lua
+hype run server.lua
 
 # Pass command line arguments
-hype eval myapp.lua -- --port 3000 --debug</code></pre>
+hype run myapp.lua -- --port 3000 --debug</code></pre>
                         </div>
                     </div>
                 </div>
@@ -488,7 +488,7 @@ for i = 1, #arg do
     print("Arg " .. i .. ":", arg[i])
 end
 
--- Usage: hype eval args.lua -- hello world 123
+-- Usage: hype run args.lua -- hello world 123
 -- Output:
 -- Script name: args.lua
 -- Number of arguments: 3

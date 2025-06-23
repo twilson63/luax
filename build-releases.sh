@@ -6,9 +6,13 @@
 set -e
 
 # Configuration
-VERSION="v1.0.0"
+VERSION=$(git describe --tags --always)
+# If we're exactly on a tag, use just the tag
+if git describe --exact-match --tags HEAD 2>/dev/null; then
+    VERSION=$(git describe --exact-match --tags HEAD)
+fi
 BUILD_DIR="dist"
-BINARY_NAME="luax"
+BINARY_NAME="hype"
 
 # Colors
 GREEN='\033[0;32m'
@@ -50,7 +54,17 @@ build_binary() {
     
     log_info "Building for $goos/$goarch..."
     
-    env GOOS="$goos" GOARCH="$goarch" go build -ldflags "-s -w" -o "$output_name" .
+    # Get build information
+    local commit=$(git rev-parse --short HEAD)
+    local date=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+    
+    # Build with version information
+    env GOOS="$goos" GOARCH="$goarch" go build -ldflags "
+        -s -w 
+        -X main.version=$VERSION 
+        -X main.commit=$commit 
+        -X main.date=$date
+    " -o "$output_name" .
     
     if [[ $? -eq 0 ]]; then
         log_success "Built $output_name"
