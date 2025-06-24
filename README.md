@@ -74,33 +74,33 @@ app:Run()' > hello.lua
 ./hype build script.lua -t darwin
 
 # Run a Lua script directly (development/testing)
-./hype eval script.lua
+./hype run script.lua
 
 # Pass arguments to Lua scripts
-./hype eval server.lua -- --port 8080 --dir ./public
+./hype run server.lua -- --port 8080 --dir ./public
 ```
 
 ## Development Mode
 
-For faster development and testing, Hype provides an `eval` command that runs Lua scripts directly without building executables:
+For faster development and testing, Hype provides a `run` command that runs Lua scripts directly without building executables:
 
 ```bash
 # Run script directly (great for development)
-./hype eval myapp.lua
+./hype run myapp.lua
 
 # All Hype APIs work the same way
-./hype eval examples/showcase.lua
+./hype run examples/showcase.lua
 ```
 
-**Benefits of eval mode:**
+**Benefits of run mode:**
 - ⚡ **Instant execution** - no build step required
 - 🔄 **Rapid iteration** - test changes immediately  
 - 🐛 **Easy debugging** - direct error output
 - 📦 **Same APIs** - identical behavior to built executables
 - 🛠️ **Development workflow** - perfect for prototyping
 
-**When to use eval vs build:**
-- Use `eval` during development and testing
+**When to use run vs build:**
+- Use `run` during development and testing
 - Use `build` for production deployments and distribution
 
 ## Command Line Arguments
@@ -130,8 +130,8 @@ print("Server will run on port", port, "serving", directory)
 
 **Usage:**
 ```bash
-# In eval mode (use -- to separate script args)
-./hype eval server.lua -- --port 3000 --dir /var/www
+# In run mode (use -- to separate script args)
+./hype run server.lua -- --port 3000 --dir /var/www
 
 # In built executables (direct arguments)
 ./server --port 3000 --dir /var/www
@@ -398,10 +398,10 @@ end
 **Usage:**
 ```bash
 # Default settings (port 8080, ./public directory)
-./hype eval server.lua
+./hype run server.lua
 
 # Custom port and directory
-./hype eval server.lua -- --port 3000 --dir /var/www
+./hype run server.lua -- --port 3000 --dir /var/www
 ```
 
 ### Plain Text Browser
@@ -534,13 +534,13 @@ end
 # Build the hype tool
 go build -o hype .
 
-# Test with example scripts using eval (faster for development)
-./hype eval examples/hello.lua
-./hype eval examples/kv-test.lua
-./hype eval examples/browser.lua
-./hype eval examples/webserver.lua
-./hype eval examples/static-server.lua -- --port 3000
-./hype eval examples/showcase.lua
+# Test with example scripts using run (faster for development)
+./hype run examples/hello.lua
+./hype run examples/kv-test.lua
+./hype run examples/browser.lua
+./hype run examples/webserver.lua
+./hype run examples/static-server.lua -- --port 3000
+./hype run examples/showcase.lua
 
 # Or build standalone executables
 ./hype build examples/hello.lua -o hello && ./hello
