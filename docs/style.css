@@ -1083,6 +1083,35 @@ a:hover {
     margin-right: 1rem;
 }
 
+/* Example lists */
+.example-list {
+    list-style: none;
+    margin: 1rem 0 0 0;
+    padding: 0;
+}
+
+.example-list li {
+    margin-bottom: 0.75rem;
+    padding-left: 0;
+}
+
+.example-list li::before {
+    content: '▶ ';
+    color: var(--cyber-accent);
+    margin-right: 0.5rem;
+}
+
+.example-list a {
+    color: var(--cyber-text-light);
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+.example-list a:hover {
+    color: var(--cyber-accent);
+    text-shadow: var(--cyber-glow);
+}
+
 /* Mobile adjustments for new sections */
 @media (max-width: 768px) {
     .howto-steps {
@@ -1184,9 +1213,12 @@ a:hover {
 /* Example showcase grid */
 .example-showcase {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(600px, 1fr));
     gap: 2rem;
     margin-bottom: 3rem;
+    max-width: 1200px;
+    margin-left: auto;
+    margin-right: auto;
 }
 
 /* Example cards for showcase */
