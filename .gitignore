@@ -1,0 +1,40 @@
+# Build artifacts
+hype
+hype-*
+!hype-*/.gitkeep
+
+# Test and debug files
+debug-*.lua
+test-*.lua
+simple-*.lua
+*-test.lua
+
+# Database files
+*.db
+
+# Temporary files
+*.tmp
+*.temp
+
+# Go build cache
+*.exe~
+
+# Release artifacts
+releases/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# macOS
+.DS_Store
+
+# Linux
+*~
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
