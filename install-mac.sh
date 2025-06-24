@@ -44,6 +44,19 @@ mv "/tmp/hype" "$INSTALL_DIR/hype"
 
 echo -e "${GREEN}✅ Hype installed successfully!${NC}"
 
+# Verify installation by checking version
+echo -e "\n${BLUE}🔍 Verifying installation...${NC}"
+if command -v hype >/dev/null 2>&1; then
+    INSTALLED_VERSION=$(hype version 2>/dev/null | head -n1 | awk '{print $2}' || echo "unknown")
+    if [[ "$INSTALLED_VERSION" == "$VERSION" ]] || [[ "$INSTALLED_VERSION" == "${VERSION#v}" ]]; then
+        echo -e "${GREEN}✅ Version verification successful: $INSTALLED_VERSION${NC}"
+    else
+        echo -e "${YELLOW}⚠️  Version mismatch: expected $VERSION, got $INSTALLED_VERSION${NC}"
+    fi
+else
+    echo -e "${YELLOW}⚠️  Hype not found in PATH${NC}"
+fi
+
 # Check if ~/.local/bin is in PATH
 if [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
     echo -e "\n${YELLOW}⚠️  Adding ~/.local/bin to your PATH...${NC}"
