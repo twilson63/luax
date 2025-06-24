@@ -7,9 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.1] - 2024-06-24
+
+### Fixed
+- HTTP signatures build error when creating standalone executables
+- HTML injection issue in examples page that rendered code as HTML
+- Examples page layout inconsistencies with homepage and API pages
+
+### Added
+- Complete HTTP signatures implementation in runtime template for standalone executables
+- Professional code viewer using Prism.js for syntax highlighting
+- Direct links to GitHub examples repository in documentation
+
+### Changed
+- Refactored examples page to showcase actual GitHub examples instead of embedded code
+- Improved documentation website styling consistency across all pages
+- Enhanced mobile responsiveness and touch-friendly navigation
+
+## [1.3.0] - 2024-06-24
+
 ### Added
 - Release automation and checklist process
-- Comprehensive mobile-friendly documentation website
+- Comprehensive mobile-friendly documentation website  
 - Version verification in install scripts
 
 ### Changed
