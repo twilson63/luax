@@ -57,6 +57,18 @@
                         <a href="#db-examples" class="btn btn-secondary">View Examples</a>
                     </div>
                     <div class="feature-card">
+                        <div class="feature-icon">🔐</div>
+                        <h3>Cryptography</h3>
+                        <p>Digital signatures, key management, and JWK operations</p>
+                        <a href="#crypto-examples" class="btn btn-secondary">View Examples</a>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">🔏</div>
+                        <h3>HTTP Signatures</h3>
+                        <p>Secure API communication and message authentication</p>
+                        <a href="#httpsig-examples" class="btn btn-secondary">View Examples</a>
+                    </div>
+                    <div class="feature-card">
                         <div class="feature-icon">⚡</div>
                         <h3>Full-Stack Apps</h3>
                         <p>Complete applications combining all features</p>
@@ -945,6 +957,532 @@ print("Database closed. Goodbye!")</code></pre>
                                 <strong>Build & Run:</strong>
                                 <div class="code-block">
                                     <code>hype build user-manager.lua -o user-manager<br>./user-manager</code>
+                                    <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Crypto Examples -->
+        <section id="crypto-examples" class="examples-section">
+            <div class="container">
+                <h2>Cryptography Examples</h2>
+                <p>Professional-grade cryptography using JWK format with support for RSA, ECDSA, and Ed25519 algorithms.</p>
+                
+                <div class="example-showcase">
+                    <div class="showcase-item">
+                        <h3>🔐 Basic Cryptography Operations</h3>
+                        <p>Learn the fundamentals: key generation, digital signatures, and key management with various algorithms.</p>
+                        <div class="code-block">
+                            <pre><code>-- crypto-basic.lua - Basic cryptography examples with Hype
+local crypto = require('crypto')
+
+print("🔐 Hype Cryptography Examples")
+print("=============================")
+
+-- Example 1: Generate different types of keys
+print("\n1️⃣ Key Generation")
+print("-------------------")
+
+-- RSA keys
+local rsa_key = crypto.generate_jwk("RS256")
+print("✅ Generated RSA-256 key")
+print("   Key type:", rsa_key.kty)
+print("   Algorithm:", rsa_key.alg)
+
+-- ECDSA keys  
+local ecdsa_key = crypto.generate_jwk("ES256")
+print("✅ Generated ECDSA-256 key")
+print("   Key type:", ecdsa_key.kty)
+print("   Algorithm:", ecdsa_key.alg)
+
+-- Ed25519 keys
+local ed25519_key = crypto.generate_jwk("EdDSA")
+print("✅ Generated Ed25519 key")
+print("   Key type:", ed25519_key.kty)
+print("   Algorithm:", ed25519_key.alg)
+
+-- Example 2: Basic signing and verification
+print("\n2️⃣ Basic Signing & Verification")
+print("--------------------------------")
+
+local message = "Hello, secure world! 🌍"
+local signature = crypto.sign(rsa_key, message)
+
+if signature then
+    print("✅ Message signed successfully")
+    print("   Signature length:", #signature, "bytes")
+    
+    -- Extract public key for verification
+    local public_key = crypto.jwk_to_public(rsa_key)
+    local is_valid = crypto.verify(public_key, message, signature)
+    
+    if is_valid then
+        print("✅ Signature verified successfully")
+    else
+        print("❌ Signature verification failed")
+    end
+else
+    print("❌ Signing failed")
+end
+
+-- Example 3: JSON serialization
+print("\n3️⃣ Key Serialization")
+print("---------------------")
+
+local key_json = crypto.jwk_to_json(ecdsa_key)
+print("✅ Exported key to JSON")
+print("   JSON length:", #key_json, "characters")
+
+local imported_key = crypto.jwk_from_json(key_json)
+print("✅ Imported key from JSON")
+print("   Algorithm matches:", imported_key.alg == ecdsa_key.alg)
+
+-- Example 4: Key thumbprints
+print("\n4️⃣ Key Identification")
+print("----------------------")
+
+local thumbprint = crypto.jwk_thumbprint(ed25519_key)
+print("✅ Generated key thumbprint")
+print("   Thumbprint:", thumbprint)
+print("   Can be used as unique key identifier")
+
+-- Example 5: Different algorithms comparison
+print("\n5️⃣ Algorithm Comparison")
+print("-----------------------")
+
+local test_data = "Performance test data 📊"
+
+local algorithms = {"RS256", "ES256", "EdDSA"}
+for _, alg in ipairs(algorithms) do
+    local key = crypto.generate_jwk(alg)
+    local start_time = os.clock()
+    
+    -- Sign 100 times
+    for i = 1, 100 do
+        crypto.sign(key, test_data .. i)
+    end
+    
+    local elapsed = os.clock() - start_time
+    print("✅", alg, "- 100 signatures in", string.format("%.3f", elapsed), "seconds")
+end
+
+print("\n🎉 Cryptography examples completed!")
+print("\n💡 Use Cases:")
+print("• Digital signatures for API authentication")
+print("• Document integrity verification") 
+print("• Secure token generation")
+print("• Certificate and key management")</code></pre>
+                            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                        </div>
+                        <div class="example-actions">
+                            <div class="build-example">
+                                <strong>Build & Run:</strong>
+                                <div class="code-block">
+                                    <code>hype build crypto-basic.lua -o crypto-demo<br>./crypto-demo</code>
+                                    <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- HTTP Signatures Examples -->
+        <section id="httpsig-examples" class="examples-section">
+            <div class="container">
+                <h2>HTTP Signatures Examples</h2>
+                <p>Secure API communication with RFC-compliant HTTP message signing and verification.</p>
+                
+                <div class="example-showcase">
+                    <div class="showcase-item">
+                        <h3>🔏 Basic HTTP Signatures</h3>
+                        <p>Learn HTTP request/response signing, verification, and digest operations for secure API communication.</p>
+                        <div class="code-block">
+                            <pre><code>-- httpsig-basic.lua - Basic HTTP signatures examples
+local crypto = require('crypto')
+local httpsig = require('httpsig')
+
+print("🔏 HTTP Signatures Examples")
+print("============================")
+
+-- Generate keys for examples
+local server_key = crypto.generate_jwk("RS256")
+local client_key = crypto.generate_jwk("ES256")
+
+print("✅ Generated RSA server key and ECDSA client key")
+
+-- Example 1: Sign an HTTP Request
+print("\n1️⃣ HTTP Request Signing")
+print("------------------------")
+
+local request = {
+    type = "request",
+    method = "POST",
+    path = "/api/users",
+    headers = {
+        ["Host"] = "api.example.com",
+        ["Content-Type"] = "application/json",
+        ["User-Agent"] = "MyApp/1.0"
+    },
+    body = '{"name": "Alice", "email": "alice@example.com"}'
+}
+
+local sign_options = {
+    jwk = client_key,
+    key_id = "client-key-2024",
+    headers = {"(request-target)", "host", "content-type", "digest", "date"}
+}
+
+local signed_request = httpsig.sign(request, sign_options)
+if signed_request then
+    print("✅ Request signed successfully")
+    print("   Added headers:")
+    for key, value in pairs(signed_request.headers) do
+        if key == "signature" then
+            print("   " .. key .. ": " .. value:sub(1, 50) .. "...")
+        elseif key == "digest" or key == "date" then
+            print("   " .. key .. ": " .. value)
+        end
+    end
+else
+    print("❌ Request signing failed")
+end
+
+-- Example 2: Verify the HTTP Request
+print("\n2️⃣ HTTP Request Verification")
+print("-----------------------------")
+
+-- Create verification message (simulate received request)
+local verify_request = {
+    type = "request",
+    method = "POST",
+    path = "/api/users",
+    headers = signed_request.headers,
+    body = '{"name": "Alice", "email": "alice@example.com"}'
+}
+
+-- Copy original headers
+for k, v in pairs(request.headers) do
+    verify_request.headers[k] = v
+end
+
+local verify_options = {
+    jwk = crypto.jwk_to_public(client_key),
+    required_headers = {"host", "content-type"},
+    max_age = 300  -- 5 minutes
+}
+
+local verification = httpsig.verify(verify_request, verify_options)
+if verification and verification.valid then
+    print("✅ Request verification successful")
+    print("   Key ID:", verification.key_id)
+    print("   Algorithm:", verification.algorithm)
+else
+    print("❌ Request verification failed")
+    if verification then
+        print("   Reason:", verification.reason)
+    end
+end
+
+-- Example 3: Sign an HTTP Response
+print("\n3️⃣ HTTP Response Signing")
+print("-------------------------")
+
+local response = {
+    type = "response",
+    status = 201,
+    headers = {
+        ["Content-Type"] = "application/json",
+        ["Server"] = "MyAPI/1.0",
+        ["Location"] = "/api/users/123"
+    },
+    body = '{"id": 123, "name": "Alice", "created": "2024-01-15T10:30:00Z"}'
+}
+
+local response_sign_options = {
+    jwk = server_key,
+    key_id = "server-rsa-2024",
+    headers = {"(status)", "content-type", "location", "digest", "date"}
+}
+
+local signed_response = httpsig.sign(response, response_sign_options)
+if signed_response then
+    print("✅ Response signed successfully")
+    print("   Status:", response.status)
+    print("   Signature length:", #signed_response.headers.signature)
+else
+    print("❌ Response signing failed")
+end
+
+-- Example 4: Verify HTTP Response
+print("\n4️⃣ HTTP Response Verification")
+print("------------------------------")
+
+local verify_response = {
+    type = "response",
+    status = 201,
+    headers = signed_response.headers,
+    body = '{"id": 123, "name": "Alice", "created": "2024-01-15T10:30:00Z"}'
+}
+
+for k, v in pairs(response.headers) do
+    verify_response.headers[k] = v
+end
+
+local response_verify_options = {
+    jwk = crypto.jwk_to_public(server_key),
+    required_headers = {"content-type", "location"}
+}
+
+local response_verification = httpsig.verify(verify_response, response_verify_options)
+if response_verification and response_verification.valid then
+    print("✅ Response verification successful")
+    print("   Server key ID:", response_verification.key_id)
+else
+    print("❌ Response verification failed")
+end
+
+-- Example 5: Security Demonstration
+print("\n5️⃣ Security Demonstration")
+print("--------------------------")
+
+-- Try to tamper with signed request
+local tampered_request = {
+    type = "request",
+    method = "POST",
+    path = "/api/users",
+    headers = signed_request.headers,
+    body = '{"name": "Hacker", "email": "hacker@evil.com"}'  -- Tampered!
+}
+
+for k, v in pairs(request.headers) do
+    tampered_request.headers[k] = v
+end
+
+local tampered_verification = httpsig.verify(tampered_request, verify_options)
+if tampered_verification and not tampered_verification.valid then
+    print("✅ Tampered request correctly rejected")
+    print("   Reason:", tampered_verification.reason)
+else
+    print("❌ Security failure - tampered request accepted!")
+end
+
+print("\n🎉 HTTP Signatures examples completed!")
+print("\n💡 Use Cases:")
+print("• API authentication and authorization")
+print("• Webhook payload verification")
+print("• Microservice communication security")
+print("• Financial transaction signing")
+print("• Document integrity protection")</code></pre>
+                            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                        </div>
+                        <div class="example-actions">
+                            <div class="build-example">
+                                <strong>Build & Run:</strong>
+                                <div class="code-block">
+                                    <code>hype build httpsig-basic.lua -o httpsig-demo<br>./httpsig-demo</code>
+                                    <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="showcase-item">
+                        <h3>🚀 Advanced HTTP Signatures</h3>
+                        <p>Production-ready patterns: webhook systems, API gateways, multi-key scenarios, and performance optimization.</p>
+                        <div class="code-block">
+                            <pre><code>-- httpsig-advanced.lua - Advanced HTTP signatures examples
+local crypto = require('crypto')
+local httpsig = require('httpsig')
+
+print("🚀 Advanced HTTP Signatures")
+print("============================")
+
+-- Example 1: Webhook Signing System
+print("\n1️⃣ Webhook Signing System")
+print("--------------------------")
+
+local webhook_key = crypto.generate_jwk("ES256")
+
+function sign_webhook(payload, event_type, webhook_url)
+    local webhook_request = {
+        type = "request",
+        method = "POST",
+        path = "/webhook",
+        headers = {
+            ["Host"] = webhook_url:match("https?://([^/]+)") or "example.com",
+            ["Content-Type"] = "application/json",
+            ["X-Event-Type"] = event_type,
+            ["X-Webhook-ID"] = "wh_" .. os.time()
+        },
+        body = payload
+    }
+    
+    local sign_options = {
+        jwk = webhook_key,
+        key_id = "webhook-2024",
+        headers = {"(request-target)", "host", "x-event-type", "x-webhook-id", "digest", "date"},
+        created = os.time(),
+        expires = os.time() + 300  -- 5 minutes
+    }
+    
+    return httpsig.sign(webhook_request, sign_options)
+end
+
+function verify_webhook(request_data, sender_key_id)
+    local verify_options = {
+        jwk = crypto.jwk_to_public(webhook_key),  -- In production: lookup by sender_key_id
+        required_headers = {"host", "x-event-type", "digest"},
+        max_age = 300
+    }
+    
+    return httpsig.verify(request_data, verify_options)
+end
+
+-- Test webhook system
+local webhook_payload = '{"event": "user.created", "user_id": 12345, "timestamp": "2024-01-15T10:30:00Z"}'
+local signed_webhook = sign_webhook(webhook_payload, "user.created", "https://client.example.com/webhook")
+
+if signed_webhook then
+    print("✅ Webhook signed successfully")
+    print("   Event type: user.created")
+    print("   Expires in: 5 minutes")
+    
+    -- Simulate webhook reception and verification
+    local webhook_verification = verify_webhook({
+        type = "request",
+        method = "POST",
+        path = "/webhook",
+        headers = signed_webhook.headers,
+        body = webhook_payload
+    }, "webhook-2024")
+    
+    if webhook_verification and webhook_verification.valid then
+        print("✅ Webhook verification successful")
+    else
+        print("❌ Webhook verification failed")
+    end
+else
+    print("❌ Webhook signing failed")
+end
+
+-- Example 2: API Gateway with Multiple Algorithms
+print("\n2️⃣ API Gateway Authentication")
+print("------------------------------")
+
+local key_store = {
+    ["user-auth-2024"] = crypto.generate_jwk("RS256"),
+    ["admin-2024"] = crypto.generate_jwk("EdDSA"),
+    ["system-2024"] = crypto.generate_jwk("ES256")
+}
+
+function create_api_request(method, endpoint, payload, auth_level)
+    local key_mapping = {
+        ["user"] = "user-auth-2024",
+        ["admin"] = "admin-2024",
+        ["system"] = "system-2024"
+    }
+    
+    local key_id = key_mapping[auth_level] or "user-auth-2024"
+    
+    local api_request = {
+        type = "request",
+        method = method,
+        path = endpoint,
+        headers = {
+            ["Host"] = "api.example.com",
+            ["Content-Type"] = "application/json",
+            ["Authorization"] = "Bearer token123",
+            ["X-Auth-Level"] = auth_level
+        },
+        body = payload or ""
+    }
+    
+    local headers_to_sign = {"(request-target)", "host", "authorization", "x-auth-level", "date"}
+    if payload and payload ~= "" then
+        table.insert(headers_to_sign, "digest")
+    end
+    
+    local sign_options = {
+        jwk = key_store[key_id],
+        key_id = key_id,
+        headers = headers_to_sign,
+        created = os.time()
+    }
+    
+    return httpsig.sign(api_request, sign_options)
+end
+
+-- Test different auth levels
+local auth_levels = {"user", "admin", "system"}
+for _, level in ipairs(auth_levels) do
+    local api_request = create_api_request("GET", "/api/profile", nil, level)
+    if api_request then
+        local key_id = api_request.headers.signature:match('keyId="([^"]+)"')
+        print("✅ " .. level .. " request signed with " .. key_id)
+    end
+end
+
+-- Example 3: Performance Benchmarking
+print("\n3️⃣ Performance Benchmarking")
+print("----------------------------")
+
+function benchmark_algorithm(algorithm, iterations)
+    local key = crypto.generate_jwk(algorithm)
+    local test_request = {
+        type = "request",
+        method = "GET",
+        path = "/test",
+        headers = {["Host"] = "test.com"},
+        body = ""
+    }
+    
+    local sign_options = {
+        jwk = key,
+        key_id = "benchmark-key",
+        headers = {"(request-target)", "host", "date"}
+    }
+    
+    local start_time = os.clock()
+    
+    for i = 1, iterations do
+        httpsig.sign(test_request, sign_options)
+    end
+    
+    local elapsed = os.clock() - start_time
+    local ops_per_sec = iterations / elapsed
+    
+    return elapsed, ops_per_sec
+end
+
+local iterations = 100
+local algorithms = {"RS256", "ES256", "EdDSA"}
+
+print("Benchmarking " .. iterations .. " signatures per algorithm:")
+for _, alg in ipairs(algorithms) do
+    local elapsed, ops_per_sec = benchmark_algorithm(alg, iterations)
+    print("   " .. alg .. ": " .. string.format("%.0f", ops_per_sec) .. " ops/sec")
+end
+
+print("\n🎉 Advanced HTTP Signatures examples completed!")
+print("\n💡 Advanced Patterns:")
+print("• Multi-party signature chains")
+print("• Algorithm-specific key management")
+print("• Webhook security systems")
+print("• API gateway authentication")
+print("• Performance optimization strategies")</code></pre>
+                            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                        </div>
+                        <div class="example-actions">
+                            <div class="build-example">
+                                <strong>Build & Run:</strong>
+                                <div class="code-block">
+                                    <code>hype build httpsig-advanced.lua -o httpsig-advanced<br>./httpsig-advanced</code>
                                     <button class="copy-btn" onclick="copyCode(this)">Copy</button>
                                 </div>
                             </div>

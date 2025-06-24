@@ -55,6 +55,18 @@
                         <p>Embedded BoltDB database for persistent data storage</p>
                         <a href="#kv-api" class="btn btn-secondary">View API</a>
                     </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">🔐</div>
+                        <h3>Crypto Module</h3>
+                        <p>JWK-based cryptography with RSA, ECDSA, and Ed25519 support</p>
+                        <a href="#crypto-api" class="btn btn-secondary">View API</a>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">🔏</div>
+                        <h3>HTTP Signatures</h3>
+                        <p>RFC-compliant HTTP message signing and verification</p>
+                        <a href="#httpsig-api" class="btn btn-secondary">View API</a>
+                    </div>
                 </div>
             </div>
         </section>
@@ -512,6 +524,511 @@ if not success then
 end</code></pre>
                         </div>
                     </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Crypto API Section -->
+        <section id="crypto-api" class="api-section">
+            <div class="container">
+                <h2>Crypto Module</h2>
+                <p>Professional-grade cryptography using JSON Web Key (JWK) format with support for RSA, ECDSA, and Ed25519 algorithms.</p>
+                
+                <div class="api-group">
+                    <h3>Getting Started</h3>
+                    <div class="code-block">
+                        <pre><code>local crypto = require('crypto')</code></pre>
+                    </div>
+                    <p>The crypto module provides modern cryptographic operations using the industry-standard JWK format for key management.</p>
+                </div>
+
+                <div class="api-group">
+                    <h3>Key Generation</h3>
+                    <div class="code-block">
+                        <pre><code>local jwk = crypto.generate_jwk(algorithm)</code></pre>
+                    </div>
+                    
+                    <p><strong>Supported Algorithms:</strong></p>
+                    <ul class="api-list">
+                        <li><code>"RS256", "RS384", "RS512"</code> - RSA with SHA-256/384/512</li>
+                        <li><code>"ES256", "ES384", "ES512"</code> - ECDSA with SHA-256/384/512</li>
+                        <li><code>"EdDSA"</code> - Ed25519 (EdDSA)</li>
+                    </ul>
+                    
+                    <p><strong>Returns:</strong> JWK table with algorithm-specific fields</p>
+                    
+                    <div class="example-card">
+                        <h4>Example: Generate Different Key Types</h4>
+                        <div class="code-block">
+                            <pre><code>-- Generate RSA key
+local rsa_key = crypto.generate_jwk("RS256")
+print("RSA Key Type:", rsa_key.kty)  -- "RSA"
+
+-- Generate ECDSA key  
+local ecdsa_key = crypto.generate_jwk("ES256")
+print("ECDSA Key Type:", ecdsa_key.kty)  -- "EC"
+
+-- Generate Ed25519 key
+local ed25519_key = crypto.generate_jwk("EdDSA")
+print("Ed25519 Key Type:", ed25519_key.kty)  -- "OKP"</code></pre>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="api-group">
+                    <h3>Digital Signatures</h3>
+                    
+                    <h4>Signing</h4>
+                    <div class="code-block">
+                        <pre><code>local signature = crypto.sign(jwk, message)</code></pre>
+                    </div>
+                    <p><strong>Parameters:</strong></p>
+                    <ul class="api-list">
+                        <li><code>jwk</code> - Private JWK key (from generate_jwk)</li>
+                        <li><code>message</code> - String data to sign</li>
+                    </ul>
+                    <p><strong>Returns:</strong> Binary signature string or nil on error</p>
+                    
+                    <h4>Verification</h4>
+                    <div class="code-block">
+                        <pre><code>local is_valid = crypto.verify(public_jwk, message, signature)</code></pre>
+                    </div>
+                    <p><strong>Parameters:</strong></p>
+                    <ul class="api-list">
+                        <li><code>public_jwk</code> - Public JWK key (from jwk_to_public)</li>
+                        <li><code>message</code> - Original string data</li>
+                        <li><code>signature</code> - Binary signature to verify</li>
+                    </ul>
+                    <p><strong>Returns:</strong> Boolean validation result</p>
+                    
+                    <div class="example-card">
+                        <h4>Example: Sign and Verify</h4>
+                        <div class="code-block">
+                            <pre><code>local crypto = require('crypto')
+
+-- Generate key pair
+local private_key = crypto.generate_jwk("ES256")
+local public_key = crypto.jwk_to_public(private_key)
+
+-- Sign message
+local message = "Important document content"
+local signature = crypto.sign(private_key, message)
+
+if signature then
+    print("✅ Message signed successfully")
+    
+    -- Verify signature
+    local is_valid = crypto.verify(public_key, message, signature)
+    
+    if is_valid then
+        print("✅ Signature verified!")
+    else
+        print("❌ Invalid signature")
+    end
+else
+    print("❌ Signing failed")
+end</code></pre>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="api-group">
+                    <h3>Key Management</h3>
+                    
+                    <h4>Extract Public Key</h4>
+                    <div class="code-block">
+                        <pre><code>local public_jwk = crypto.jwk_to_public(private_jwk)</code></pre>
+                    </div>
+                    <p>Extracts the public key component from a private JWK for sharing and verification.</p>
+                    
+                    <h4>Key Thumbprint</h4>
+                    <div class="code-block">
+                        <pre><code>local thumbprint = crypto.jwk_thumbprint(jwk)</code></pre>
+                    </div>
+                    <p>Generates a unique SHA-256 thumbprint for key identification (RFC 7638).</p>
+                    
+                    <h4>JSON Serialization</h4>
+                    <div class="code-block">
+                        <pre><code>-- Export to JSON
+local json_string = crypto.jwk_to_json(jwk)
+
+-- Import from JSON
+local jwk = crypto.jwk_from_json(json_string)</code></pre>
+                    </div>
+                    <p>Convert JWK objects to/from JSON for storage and transmission.</p>
+                    
+                    <div class="example-card">
+                        <h4>Example: Key Management</h4>
+                        <div class="code-block">
+                            <pre><code>local crypto = require('crypto')
+
+-- Generate and manage keys
+local private_key = crypto.generate_jwk("RS256")
+local public_key = crypto.jwk_to_public(private_key)
+
+-- Get unique identifier
+local key_id = crypto.jwk_thumbprint(private_key)
+print("Key ID:", key_id)
+
+-- Serialize for storage
+local private_json = crypto.jwk_to_json(private_key)
+local public_json = crypto.jwk_to_json(public_key)
+
+-- Save public key for sharing
+local file = io.open("public_key.json", "w")
+file:write(public_json)
+file:close()
+
+-- Later: load and use
+local loaded_json = io.open("public_key.json"):read("*all")
+local loaded_key = crypto.jwk_from_json(loaded_json)
+print("Loaded key algorithm:", loaded_key.alg)</code></pre>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="api-group">
+                    <h3>Security Best Practices</h3>
+                    <ul class="api-list">
+                        <li><strong>Key Storage:</strong> Store private keys securely, never in plain text</li>
+                        <li><strong>Algorithm Choice:</strong> Use ES256 for most applications (fast + secure)</li>
+                        <li><strong>Key Rotation:</strong> Regularly rotate keys and use thumbprints for identification</li>
+                        <li><strong>Public Key Sharing:</strong> Only share public keys, never private keys</li>
+                        <li><strong>Message Integrity:</strong> Always verify signatures before trusting data</li>
+                    </ul>
+                </div>
+
+                <div class="api-group">
+                    <h3>Algorithm Comparison</h3>
+                    <div class="code-block">
+                        <pre><code>Performance Characteristics:
+┌─────────┬─────────────┬─────────────┬──────────────┐
+│ Algorithm│ Key Size    │ Signature   │ Performance  │
+├─────────┼─────────────┼─────────────┼──────────────┤
+│ RS256   │ 2048 bits   │ 256 bytes   │ Slower       │
+│ ES256   │ 256 bits    │ 64 bytes    │ Fast         │
+│ EdDSA   │ 256 bits    │ 64 bytes    │ Fastest      │
+└─────────┴─────────────┴─────────────┴──────────────┘</code></pre>
+                    </div>
+                    <p><strong>Recommendations:</strong></p>
+                    <ul class="api-list">
+                        <li><strong>ES256:</strong> Best general-purpose choice (NIST P-256)</li>
+                        <li><strong>EdDSA:</strong> Fastest performance, modern alternative</li>
+                        <li><strong>RS256:</strong> Use when RSA compatibility is required</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- HTTP Signatures API Section -->
+        <section id="httpsig-api" class="api-section">
+            <div class="container">
+                <h2>HTTP Signatures Module</h2>
+                <p>RFC-compliant HTTP message signing and verification for secure API communication, webhooks, and microservice authentication.</p>
+                
+                <div class="api-group">
+                    <h3>Getting Started</h3>
+                    <div class="code-block">
+                        <pre><code>local crypto = require('crypto')
+local httpsig = require('httpsig')</code></pre>
+                    </div>
+                    <p>HTTP Signatures provide message-level security by cryptographically signing HTTP requests and responses using the draft-cavage-http-signatures specification.</p>
+                </div>
+
+                <div class="api-group">
+                    <h3>HTTP Request Signing</h3>
+                    <div class="code-block">
+                        <pre><code>local signed_result = httpsig.sign(message, options)</code></pre>
+                    </div>
+                    
+                    <p><strong>Message Structure (Request):</strong></p>
+                    <div class="code-block">
+                        <pre><code>{
+    type = "request",
+    method = "POST",           -- HTTP method
+    path = "/api/users",       -- URL path
+    headers = {                -- HTTP headers
+        ["Host"] = "api.example.com",
+        ["Content-Type"] = "application/json"
+    },
+    body = '{"name": "Alice"}'  -- Message body
+}</code></pre>
+                    </div>
+                    
+                    <p><strong>Signing Options:</strong></p>
+                    <div class="code-block">
+                        <pre><code>{
+    jwk = private_key,                    -- Private JWK for signing
+    key_id = "my-key-2024",              -- Key identifier
+    headers = {"(request-target)", "host", "date", "digest"},  -- Headers to sign
+    created = os.time(),                 -- Optional: signature creation time
+    expires = os.time() + 300           -- Optional: signature expiration
+}</code></pre>
+                    </div>
+                    
+                    <p><strong>Returns:</strong> Table with signed headers or nil on error</p>
+                    
+                    <div class="example-card">
+                        <h4>Example: Sign HTTP Request</h4>
+                        <div class="code-block">
+                            <pre><code>local crypto = require('crypto')
+local httpsig = require('httpsig')
+
+-- Generate signing key
+local signing_key = crypto.generate_jwk("ES256")
+
+-- Create request to sign
+local request = {
+    type = "request",
+    method = "POST",
+    path = "/api/transfer", 
+    headers = {
+        ["Host"] = "bank-api.com",
+        ["Content-Type"] = "application/json"
+    },
+    body = '{"amount": 1000, "to": "account123"}'
+}
+
+-- Sign the request
+local signed = httpsig.sign(request, {
+    jwk = signing_key,
+    key_id = "client-2024",
+    headers = {"(request-target)", "host", "content-type", "digest", "date"}
+})
+
+if signed then
+    print("✅ Request signed successfully")
+    print("Signature:", signed.headers.signature:sub(1, 50) .. "...")
+    print("Digest:", signed.headers.digest)
+    print("Date:", signed.headers.date)
+else
+    print("❌ Signing failed")
+end</code></pre>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="api-group">
+                    <h3>HTTP Response Signing</h3>
+                    <p><strong>Message Structure (Response):</strong></p>
+                    <div class="code-block">
+                        <pre><code>{
+    type = "response",
+    status = 200,              -- HTTP status code
+    headers = {                -- HTTP headers
+        ["Content-Type"] = "application/json",
+        ["Server"] = "MyAPI/1.0"
+    },
+    body = '{"status": "success"}'  -- Response body
+}</code></pre>
+                    </div>
+                    
+                    <div class="example-card">
+                        <h4>Example: Sign HTTP Response</h4>
+                        <div class="code-block">
+                            <pre><code>-- Server response signing
+local server_key = crypto.generate_jwk("RS256")
+
+local response = {
+    type = "response",
+    status = 201,
+    headers = {
+        ["Content-Type"] = "application/json",
+        ["Location"] = "/api/users/123"
+    },
+    body = '{"id": 123, "created": true}'
+}
+
+local signed_response = httpsig.sign(response, {
+    jwk = server_key,
+    key_id = "server-rsa-key",
+    headers = {"(status)", "content-type", "location", "digest", "date"}
+})
+
+if signed_response then
+    print("✅ Response signed by server")
+    print("Status signed:", response.status)
+end</code></pre>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="api-group">
+                    <h3>Signature Verification</h3>
+                    <div class="code-block">
+                        <pre><code>local result = httpsig.verify(message, options)</code></pre>
+                    </div>
+                    
+                    <p><strong>Verification Options:</strong></p>
+                    <div class="code-block">
+                        <pre><code>{
+    jwk = public_key,                    -- Public JWK for verification
+    required_headers = {"host", "date"}, -- Headers that must be signed
+    max_age = 300                       -- Max signature age in seconds
+}</code></pre>
+                    </div>
+                    
+                    <p><strong>Returns:</strong> Verification result table</p>
+                    <div class="code-block">
+                        <pre><code>{
+    valid = true,                       -- Boolean: signature valid
+    key_id = "client-2024",            -- Key ID from signature
+    algorithm = "ecdsa-256",           -- Algorithm used
+    reason = "digest mismatch"         -- Error reason if invalid
+}</code></pre>
+                    </div>
+                    
+                    <div class="example-card">
+                        <h4>Example: Verify Signature</h4>
+                        <div class="code-block">
+                            <pre><code>-- Extract public key for verification
+local public_key = crypto.jwk_to_public(signing_key)
+
+-- Verify received message
+local verification = httpsig.verify(received_message, {
+    jwk = public_key,
+    required_headers = {"host", "content-type"},
+    max_age = 300  -- 5 minutes
+})
+
+if verification.valid then
+    print("✅ Signature verified!")
+    print("Signed by:", verification.key_id)
+    print("Algorithm:", verification.algorithm)
+    
+    -- Process trusted message
+    process_secure_request(received_message)
+else
+    print("❌ Invalid signature:", verification.reason)
+    -- Reject untrusted message
+    return_error("Signature verification failed")
+end</code></pre>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="api-group">
+                    <h3>Digest Operations</h3>
+                    <p>Message digests ensure content integrity and are automatically included when body content is present.</p>
+                    
+                    <h4>Create Digest</h4>
+                    <div class="code-block">
+                        <pre><code>local digest = httpsig.create_digest(content, algorithm)</code></pre>
+                    </div>
+                    <p><strong>Parameters:</strong></p>
+                    <ul class="api-list">
+                        <li><code>content</code> - String content to hash</li>
+                        <li><code>algorithm</code> - "sha256" or "sha512" (default: "sha256")</li>
+                    </ul>
+                    
+                    <h4>Verify Digest</h4>
+                    <div class="code-block">
+                        <pre><code>local is_valid = httpsig.verify_digest(content, digest_header)</code></pre>
+                    </div>
+                    
+                    <div class="example-card">
+                        <h4>Example: Manual Digest Operations</h4>
+                        <div class="code-block">
+                            <pre><code>local content = '{"sensitive": "data", "amount": 5000}'
+
+-- Create digest
+local digest = httpsig.create_digest(content, "sha256")
+print("Digest:", digest)  -- "SHA-256=base64encodedHash"
+
+-- Verify digest
+local is_valid = httpsig.verify_digest(content, digest)
+print("Valid:", is_valid)  -- true
+
+-- Test with tampered content
+local tampered = '{"sensitive": "HACKED", "amount": 5000}'
+local tampered_valid = httpsig.verify_digest(tampered, digest)
+print("Tampered valid:", tampered_valid)  -- false</code></pre>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="api-group">
+                    <h3>Security Features</h3>
+                    <ul class="api-list">
+                        <li><strong>Automatic Digest Creation:</strong> Body content automatically hashed and signed</li>
+                        <li><strong>Tampering Detection:</strong> Modified content fails verification</li>
+                        <li><strong>Replay Protection:</strong> Timestamps prevent replay attacks</li>
+                        <li><strong>Flexible Headers:</strong> Sign any combination of HTTP headers</li>
+                        <li><strong>Multiple Algorithms:</strong> Support for RSA, ECDSA, and Ed25519</li>
+                        <li><strong>Key Identification:</strong> Key IDs enable multi-key scenarios</li>
+                    </ul>
+                </div>
+
+                <div class="api-group">
+                    <h3>Common Use Cases</h3>
+                    
+                    <h4>Webhook Security</h4>
+                    <div class="code-block">
+                        <pre><code>-- Sign webhook payload
+local webhook_signature = httpsig.sign({
+    type = "request",
+    method = "POST",
+    path = "/webhook",
+    headers = {
+        ["Host"] = "client.example.com",
+        ["X-Event-Type"] = "user.created"
+    },
+    body = '{"user_id": 123, "event": "created"}'
+}, {
+    jwk = webhook_signing_key,
+    key_id = "webhook-2024"
+})</code></pre>
+                    </div>
+                    
+                    <h4>API Authentication</h4>
+                    <div class="code-block">
+                        <pre><code>-- Client signs API request
+local api_request = httpsig.sign({
+    type = "request", 
+    method = "GET",
+    path = "/api/user/profile",
+    headers = {
+        ["Host"] = "api.service.com",
+        ["Authorization"] = "Bearer " .. access_token
+    }
+}, {
+    jwk = client_key,
+    key_id = "client-app-2024",
+    headers = {"(request-target)", "host", "authorization", "date"}
+})</code></pre>
+                    </div>
+                    
+                    <h4>Microservice Communication</h4>
+                    <div class="code-block">
+                        <pre><code>-- Service-to-service authentication
+local service_request = httpsig.sign({
+    type = "request",
+    method = "POST", 
+    path = "/internal/process",
+    headers = {
+        ["Host"] = "worker-service",
+        ["X-Service-ID"] = "gateway-v1"
+    },
+    body = process_data
+}, {
+    jwk = service_key,
+    key_id = "gateway-service",
+    created = os.time(),
+    expires = os.time() + 60  -- 1 minute expiry
+})</code></pre>
+                    </div>
+                </div>
+
+                <div class="api-group">
+                    <h3>Best Practices</h3>
+                    <ul class="api-list">
+                        <li><strong>Always Sign Critical Headers:</strong> Include host, date, and content-type</li>
+                        <li><strong>Use Digest for Body Content:</strong> Include "digest" header when signing requests with bodies</li>
+                        <li><strong>Set Reasonable Expiration:</strong> Use expires or max_age to prevent replay attacks</li>
+                        <li><strong>Validate Required Headers:</strong> Specify required_headers in verification</li>
+                        <li><strong>Key Management:</strong> Use unique key_id values and rotate keys regularly</li>
+                        <li><strong>Algorithm Selection:</strong> Use ES256 for most applications (fast + secure)</li>
+                    </ul>
                 </div>
             </div>
         </section>

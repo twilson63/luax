@@ -1,13 +1,20 @@
 package main
 
 import (
+	"crypto/sha256"
+	"crypto/sha512"
+	"encoding/base64"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 	"text/template"
+	"time"
+
+	"github.com/yuin/gopher-lua"
 )
 
 // Removed embed for now - we'll generate everything at build time
@@ -65,17 +72,26 @@ func generateRuntimeCode(tempDir string, config *BuildConfig) error {
 import (
 	"bytes"
 	"context"
+	"crypto"
+	"crypto/ecdsa"
+	"crypto/ed25519"
+	"crypto/elliptic"
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/sha256"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"math/big"
 	"os"
 	"sync"
+	"time"
 	"github.com/yuin/gopher-lua"
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 	"go.etcd.io/bbolt"
 	"io"
 	"net/http"
-	"time"
 )
 
 const luaScript = ` + "`" + `{{.ScriptContent}}` + "`" + `
@@ -106,6 +122,12 @@ func main() {
 
 	// Register TUI functions
 	registerTUIFunctions(L)
+
+	// Register Crypto module
+	registerCryptoModule(L)
+
+	// Register HTTP Signatures module
+	registerHTTPSigModule(L)
 
 	if err := L.DoString(luaScript); err != nil {
 		fmt.Fprintf(os.Stderr, "Error running Lua script: %v\n", err)
@@ -1363,6 +1385,831 @@ func kvCursorGC(L *lua.LState) int {
 	return 0
 }
 
+// JWK represents a JSON Web Key
+type JWK struct {
+	Kty string ` + "`json:\"kty\"`" + `           // Key Type
+	Alg string ` + "`json:\"alg,omitempty\"`" + ` // Algorithm
+	Use string ` + "`json:\"use,omitempty\"`" + ` // Public Key Use
+	Kid string ` + "`json:\"kid,omitempty\"`" + ` // Key ID
+	
+	// RSA keys
+	N string ` + "`json:\"n,omitempty\"`" + ` // Modulus
+	E string ` + "`json:\"e,omitempty\"`" + ` // Exponent
+	D string ` + "`json:\"d,omitempty\"`" + ` // Private Exponent
+	P string ` + "`json:\"p,omitempty\"`" + ` // First Prime Factor
+	Q string ` + "`json:\"q,omitempty\"`" + ` // Second Prime Factor
+	Dp string ` + "`json:\"dp,omitempty\"`" + ` // First Factor CRT Exponent
+	Dq string ` + "`json:\"dq,omitempty\"`" + ` // Second Factor CRT Exponent
+	Qi string ` + "`json:\"qi,omitempty\"`" + ` // First CRT Coefficient
+	
+	// ECDSA keys
+	Crv string ` + "`json:\"crv,omitempty\"`" + ` // Curve
+	X   string ` + "`json:\"x,omitempty\"`" + `   // X Coordinate
+	Y   string ` + "`json:\"y,omitempty\"`" + `   // Y Coordinate
+	
+	// EdDSA keys (same as ECDSA for Ed25519)
+}
+
+// registerCryptoModule adds crypto functionality to Lua
+func registerCryptoModule(L *lua.LState) {
+	L.PreloadModule("crypto", func(L *lua.LState) int {
+		cryptoModule := L.NewTable()
+		
+		L.SetField(cryptoModule, "generate_jwk", L.NewFunction(cryptoGenerateJWK))
+		L.SetField(cryptoModule, "sign", L.NewFunction(cryptoSign))
+		L.SetField(cryptoModule, "verify", L.NewFunction(cryptoVerify))
+		L.SetField(cryptoModule, "jwk_to_public", L.NewFunction(cryptoJWKToPublic))
+		L.SetField(cryptoModule, "jwk_thumbprint", L.NewFunction(cryptoJWKThumbprint))
+		L.SetField(cryptoModule, "jwk_to_json", L.NewFunction(cryptoJWKToJSON))
+		L.SetField(cryptoModule, "jwk_from_json", L.NewFunction(cryptoJWKFromJSON))
+		
+		L.Push(cryptoModule)
+		return 1
+	})
+}
+
+// cryptoGenerateJWK generates a new JWK keypair
+func cryptoGenerateJWK(L *lua.LState) int {
+	algorithm := L.ToString(1)
+	if algorithm == "" {
+		algorithm = "RS256" // default
+	}
+	
+	var jwk *JWK
+	var err error
+	
+	switch algorithm {
+	case "RS256", "RS384", "RS512":
+		jwk, err = generateRSAJWK(algorithm)
+	case "ES256", "ES384", "ES512":
+		jwk, err = generateECDSAJWK(algorithm)
+	case "EdDSA":
+		jwk, err = generateEd25519JWK()
+	default:
+		L.Push(lua.LNil)
+		L.Push(lua.LString("unsupported algorithm: " + algorithm))
+		return 2
+	}
+	
+	if err != nil {
+		L.Push(lua.LNil)
+		L.Push(lua.LString("failed to generate key: " + err.Error()))
+		return 2
+	}
+	
+	// Convert JWK to Lua table
+	jwkTable := jwkToLuaTable(L, jwk)
+	L.Push(jwkTable)
+	return 1
+}
+
+// generateRSAJWK creates an RSA JWK
+func generateRSAJWK(algorithm string) (*JWK, error) {
+	keySize := 2048
+	if algorithm == "RS384" || algorithm == "RS512" {
+		keySize = 3072
+	}
+	
+	privateKey, err := rsa.GenerateKey(rand.Reader, keySize)
+	if err != nil {
+		return nil, err
+	}
+	
+	jwk := &JWK{
+		Kty: "RSA",
+		Alg: algorithm,
+		Use: "sig",
+		Kid: fmt.Sprintf("%d", time.Now().Unix()),
+		N:   base64.RawURLEncoding.EncodeToString(privateKey.N.Bytes()),
+		E:   base64.RawURLEncoding.EncodeToString(big.NewInt(int64(privateKey.E)).Bytes()),
+		D:   base64.RawURLEncoding.EncodeToString(privateKey.D.Bytes()),
+		P:   base64.RawURLEncoding.EncodeToString(privateKey.Primes[0].Bytes()),
+		Q:   base64.RawURLEncoding.EncodeToString(privateKey.Primes[1].Bytes()),
+	}
+	
+	// Calculate CRT values
+	dp := new(big.Int).Mod(privateKey.D, new(big.Int).Sub(privateKey.Primes[0], big.NewInt(1)))
+	dq := new(big.Int).Mod(privateKey.D, new(big.Int).Sub(privateKey.Primes[1], big.NewInt(1)))
+	qi := new(big.Int).ModInverse(privateKey.Primes[1], privateKey.Primes[0])
+	
+	jwk.Dp = base64.RawURLEncoding.EncodeToString(dp.Bytes())
+	jwk.Dq = base64.RawURLEncoding.EncodeToString(dq.Bytes())
+	jwk.Qi = base64.RawURLEncoding.EncodeToString(qi.Bytes())
+	
+	return jwk, nil
+}
+
+// generateECDSAJWK creates an ECDSA JWK
+func generateECDSAJWK(algorithm string) (*JWK, error) {
+	var curve elliptic.Curve
+	var crvName string
+	
+	switch algorithm {
+	case "ES256":
+		curve = elliptic.P256()
+		crvName = "P-256"
+	case "ES384":
+		curve = elliptic.P384()
+		crvName = "P-384"
+	case "ES512":
+		curve = elliptic.P521()
+		crvName = "P-521"
+	default:
+		return nil, fmt.Errorf("unsupported ECDSA algorithm: %s", algorithm)
+	}
+	
+	privateKey, err := ecdsa.GenerateKey(curve, rand.Reader)
+	if err != nil {
+		return nil, err
+	}
+	
+	// Get curve size for padding
+	keySize := (curve.Params().BitSize + 7) / 8
+	
+	xBytes := privateKey.X.Bytes()
+	yBytes := privateKey.Y.Bytes()
+	dBytes := privateKey.D.Bytes()
+	
+	// Pad to correct length
+	if len(xBytes) < keySize {
+		padded := make([]byte, keySize)
+		copy(padded[keySize-len(xBytes):], xBytes)
+		xBytes = padded
+	}
+	if len(yBytes) < keySize {
+		padded := make([]byte, keySize)
+		copy(padded[keySize-len(yBytes):], yBytes)
+		yBytes = padded
+	}
+	if len(dBytes) < keySize {
+		padded := make([]byte, keySize)
+		copy(padded[keySize-len(dBytes):], dBytes)
+		dBytes = padded
+	}
+	
+	jwk := &JWK{
+		Kty: "EC",
+		Alg: algorithm,
+		Use: "sig",
+		Kid: fmt.Sprintf("%d", time.Now().Unix()),
+		Crv: crvName,
+		X:   base64.RawURLEncoding.EncodeToString(xBytes),
+		Y:   base64.RawURLEncoding.EncodeToString(yBytes),
+		D:   base64.RawURLEncoding.EncodeToString(dBytes),
+	}
+	
+	return jwk, nil
+}
+
+// generateEd25519JWK creates an Ed25519 JWK
+func generateEd25519JWK() (*JWK, error) {
+	publicKey, privateKey, err := ed25519.GenerateKey(rand.Reader)
+	if err != nil {
+		return nil, err
+	}
+	
+	jwk := &JWK{
+		Kty: "OKP",
+		Alg: "EdDSA",
+		Use: "sig",
+		Kid: fmt.Sprintf("%d", time.Now().Unix()),
+		Crv: "Ed25519",
+		X:   base64.RawURLEncoding.EncodeToString(publicKey),
+		D:   base64.RawURLEncoding.EncodeToString(privateKey[:32]), // Ed25519 private key is 32 bytes
+	}
+	
+	return jwk, nil
+}
+
+// cryptoSign signs data with a JWK
+func cryptoSign(L *lua.LState) int {
+	jwkTable := L.ToTable(1)
+	data := L.ToString(2)
+	
+	if jwkTable == nil || data == "" {
+		L.Push(lua.LNil)
+		L.Push(lua.LString("missing jwk or data"))
+		return 2
+	}
+	
+	jwk, err := luaTableToJWK(jwkTable)
+	if err != nil {
+		L.Push(lua.LNil)
+		L.Push(lua.LString("invalid jwk: " + err.Error()))
+		return 2
+	}
+	
+	signature, err := signWithJWK(jwk, []byte(data))
+	if err != nil {
+		L.Push(lua.LNil)
+		L.Push(lua.LString("signing failed: " + err.Error()))
+		return 2
+	}
+	
+	L.Push(lua.LString(base64.RawURLEncoding.EncodeToString(signature)))
+	return 1
+}
+
+// cryptoVerify verifies a signature with a JWK
+func cryptoVerify(L *lua.LState) int {
+	jwkTable := L.ToTable(1)
+	data := L.ToString(2)
+	signatureB64 := L.ToString(3)
+	
+	if jwkTable == nil || data == "" || signatureB64 == "" {
+		L.Push(lua.LBool(false))
+		L.Push(lua.LString("missing jwk, data, or signature"))
+		return 2
+	}
+	
+	jwk, err := luaTableToJWK(jwkTable)
+	if err != nil {
+		L.Push(lua.LBool(false))
+		L.Push(lua.LString("invalid jwk: " + err.Error()))
+		return 2
+	}
+	
+	signature, err := base64.RawURLEncoding.DecodeString(signatureB64)
+	if err != nil {
+		L.Push(lua.LBool(false))
+		L.Push(lua.LString("invalid signature encoding: " + err.Error()))
+		return 2
+	}
+	
+	valid, err := verifyWithJWK(jwk, []byte(data), signature)
+	if err != nil {
+		L.Push(lua.LBool(false))
+		L.Push(lua.LString("verification failed: " + err.Error()))
+		return 2
+	}
+	
+	L.Push(lua.LBool(valid))
+	return 1
+}
+
+// signWithJWK signs data using a JWK
+func signWithJWK(jwk *JWK, data []byte) ([]byte, error) {
+	switch jwk.Kty {
+	case "RSA":
+		return signRSA(jwk, data)
+	case "EC":
+		return signECDSA(jwk, data)
+	case "OKP":
+		if jwk.Crv == "Ed25519" {
+			return signEd25519(jwk, data)
+		}
+		return nil, fmt.Errorf("unsupported OKP curve: %s", jwk.Crv)
+	default:
+		return nil, fmt.Errorf("unsupported key type: %s", jwk.Kty)
+	}
+}
+
+// verifyWithJWK verifies a signature using a JWK
+func verifyWithJWK(jwk *JWK, data []byte, signature []byte) (bool, error) {
+	switch jwk.Kty {
+	case "RSA":
+		return verifyRSA(jwk, data, signature)
+	case "EC":
+		return verifyECDSA(jwk, data, signature)
+	case "OKP":
+		if jwk.Crv == "Ed25519" {
+			return verifyEd25519(jwk, data, signature)
+		}
+		return false, fmt.Errorf("unsupported OKP curve: %s", jwk.Crv)
+	default:
+		return false, fmt.Errorf("unsupported key type: %s", jwk.Kty)
+	}
+}
+
+// signRSA signs data with RSA
+func signRSA(jwk *JWK, data []byte) ([]byte, error) {
+	privateKey, err := jwkToRSAPrivateKey(jwk)
+	if err != nil {
+		return nil, err
+	}
+	
+	var hash crypto.Hash
+	switch jwk.Alg {
+	case "RS256":
+		hash = crypto.SHA256
+	case "RS384":
+		hash = crypto.SHA384
+	case "RS512":
+		hash = crypto.SHA512
+	default:
+		return nil, fmt.Errorf("unsupported RSA algorithm: %s", jwk.Alg)
+	}
+	
+	hasher := hash.New()
+	hasher.Write(data)
+	hashed := hasher.Sum(nil)
+	
+	return rsa.SignPKCS1v15(rand.Reader, privateKey, hash, hashed)
+}
+
+// verifyRSA verifies an RSA signature
+func verifyRSA(jwk *JWK, data []byte, signature []byte) (bool, error) {
+	publicKey, err := jwkToRSAPublicKey(jwk)
+	if err != nil {
+		return false, err
+	}
+	
+	var hash crypto.Hash
+	switch jwk.Alg {
+	case "RS256":
+		hash = crypto.SHA256
+	case "RS384":
+		hash = crypto.SHA384
+	case "RS512":
+		hash = crypto.SHA512
+	default:
+		return false, fmt.Errorf("unsupported RSA algorithm: %s", jwk.Alg)
+	}
+	
+	hasher := hash.New()
+	hasher.Write(data)
+	hashed := hasher.Sum(nil)
+	
+	err = rsa.VerifyPKCS1v15(publicKey, hash, hashed, signature)
+	return err == nil, nil
+}
+
+// signECDSA signs data with ECDSA
+func signECDSA(jwk *JWK, data []byte) ([]byte, error) {
+	privateKey, err := jwkToECDSAPrivateKey(jwk)
+	if err != nil {
+		return nil, err
+	}
+	
+	var hasher crypto.Hash
+	switch jwk.Alg {
+	case "ES256":
+		hasher = crypto.SHA256
+	case "ES384":
+		hasher = crypto.SHA384
+	case "ES512":
+		hasher = crypto.SHA512
+	default:
+		return nil, fmt.Errorf("unsupported ECDSA algorithm: %s", jwk.Alg)
+	}
+	
+	hash := hasher.New()
+	hash.Write(data)
+	hashed := hash.Sum(nil)
+	
+	r, s, err := ecdsa.Sign(rand.Reader, privateKey, hashed)
+	if err != nil {
+		return nil, err
+	}
+	
+	// Get curve size for signature formatting
+	keySize := (privateKey.Curve.Params().BitSize + 7) / 8
+	
+	rBytes := r.Bytes()
+	sBytes := s.Bytes()
+	
+	// Pad to correct length
+	signature := make([]byte, 2*keySize)
+	copy(signature[keySize-len(rBytes):keySize], rBytes)
+	copy(signature[2*keySize-len(sBytes):], sBytes)
+	
+	return signature, nil
+}
+
+// verifyECDSA verifies an ECDSA signature
+func verifyECDSA(jwk *JWK, data []byte, signature []byte) (bool, error) {
+	publicKey, err := jwkToECDSAPublicKey(jwk)
+	if err != nil {
+		return false, err
+	}
+	
+	var hasher crypto.Hash
+	switch jwk.Alg {
+	case "ES256":
+		hasher = crypto.SHA256
+	case "ES384":
+		hasher = crypto.SHA384
+	case "ES512":
+		hasher = crypto.SHA512
+	default:
+		return false, fmt.Errorf("unsupported ECDSA algorithm: %s", jwk.Alg)
+	}
+	
+	hash := hasher.New()
+	hash.Write(data)
+	hashed := hash.Sum(nil)
+	
+	// Parse signature (r, s values)
+	keySize := len(signature) / 2
+	r := new(big.Int).SetBytes(signature[:keySize])
+	s := new(big.Int).SetBytes(signature[keySize:])
+	
+	return ecdsa.Verify(publicKey, hashed, r, s), nil
+}
+
+// signEd25519 signs data with Ed25519
+func signEd25519(jwk *JWK, data []byte) ([]byte, error) {
+	privateKey, err := jwkToEd25519PrivateKey(jwk)
+	if err != nil {
+		return nil, err
+	}
+	
+	return ed25519.Sign(privateKey, data), nil
+}
+
+// verifyEd25519 verifies an Ed25519 signature
+func verifyEd25519(jwk *JWK, data []byte, signature []byte) (bool, error) {
+	publicKey, err := jwkToEd25519PublicKey(jwk)
+	if err != nil {
+		return false, err
+	}
+	
+	return ed25519.Verify(publicKey, data, signature), nil
+}
+
+// Helper functions for JWK conversion
+func jwkToRSAPrivateKey(jwk *JWK) (*rsa.PrivateKey, error) {
+	nBytes, err := base64.RawURLEncoding.DecodeString(jwk.N)
+	if err != nil {
+		return nil, err
+	}
+	eBytes, err := base64.RawURLEncoding.DecodeString(jwk.E)
+	if err != nil {
+		return nil, err
+	}
+	dBytes, err := base64.RawURLEncoding.DecodeString(jwk.D)
+	if err != nil {
+		return nil, err
+	}
+	pBytes, err := base64.RawURLEncoding.DecodeString(jwk.P)
+	if err != nil {
+		return nil, err
+	}
+	qBytes, err := base64.RawURLEncoding.DecodeString(jwk.Q)
+	if err != nil {
+		return nil, err
+	}
+	
+	return &rsa.PrivateKey{
+		PublicKey: rsa.PublicKey{
+			N: new(big.Int).SetBytes(nBytes),
+			E: int(new(big.Int).SetBytes(eBytes).Int64()),
+		},
+		D:      new(big.Int).SetBytes(dBytes),
+		Primes: []*big.Int{new(big.Int).SetBytes(pBytes), new(big.Int).SetBytes(qBytes)},
+	}, nil
+}
+
+func jwkToRSAPublicKey(jwk *JWK) (*rsa.PublicKey, error) {
+	nBytes, err := base64.RawURLEncoding.DecodeString(jwk.N)
+	if err != nil {
+		return nil, err
+	}
+	eBytes, err := base64.RawURLEncoding.DecodeString(jwk.E)
+	if err != nil {
+		return nil, err
+	}
+	
+	return &rsa.PublicKey{
+		N: new(big.Int).SetBytes(nBytes),
+		E: int(new(big.Int).SetBytes(eBytes).Int64()),
+	}, nil
+}
+
+func jwkToECDSAPrivateKey(jwk *JWK) (*ecdsa.PrivateKey, error) {
+	var curve elliptic.Curve
+	switch jwk.Crv {
+	case "P-256":
+		curve = elliptic.P256()
+	case "P-384":
+		curve = elliptic.P384()
+	case "P-521":
+		curve = elliptic.P521()
+	default:
+		return nil, fmt.Errorf("unsupported curve: %s", jwk.Crv)
+	}
+	
+	xBytes, err := base64.RawURLEncoding.DecodeString(jwk.X)
+	if err != nil {
+		return nil, err
+	}
+	yBytes, err := base64.RawURLEncoding.DecodeString(jwk.Y)
+	if err != nil {
+		return nil, err
+	}
+	dBytes, err := base64.RawURLEncoding.DecodeString(jwk.D)
+	if err != nil {
+		return nil, err
+	}
+	
+	return &ecdsa.PrivateKey{
+		PublicKey: ecdsa.PublicKey{
+			Curve: curve,
+			X:     new(big.Int).SetBytes(xBytes),
+			Y:     new(big.Int).SetBytes(yBytes),
+		},
+		D: new(big.Int).SetBytes(dBytes),
+	}, nil
+}
+
+func jwkToECDSAPublicKey(jwk *JWK) (*ecdsa.PublicKey, error) {
+	var curve elliptic.Curve
+	switch jwk.Crv {
+	case "P-256":
+		curve = elliptic.P256()
+	case "P-384":
+		curve = elliptic.P384()
+	case "P-521":
+		curve = elliptic.P521()
+	default:
+		return nil, fmt.Errorf("unsupported curve: %s", jwk.Crv)
+	}
+	
+	xBytes, err := base64.RawURLEncoding.DecodeString(jwk.X)
+	if err != nil {
+		return nil, err
+	}
+	yBytes, err := base64.RawURLEncoding.DecodeString(jwk.Y)
+	if err != nil {
+		return nil, err
+	}
+	
+	return &ecdsa.PublicKey{
+		Curve: curve,
+		X:     new(big.Int).SetBytes(xBytes),
+		Y:     new(big.Int).SetBytes(yBytes),
+	}, nil
+}
+
+func jwkToEd25519PrivateKey(jwk *JWK) (ed25519.PrivateKey, error) {
+	xBytes, err := base64.RawURLEncoding.DecodeString(jwk.X)
+	if err != nil {
+		return nil, err
+	}
+	dBytes, err := base64.RawURLEncoding.DecodeString(jwk.D)
+	if err != nil {
+		return nil, err
+	}
+	
+	// Ed25519 private key is 64 bytes: 32 bytes private + 32 bytes public
+	privateKey := make(ed25519.PrivateKey, ed25519.PrivateKeySize)
+	copy(privateKey[:32], dBytes)
+	copy(privateKey[32:], xBytes)
+	
+	return privateKey, nil
+}
+
+func jwkToEd25519PublicKey(jwk *JWK) (ed25519.PublicKey, error) {
+	xBytes, err := base64.RawURLEncoding.DecodeString(jwk.X)
+	if err != nil {
+		return nil, err
+	}
+	
+	return ed25519.PublicKey(xBytes), nil
+}
+
+// Helper functions for Lua table conversion
+func jwkToLuaTable(L *lua.LState, jwk *JWK) *lua.LTable {
+	table := L.NewTable()
+	
+	L.SetField(table, "kty", lua.LString(jwk.Kty))
+	if jwk.Alg != "" {
+		L.SetField(table, "alg", lua.LString(jwk.Alg))
+	}
+	if jwk.Use != "" {
+		L.SetField(table, "use", lua.LString(jwk.Use))
+	}
+	if jwk.Kid != "" {
+		L.SetField(table, "kid", lua.LString(jwk.Kid))
+	}
+	
+	// RSA fields
+	if jwk.N != "" {
+		L.SetField(table, "n", lua.LString(jwk.N))
+	}
+	if jwk.E != "" {
+		L.SetField(table, "e", lua.LString(jwk.E))
+	}
+	if jwk.D != "" {
+		L.SetField(table, "d", lua.LString(jwk.D))
+	}
+	if jwk.P != "" {
+		L.SetField(table, "p", lua.LString(jwk.P))
+	}
+	if jwk.Q != "" {
+		L.SetField(table, "q", lua.LString(jwk.Q))
+	}
+	if jwk.Dp != "" {
+		L.SetField(table, "dp", lua.LString(jwk.Dp))
+	}
+	if jwk.Dq != "" {
+		L.SetField(table, "dq", lua.LString(jwk.Dq))
+	}
+	if jwk.Qi != "" {
+		L.SetField(table, "qi", lua.LString(jwk.Qi))
+	}
+	
+	// ECDSA/EdDSA fields
+	if jwk.Crv != "" {
+		L.SetField(table, "crv", lua.LString(jwk.Crv))
+	}
+	if jwk.X != "" {
+		L.SetField(table, "x", lua.LString(jwk.X))
+	}
+	if jwk.Y != "" {
+		L.SetField(table, "y", lua.LString(jwk.Y))
+	}
+	
+	return table
+}
+
+func luaTableToJWK(table *lua.LTable) (*JWK, error) {
+	jwk := &JWK{}
+	
+	table.ForEach(func(key, value lua.LValue) {
+		keyStr := key.String()
+		valueStr := value.String()
+		
+		switch keyStr {
+		case "kty":
+			jwk.Kty = valueStr
+		case "alg":
+			jwk.Alg = valueStr
+		case "use":
+			jwk.Use = valueStr
+		case "kid":
+			jwk.Kid = valueStr
+		case "n":
+			jwk.N = valueStr
+		case "e":
+			jwk.E = valueStr
+		case "d":
+			jwk.D = valueStr
+		case "p":
+			jwk.P = valueStr
+		case "q":
+			jwk.Q = valueStr
+		case "dp":
+			jwk.Dp = valueStr
+		case "dq":
+			jwk.Dq = valueStr
+		case "qi":
+			jwk.Qi = valueStr
+		case "crv":
+			jwk.Crv = valueStr
+		case "x":
+			jwk.X = valueStr
+		case "y":
+			jwk.Y = valueStr
+		}
+	})
+	
+	if jwk.Kty == "" {
+		return nil, fmt.Errorf("missing required field: kty")
+	}
+	
+	return jwk, nil
+}
+
+// cryptoJWKToPublic extracts public key from JWK
+func cryptoJWKToPublic(L *lua.LState) int {
+	jwkTable := L.ToTable(1)
+	if jwkTable == nil {
+		L.Push(lua.LNil)
+		L.Push(lua.LString("missing jwk"))
+		return 2
+	}
+	
+	jwk, err := luaTableToJWK(jwkTable)
+	if err != nil {
+		L.Push(lua.LNil)
+		L.Push(lua.LString("invalid jwk: " + err.Error()))
+		return 2
+	}
+	
+	publicJWK := &JWK{
+		Kty: jwk.Kty,
+		Alg: jwk.Alg,
+		Use: jwk.Use,
+		Kid: jwk.Kid,
+		N:   jwk.N,
+		E:   jwk.E,
+		Crv: jwk.Crv,
+		X:   jwk.X,
+		Y:   jwk.Y,
+	}
+	
+	publicTable := jwkToLuaTable(L, publicJWK)
+	L.Push(publicTable)
+	return 1
+}
+
+// cryptoJWKThumbprint generates a thumbprint for a JWK
+func cryptoJWKThumbprint(L *lua.LState) int {
+	jwkTable := L.ToTable(1)
+	if jwkTable == nil {
+		L.Push(lua.LNil)
+		L.Push(lua.LString("missing jwk"))
+		return 2
+	}
+	
+	jwk, err := luaTableToJWK(jwkTable)
+	if err != nil {
+		L.Push(lua.LNil)
+		L.Push(lua.LString("invalid jwk: " + err.Error()))
+		return 2
+	}
+	
+	// Create canonical JSON for thumbprint (RFC 7638)
+	var canonical map[string]interface{}
+	switch jwk.Kty {
+	case "RSA":
+		canonical = map[string]interface{}{
+			"e":   jwk.E,
+			"kty": jwk.Kty,
+			"n":   jwk.N,
+		}
+	case "EC":
+		canonical = map[string]interface{}{
+			"crv": jwk.Crv,
+			"kty": jwk.Kty,
+			"x":   jwk.X,
+			"y":   jwk.Y,
+		}
+	case "OKP":
+		canonical = map[string]interface{}{
+			"crv": jwk.Crv,
+			"kty": jwk.Kty,
+			"x":   jwk.X,
+		}
+	default:
+		L.Push(lua.LNil)
+		L.Push(lua.LString("unsupported key type for thumbprint: " + jwk.Kty))
+		return 2
+	}
+	
+	canonicalJSON, err := json.Marshal(canonical)
+	if err != nil {
+		L.Push(lua.LNil)
+		L.Push(lua.LString("failed to create canonical JSON: " + err.Error()))
+		return 2
+	}
+	
+	hash := sha256.Sum256(canonicalJSON)
+	thumbprint := base64.RawURLEncoding.EncodeToString(hash[:])
+	
+	L.Push(lua.LString(thumbprint))
+	return 1
+}
+
+// cryptoJWKToJSON converts JWK to JSON string
+func cryptoJWKToJSON(L *lua.LState) int {
+	jwkTable := L.ToTable(1)
+	if jwkTable == nil {
+		L.Push(lua.LNil)
+		L.Push(lua.LString("missing jwk"))
+		return 2
+	}
+	
+	jwk, err := luaTableToJWK(jwkTable)
+	if err != nil {
+		L.Push(lua.LNil)
+		L.Push(lua.LString("invalid jwk: " + err.Error()))
+		return 2
+	}
+	
+	jsonData, err := json.Marshal(jwk)
+	if err != nil {
+		L.Push(lua.LNil)
+		L.Push(lua.LString("failed to marshal JSON: " + err.Error()))
+		return 2
+	}
+	
+	L.Push(lua.LString(string(jsonData)))
+	return 1
+}
+
+// cryptoJWKFromJSON parses JWK from JSON string
+func cryptoJWKFromJSON(L *lua.LState) int {
+	jsonStr := L.ToString(1)
+	if jsonStr == "" {
+		L.Push(lua.LNil)
+		L.Push(lua.LString("missing json string"))
+		return 2
+	}
+	
+	var jwk JWK
+	if err := json.Unmarshal([]byte(jsonStr), &jwk); err != nil {
+		L.Push(lua.LNil)
+		L.Push(lua.LString("invalid JSON: " + err.Error()))
+		return 2
+	}
+	
+	jwkTable := jwkToLuaTable(L, &jwk)
+	L.Push(jwkTable)
+	return 1
+}
+
 `
 
 	tmpl, err := template.New("runtime").Parse(runtimeTemplate)
@@ -1412,9 +2259,17 @@ require (
 
 	cmd := exec.Command("go", "build", "-o", outputPath, ".")
 	cmd.Dir = tempDir
+	
+	// Use current architecture unless building for a different OS
+	targetArch := runtime.GOARCH
+	if config.Target != runtime.GOOS {
+		// For cross-compilation to different OS, default to amd64
+		targetArch = "amd64"
+	}
+	
 	cmd.Env = append(os.Environ(),
 		"GOOS="+config.Target,
-		"GOARCH=amd64",
+		"GOARCH="+targetArch,
 	)
 
 	output, err := cmd.CombinedOutput()
@@ -1428,4 +2283,654 @@ require (
 	}
 
 	return nil
+}
+
+// HTTP Signatures implementation for builder.go
+// This is a complete copy of httpsig_functions.go to maintain build/run parity
+
+// HTTPSignatureOptions represents options for HTTP signature creation/verification
+type HTTPSignatureOptions struct {
+	JWK             *JWK
+	KeyID           string
+	Algorithm       string
+	Headers         []string
+	Created         int64
+	Expires         int64
+	RequiredHeaders []string
+	MaxAge          int64
+}
+
+// HTTPMessage represents an HTTP request or response for signing
+type HTTPMessage struct {
+	Type    string            // "request" or "response"
+	Method  string            // HTTP method (for requests)
+	Path    string            // URL path (for requests)
+	Status  int               // Status code (for responses)
+	Headers map[string]string // HTTP headers
+	Body    string            // Message body
+}
+
+// registerHTTPSigModule adds HTTP signature functionality to Lua
+func registerHTTPSigModule(L *lua.LState) {
+	L.PreloadModule("httpsig", func(L *lua.LState) int {
+		httpsigModule := L.NewTable()
+		
+		L.SetField(httpsigModule, "sign", L.NewFunction(httpsigSign))
+		L.SetField(httpsigModule, "verify", L.NewFunction(httpsigVerify))
+		L.SetField(httpsigModule, "create_digest", L.NewFunction(httpsigCreateDigest))
+		L.SetField(httpsigModule, "verify_digest", L.NewFunction(httpsigVerifyDigest))
+		
+		L.Push(httpsigModule)
+		return 1
+	})
+}
+
+// httpsigSign signs an HTTP message
+func httpsigSign(L *lua.LState) int {
+	messageTable := L.ToTable(1)
+	optionsTable := L.ToTable(2)
+	
+	if messageTable == nil {
+		L.Push(lua.LNil)
+		L.Push(lua.LString("missing message table"))
+		return 2
+	}
+	
+	if optionsTable == nil {
+		L.Push(lua.LNil)
+		L.Push(lua.LString("missing options table"))
+		return 2
+	}
+	
+	// Parse message
+	message, err := luaTableToHTTPMessage(messageTable)
+	if err != nil {
+		L.Push(lua.LNil)
+		L.Push(lua.LString("invalid message: " + err.Error()))
+		return 2
+	}
+	
+	// Parse options
+	options, err := luaTableToHTTPSignatureOptions(optionsTable)
+	if err != nil {
+		L.Push(lua.LNil)
+		L.Push(lua.LString("invalid options: " + err.Error()))
+		return 2
+	}
+	
+	// Generate signature
+	signatureHeader, err := createHTTPSignature(message, options)
+	if err != nil {
+		L.Push(lua.LNil)
+		L.Push(lua.LString("signing failed: " + err.Error()))
+		return 2
+	}
+	
+	// Return updated headers with signature
+	resultTable := L.NewTable()
+	
+	newHeaders := L.NewTable()
+	
+	// Copy all headers from the message (including ones added during signing)
+	for key, value := range message.Headers {
+		L.SetField(newHeaders, key, lua.LString(value))
+	}
+	
+	// Add signature header
+	L.SetField(newHeaders, "signature", lua.LString(signatureHeader))
+	
+	L.SetField(resultTable, "headers", newHeaders)
+	L.Push(resultTable)
+	return 1
+}
+
+// httpsigVerify verifies an HTTP message signature
+func httpsigVerify(L *lua.LState) int {
+	messageTable := L.ToTable(1)
+	optionsTable := L.ToTable(2)
+	
+	if messageTable == nil || optionsTable == nil {
+		L.Push(lua.LBool(false))
+		L.Push(lua.LString("missing message or options"))
+		return 2
+	}
+	
+	// Parse message
+	message, err := luaTableToHTTPMessage(messageTable)
+	if err != nil {
+		L.Push(lua.LBool(false))
+		L.Push(lua.LString("invalid message: " + err.Error()))
+		return 2
+	}
+	
+	// Parse options
+	options, err := luaTableToHTTPSignatureOptions(optionsTable)
+	if err != nil {
+		L.Push(lua.LBool(false))
+		L.Push(lua.LString("invalid options: " + err.Error()))
+		return 2
+	}
+	
+	// Verify signature
+	result, err := verifyHTTPSignature(message, options)
+	if err != nil {
+		L.Push(lua.LBool(false))
+		L.Push(lua.LString("verification failed: " + err.Error()))
+		return 2
+	}
+	
+	// Return verification result
+	resultTable := L.NewTable()
+	L.SetField(resultTable, "valid", lua.LBool(result.Valid))
+	L.SetField(resultTable, "key_id", lua.LString(result.KeyID))
+	L.SetField(resultTable, "algorithm", lua.LString(result.Algorithm))
+	if result.Reason != "" {
+		L.SetField(resultTable, "reason", lua.LString(result.Reason))
+	}
+	
+	L.Push(resultTable)
+	return 1
+}
+
+// httpsigCreateDigest creates a digest header for body content
+func httpsigCreateDigest(L *lua.LState) int {
+	content := L.ToString(1)
+	algorithm := L.ToString(2)
+	
+	if algorithm == "" {
+		algorithm = "sha256" // default
+	}
+	
+	digest, err := createDigest(content, algorithm)
+	if err != nil {
+		L.Push(lua.LNil)
+		L.Push(lua.LString("digest creation failed: " + err.Error()))
+		return 2
+	}
+	
+	L.Push(lua.LString(digest))
+	return 1
+}
+
+// httpsigVerifyDigest verifies a digest header against content
+func httpsigVerifyDigest(L *lua.LState) int {
+	content := L.ToString(1)
+	digestHeader := L.ToString(2)
+	
+	if content == "" || digestHeader == "" {
+		L.Push(lua.LBool(false))
+		L.Push(lua.LString("missing content or digest header"))
+		return 2
+	}
+	
+	valid, err := verifyDigest(content, digestHeader)
+	if err != nil {
+		L.Push(lua.LBool(false))
+		L.Push(lua.LString("digest verification failed: " + err.Error()))
+		return 2
+	}
+	
+	L.Push(lua.LBool(valid))
+	return 1
+}
+
+// HTTP Signature implementation functions
+
+// HTTPSignatureResult represents the result of signature verification
+type HTTPSignatureResult struct {
+	Valid     bool
+	KeyID     string
+	Algorithm string
+	Reason    string
+}
+
+// createHTTPSignature creates an HTTP signature header
+func createHTTPSignature(message *HTTPMessage, options *HTTPSignatureOptions) (string, error) {
+	// Add date header if not present
+	if !hasHeader(message.Headers, "date") {
+		message.Headers["date"] = time.Now().UTC().Format(time.RFC1123)
+	}
+	
+	// Determine headers to sign
+	headersToSign := options.Headers
+	if len(headersToSign) == 0 {
+		// Default headers based on message type
+		if message.Type == "request" {
+			headersToSign = []string{"(request-target)", "host", "date"}
+		} else {
+			headersToSign = []string{"(status)", "content-type", "date"}
+		}
+	}
+	
+	// Create digest header if needed
+	if contains(headersToSign, "digest") && !hasHeader(message.Headers, "digest") {
+		if message.Body == "" {
+			// Empty body gets empty digest
+			digest, err := createDigest("", "sha256")
+			if err != nil {
+				return "", fmt.Errorf("failed to create digest: %w", err)
+			}
+			message.Headers["digest"] = digest
+		} else {
+			digest, err := createDigest(message.Body, "sha256")
+			if err != nil {
+				return "", fmt.Errorf("failed to create digest: %w", err)
+			}
+			message.Headers["digest"] = digest
+		}
+	}
+	
+	// Add digest header if body is present and not already included in signing
+	if message.Body != "" && !contains(headersToSign, "digest") {
+		headersToSign = append(headersToSign, "digest")
+		
+		// Create digest if not present
+		if !hasHeader(message.Headers, "digest") {
+			digest, err := createDigest(message.Body, "sha256")
+			if err != nil {
+				return "", fmt.Errorf("failed to create digest: %w", err)
+			}
+			message.Headers["digest"] = digest
+		}
+	}
+	
+	// Build signing string
+	signingString, err := buildSigningString(message, headersToSign, options.Created, options.Expires)
+	if err != nil {
+		return "", fmt.Errorf("failed to build signing string: %w", err)
+	}
+	
+	// Sign the string
+	signature, err := signWithJWK(options.JWK, []byte(signingString))
+	if err != nil {
+		return "", fmt.Errorf("failed to sign: %w", err)
+	}
+	
+	// Build signature header
+	signatureB64 := base64.StdEncoding.EncodeToString(signature)
+	
+	var parts []string
+	parts = append(parts, fmt.Sprintf(`keyId="%s"`, options.KeyID))
+	parts = append(parts, fmt.Sprintf(`algorithm="%s"`, getSignatureAlgorithm(options.JWK)))
+	parts = append(parts, fmt.Sprintf(`headers="%s"`, strings.Join(headersToSign, " ")))
+	
+	if options.Created > 0 {
+		parts = append(parts, fmt.Sprintf(`created=%d`, options.Created))
+	}
+	if options.Expires > 0 {
+		parts = append(parts, fmt.Sprintf(`expires=%d`, options.Expires))
+	}
+	
+	parts = append(parts, fmt.Sprintf(`signature="%s"`, signatureB64))
+	
+	return strings.Join(parts, ","), nil
+}
+
+// verifyHTTPSignature verifies an HTTP signature
+func verifyHTTPSignature(message *HTTPMessage, options *HTTPSignatureOptions) (*HTTPSignatureResult, error) {
+	result := &HTTPSignatureResult{}
+	
+	// Parse signature header
+	signatureHeader, ok := message.Headers["signature"]
+	if !ok {
+		result.Reason = "missing signature header"
+		return result, nil
+	}
+	
+	sigParams, err := parseSignatureHeader(signatureHeader)
+	if err != nil {
+		result.Reason = "invalid signature header format"
+		return result, nil
+	}
+	
+	result.KeyID = sigParams["keyId"]
+	result.Algorithm = sigParams["algorithm"]
+	
+	// Check required headers
+	signedHeaders := strings.Fields(sigParams["headers"])
+	for _, required := range options.RequiredHeaders {
+		if !contains(signedHeaders, required) {
+			result.Reason = fmt.Sprintf("required header '%s' not signed", required)
+			return result, nil
+		}
+	}
+	
+	// Validate digest if digest header was signed
+	if contains(signedHeaders, "digest") {
+		digestHeader, ok := message.Headers["digest"]
+		if !ok {
+			result.Reason = "digest header missing but was signed"
+			return result, nil
+		}
+		
+		// Verify digest matches the body content
+		digestValid, err := verifyDigest(message.Body, digestHeader)
+		if err != nil {
+			result.Reason = "digest verification failed: " + err.Error()
+			return result, nil
+		}
+		
+		if !digestValid {
+			result.Reason = "digest mismatch - body content has been tampered"
+			return result, nil
+		}
+	}
+	
+	// Check expiration
+	if created, ok := sigParams["created"]; ok {
+		createdTime, err := strconv.ParseInt(created, 10, 64)
+		if err != nil {
+			result.Reason = "invalid created timestamp"
+			return result, nil
+		}
+		
+		if options.MaxAge > 0 && time.Now().Unix()-createdTime > options.MaxAge {
+			result.Reason = "signature expired"
+			return result, nil
+		}
+	}
+	
+	if expires, ok := sigParams["expires"]; ok {
+		expiresTime, err := strconv.ParseInt(expires, 10, 64)
+		if err != nil {
+			result.Reason = "invalid expires timestamp"
+			return result, nil
+		}
+		
+		if time.Now().Unix() > expiresTime {
+			result.Reason = "signature expired"
+			return result, nil
+		}
+	}
+	
+	// Build signing string
+	created, _ := strconv.ParseInt(sigParams["created"], 10, 64)
+	expires, _ := strconv.ParseInt(sigParams["expires"], 10, 64)
+	
+	signingString, err := buildSigningString(message, signedHeaders, created, expires)
+	if err != nil {
+		result.Reason = "failed to build signing string"
+		return result, nil
+	}
+	
+	// Verify signature
+	signatureB64 := sigParams["signature"]
+	signature, err := base64.StdEncoding.DecodeString(signatureB64)
+	if err != nil {
+		result.Reason = "invalid signature encoding"
+		return result, nil
+	}
+	
+	valid, err := verifyWithJWK(options.JWK, []byte(signingString), signature)
+	if err != nil {
+		result.Reason = "signature verification failed"
+		return result, nil
+	}
+	
+	result.Valid = valid
+	if !valid {
+		result.Reason = "signature verification failed"
+	}
+	
+	return result, nil
+}
+
+// buildSigningString constructs the string to be signed
+func buildSigningString(message *HTTPMessage, headers []string, created, expires int64) (string, error) {
+	var lines []string
+	
+	for _, header := range headers {
+		switch header {
+		case "(request-target)":
+			if message.Type != "request" {
+				return "", fmt.Errorf("(request-target) can only be used with requests")
+			}
+			target := strings.ToLower(message.Method) + " " + message.Path
+			lines = append(lines, "(request-target): "+target)
+			
+		case "(status)":
+			if message.Type != "response" {
+				return "", fmt.Errorf("(status) can only be used with responses")
+			}
+			lines = append(lines, "(status): "+strconv.Itoa(message.Status))
+			
+		case "(created)":
+			if created <= 0 {
+				return "", fmt.Errorf("(created) header requires created timestamp")
+			}
+			lines = append(lines, "(created): "+strconv.FormatInt(created, 10))
+			
+		case "(expires)":
+			if expires <= 0 {
+				return "", fmt.Errorf("(expires) header requires expires timestamp")
+			}
+			lines = append(lines, "(expires): "+strconv.FormatInt(expires, 10))
+			
+		default:
+			// Regular header
+			value, ok := message.Headers[strings.ToLower(header)]
+			if !ok {
+				return "", fmt.Errorf("header '%s' not found in message", header)
+			}
+			lines = append(lines, strings.ToLower(header)+": "+value)
+		}
+	}
+	
+	return strings.Join(lines, "\n"), nil
+}
+
+// parseSignatureHeader parses HTTP signature header into components
+func parseSignatureHeader(header string) (map[string]string, error) {
+	params := make(map[string]string)
+	
+	// Split by commas, but handle quoted strings
+	parts := strings.Split(header, ",")
+	for _, part := range parts {
+		part = strings.TrimSpace(part)
+		if part == "" {
+			continue
+		}
+		
+		// Find key=value
+		eqIdx := strings.Index(part, "=")
+		if eqIdx == -1 {
+			continue
+		}
+		
+		key := strings.TrimSpace(part[:eqIdx])
+		value := strings.TrimSpace(part[eqIdx+1:])
+		
+		// Remove quotes
+		if len(value) >= 2 && value[0] == '"' && value[len(value)-1] == '"' {
+			value = value[1 : len(value)-1]
+		}
+		
+		params[key] = value
+	}
+	
+	return params, nil
+}
+
+// createDigest creates a digest header for content
+func createDigest(content, algorithm string) (string, error) {
+	var hash []byte
+	var algName string
+	
+	switch strings.ToLower(algorithm) {
+	case "sha256":
+		h := sha256.Sum256([]byte(content))
+		hash = h[:]
+		algName = "SHA-256"
+	case "sha512":
+		h := sha512.Sum512([]byte(content))
+		hash = h[:]
+		algName = "SHA-512"
+	default:
+		return "", fmt.Errorf("unsupported digest algorithm: %s", algorithm)
+	}
+	
+	return algName + "=" + base64.StdEncoding.EncodeToString(hash), nil
+}
+
+// verifyDigest verifies a digest header against content
+func verifyDigest(content, digestHeader string) (bool, error) {
+	// Parse digest header (e.g., "SHA-256=X48E9qOokqqrvdts8nOJRJN3OWDUoyWxBf7kbu9DBPE=")
+	parts := strings.SplitN(digestHeader, "=", 2)
+	if len(parts) != 2 {
+		return false, fmt.Errorf("invalid digest header format")
+	}
+	
+	algorithm := strings.ToLower(strings.TrimSpace(parts[0]))
+	expectedDigest := strings.TrimSpace(parts[1])
+	
+	// Map algorithm names
+	switch algorithm {
+	case "sha-256":
+		algorithm = "sha256"
+	case "sha-512":
+		algorithm = "sha512"
+	}
+	
+	// Create digest for content
+	actualDigest, err := createDigest(content, algorithm)
+	if err != nil {
+		return false, err
+	}
+	
+	// Extract just the base64 part for comparison
+	actualParts := strings.SplitN(actualDigest, "=", 2)
+	if len(actualParts) != 2 {
+		return false, fmt.Errorf("failed to create digest")
+	}
+	
+	return actualParts[1] == expectedDigest, nil
+}
+
+// getSignatureAlgorithm maps JWK algorithm to HTTP signature algorithm
+func getSignatureAlgorithm(jwk *JWK) string {
+	switch jwk.Alg {
+	case "RS256", "RS384", "RS512":
+		return "rsa-" + strings.ToLower(jwk.Alg[2:])
+	case "ES256", "ES384", "ES512":
+		return "ecdsa-" + strings.ToLower(jwk.Alg[2:])
+	case "EdDSA":
+		return "ed25519"
+	default:
+		return jwk.Alg
+	}
+}
+
+// Helper functions for Lua table conversion
+
+func luaTableToHTTPMessage(table *lua.LTable) (*HTTPMessage, error) {
+	message := &HTTPMessage{
+		Headers: make(map[string]string),
+	}
+	
+	table.ForEach(func(key, value lua.LValue) {
+		switch key.String() {
+		case "type":
+			message.Type = value.String()
+		case "method":
+			message.Method = value.String()
+		case "path":
+			message.Path = value.String()
+		case "status":
+			if num, ok := value.(lua.LNumber); ok {
+				message.Status = int(num)
+			}
+		case "body":
+			message.Body = value.String()
+		case "headers":
+			if headersTable, ok := value.(*lua.LTable); ok {
+				headersTable.ForEach(func(hkey, hvalue lua.LValue) {
+					message.Headers[strings.ToLower(hkey.String())] = hvalue.String()
+				})
+			}
+		}
+	})
+	
+	if message.Type == "" {
+		return nil, fmt.Errorf("missing message type")
+	}
+	
+	return message, nil
+}
+
+func luaTableToHTTPSignatureOptions(table *lua.LTable) (*HTTPSignatureOptions, error) {
+	options := &HTTPSignatureOptions{}
+	
+	table.ForEach(func(key, value lua.LValue) {
+		switch key.String() {
+		case "jwk":
+			if jwkTable, ok := value.(*lua.LTable); ok {
+				jwk, err := luaTableToJWK(jwkTable)
+				if err == nil {
+					options.JWK = jwk
+				}
+			}
+		case "key_id":
+			options.KeyID = value.String()
+		case "algorithm":
+			options.Algorithm = value.String()
+		case "headers":
+			if headersTable, ok := value.(*lua.LTable); ok {
+				var headers []string
+				for i := 1; ; i++ {
+					val := headersTable.RawGetInt(i)
+					if val == lua.LNil {
+						break
+					}
+					headers = append(headers, val.String())
+				}
+				options.Headers = headers
+			}
+		case "created":
+			if num, ok := value.(lua.LNumber); ok {
+				options.Created = int64(num)
+			}
+		case "expires":
+			if num, ok := value.(lua.LNumber); ok {
+				options.Expires = int64(num)
+			}
+		case "required_headers":
+			if headersTable, ok := value.(*lua.LTable); ok {
+				var headers []string
+				for i := 1; ; i++ {
+					val := headersTable.RawGetInt(i)
+					if val == lua.LNil {
+						break
+					}
+					headers = append(headers, val.String())
+				}
+				options.RequiredHeaders = headers
+			}
+		case "max_age":
+			if num, ok := value.(lua.LNumber); ok {
+				options.MaxAge = int64(num)
+			}
+		}
+	})
+	
+	if options.JWK == nil {
+		return nil, fmt.Errorf("missing JWK")
+	}
+	// Key ID is optional for verification - can be extracted from signature header
+	
+	return options, nil
+}
+
+// Utility functions
+func contains(slice []string, item string) bool {
+	for _, s := range slice {
+		if s == item {
+			return true
+		}
+	}
+	return false
+}
+
+func hasHeader(headers map[string]string, name string) bool {
+	_, exists := headers[strings.ToLower(name)]
+	return exists
 }

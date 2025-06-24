@@ -48,6 +48,12 @@ func runScript(scriptPath string, scriptArgs []string) error {
 	// Register TUI functions
 	registerTUIFunctions(L)
 
+	// Register Crypto module
+	registerCryptoModule(L)
+
+	// Register HTTP Signatures module
+	registerHTTPSigModule(L)
+
 	if err := L.DoString(string(scriptContent)); err != nil {
 		return fmt.Errorf("lua runtime error: %w", err)
 	}
