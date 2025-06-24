@@ -205,7 +205,7 @@ console.log(`
 ╚═╝  ╚═╝   ╚═╝   ╚═╝     ╚══════╝
 
 > Lua Script to Executable Packager
-> Version: 1.0.3
+> Version: 1.3.1
 > Status: ONLINE
 > Documentation loaded successfully...
 

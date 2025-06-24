@@ -131,8 +131,27 @@
                 <h2>🔗 Get Started</h2>
                 
                 <div class="install-options">
+                    <div class="install-option highlight">
+                        <h3>🚀 Cross-Platform (Linux, macOS, Windows)</h3>
+                        <p>Auto-detects your OS and architecture</p>
+                        <div class="code-block">
+                            <code>curl -sSL https://raw.githubusercontent.com/twilson63/hype/main/install.sh | bash</code>
+                            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                        </div>
+                    </div>
+
                     <div class="install-option">
-                        <h3>📱 One-line install:</h3>
+                        <h3>🐧 Linux</h3>
+                        <p>Dedicated Linux installer (x86_64, ARM64)</p>
+                        <div class="code-block">
+                            <code>curl -sSL https://raw.githubusercontent.com/twilson63/hype/main/install-linux.sh | bash</code>
+                            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                        </div>
+                    </div>
+
+                    <div class="install-option">
+                        <h3>🍎 macOS</h3>
+                        <p>For Intel and Apple Silicon Macs</p>
                         <div class="code-block">
                             <code>curl -sSL https://raw.githubusercontent.com/twilson63/hype/main/install-mac.sh | bash</code>
                             <button class="copy-btn" onclick="copyCode(this)">Copy</button>
@@ -140,16 +159,16 @@
                     </div>
 
                     <div class="install-option">
-                        <h3>🔧 Or download a prebuilt binary</h3>
-                        <p>Make it executable, and go.</p>
+                        <h3>🔧 Manual Download</h3>
+                        <p>Download prebuilt binaries directly</p>
                         <div class="download-links">
                             <a href="https://github.com/twilson63/hype/releases" target="_blank" class="btn btn-secondary">GitHub Releases</a>
                         </div>
                     </div>
 
-                    <div class="install-option highlight">
-                        <h3>📂 GitHub Repo</h3>
-                        <p>The source of truth</p>
+                    <div class="install-option">
+                        <h3>📂 Source Code</h3>
+                        <p>Build from source or browse examples</p>
                         <div class="download-links">
                             <a href="https://github.com/twilson63/hype" target="_blank" class="btn btn-primary">View on GitHub</a>
                         </div>
