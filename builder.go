@@ -79,11 +79,14 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/sha256"
+	"crypto/sha512"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"math/big"
 	"os"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 	"github.com/yuin/gopher-lua"
@@ -2208,6 +2211,591 @@ func cryptoJWKFromJSON(L *lua.LState) int {
 	jwkTable := jwkToLuaTable(L, &jwk)
 	L.Push(jwkTable)
 	return 1
+}
+
+// registerHTTPSigModule adds HTTP signature functionality to Lua
+func registerHTTPSigModule(L *lua.LState) {
+	L.PreloadModule("httpsig", func(L *lua.LState) int {
+		httpsigModule := L.NewTable()
+		
+		L.SetField(httpsigModule, "sign", L.NewFunction(httpsigSign))
+		L.SetField(httpsigModule, "verify", L.NewFunction(httpsigVerify))
+		L.SetField(httpsigModule, "create_digest", L.NewFunction(httpsigCreateDigest))
+		L.SetField(httpsigModule, "verify_digest", L.NewFunction(httpsigVerifyDigest))
+		
+		L.Push(httpsigModule)
+		return 1
+	})
+}
+
+// HTTP signature types for runtime
+type HTTPMessage struct {
+	Type    string            // "request" or "response"
+	Method  string            // HTTP method (for requests)
+	Path    string            // Request path (for requests)
+	Status  int               // Status code (for responses)
+	Headers map[string]string // HTTP headers
+	Body    string            // Message body
+}
+
+type HTTPSignatureOptions struct {
+	JWK             *JWK     // Signing/verification key
+	KeyID           string   // Key identifier
+	Algorithm       string   // Signature algorithm
+	Headers         []string // Headers to include in signature
+	Created         int64    // Creation timestamp
+	Expires         int64    // Expiration timestamp
+	RequiredHeaders []string // Required headers for verification
+	MaxAge          int64    // Maximum signature age in seconds
+}
+
+type HTTPSignatureResult struct {
+	Valid     bool
+	KeyID     string
+	Algorithm string
+	Reason    string
+}
+
+// httpsigSign signs an HTTP message
+func httpsigSign(L *lua.LState) int {
+	messageTable := L.ToTable(1)
+	optionsTable := L.ToTable(2)
+	
+	if messageTable == nil {
+		L.Push(lua.LNil)
+		L.Push(lua.LString("missing message table"))
+		return 2
+	}
+	
+	if optionsTable == nil {
+		L.Push(lua.LNil)
+		L.Push(lua.LString("missing options table"))
+		return 2
+	}
+	
+	// Parse message
+	message, err := luaTableToHTTPMessage(messageTable)
+	if err != nil {
+		L.Push(lua.LNil)
+		L.Push(lua.LString("invalid message: " + err.Error()))
+		return 2
+	}
+	
+	// Parse options
+	options, err := luaTableToHTTPSignatureOptions(optionsTable)
+	if err != nil {
+		L.Push(lua.LNil)
+		L.Push(lua.LString("invalid options: " + err.Error()))
+		return 2
+	}
+	
+	// Generate signature
+	signatureHeader, err := createHTTPSignature(message, options)
+	if err != nil {
+		L.Push(lua.LNil)
+		L.Push(lua.LString("signing failed: " + err.Error()))
+		return 2
+	}
+	
+	// Return updated headers with signature
+	resultTable := L.NewTable()
+	
+	newHeaders := L.NewTable()
+	
+	// Copy all headers from the message (including ones added during signing)
+	for key, value := range message.Headers {
+		L.SetField(newHeaders, key, lua.LString(value))
+	}
+	
+	// Add signature header
+	L.SetField(newHeaders, "signature", lua.LString(signatureHeader))
+	
+	L.SetField(resultTable, "headers", newHeaders)
+	L.Push(resultTable)
+	return 1
+}
+
+// httpsigVerify verifies an HTTP message signature
+func httpsigVerify(L *lua.LState) int {
+	messageTable := L.ToTable(1)
+	optionsTable := L.ToTable(2)
+	
+	if messageTable == nil || optionsTable == nil {
+		L.Push(lua.LBool(false))
+		L.Push(lua.LString("missing message or options"))
+		return 2
+	}
+	
+	// Parse message
+	message, err := luaTableToHTTPMessage(messageTable)
+	if err != nil {
+		L.Push(lua.LBool(false))
+		L.Push(lua.LString("invalid message: " + err.Error()))
+		return 2
+	}
+	
+	// Parse options
+	options, err := luaTableToHTTPSignatureOptions(optionsTable)
+	if err != nil {
+		L.Push(lua.LBool(false))
+		L.Push(lua.LString("invalid options: " + err.Error()))
+		return 2
+	}
+	
+	// Verify signature
+	result, err := verifyHTTPSignature(message, options)
+	if err != nil {
+		L.Push(lua.LBool(false))
+		L.Push(lua.LString("verification failed: " + err.Error()))
+		return 2
+	}
+	
+	// Return verification result
+	resultTable := L.NewTable()
+	L.SetField(resultTable, "valid", lua.LBool(result.Valid))
+	L.SetField(resultTable, "key_id", lua.LString(result.KeyID))
+	L.SetField(resultTable, "algorithm", lua.LString(result.Algorithm))
+	if result.Reason != "" {
+		L.SetField(resultTable, "reason", lua.LString(result.Reason))
+	}
+	
+	L.Push(resultTable)
+	return 1
+}
+
+// httpsigCreateDigest creates a digest header for body content
+func httpsigCreateDigest(L *lua.LState) int {
+	content := L.ToString(1)
+	algorithm := L.ToString(2)
+	
+	if algorithm == "" {
+		algorithm = "sha256" // default
+	}
+	
+	digest, err := createDigest(content, algorithm)
+	if err != nil {
+		L.Push(lua.LNil)
+		L.Push(lua.LString("digest creation failed: " + err.Error()))
+		return 2
+	}
+	
+	L.Push(lua.LString(digest))
+	return 1
+}
+
+// httpsigVerifyDigest verifies a digest header against content
+func httpsigVerifyDigest(L *lua.LState) int {
+	content := L.ToString(1)
+	digestHeader := L.ToString(2)
+	
+	if content == "" || digestHeader == "" {
+		L.Push(lua.LBool(false))
+		L.Push(lua.LString("missing content or digest header"))
+		return 2
+	}
+	
+	valid, err := verifyDigest(content, digestHeader)
+	if err != nil {
+		L.Push(lua.LBool(false))
+		L.Push(lua.LString("digest verification failed: " + err.Error()))
+		return 2
+	}
+	
+	L.Push(lua.LBool(valid))
+	return 1
+}
+
+// Helper functions for HTTP signatures
+
+func createHTTPSignature(message *HTTPMessage, options *HTTPSignatureOptions) (string, error) {
+	// Add date header if not present
+	if !hasHeader(message.Headers, "date") {
+		message.Headers["date"] = time.Now().UTC().Format(time.RFC1123)
+	}
+	
+	// Determine headers to sign
+	headersToSign := options.Headers
+	if len(headersToSign) == 0 {
+		// Default headers based on message type
+		if message.Type == "request" {
+			headersToSign = []string{"(request-target)", "host", "date"}
+		} else {
+			headersToSign = []string{"(status)", "content-type", "date"}
+		}
+	}
+	
+	// Create digest header if needed
+	if contains(headersToSign, "digest") && !hasHeader(message.Headers, "digest") {
+		digest, err := createDigest(message.Body, "sha256")
+		if err != nil {
+			return "", fmt.Errorf("failed to create digest: %w", err)
+		}
+		message.Headers["digest"] = digest
+	}
+	
+	// Build signing string
+	signingString, err := buildSigningString(message, headersToSign, options.Created, options.Expires)
+	if err != nil {
+		return "", fmt.Errorf("failed to build signing string: %w", err)
+	}
+	
+	// Sign the string
+	signature, err := signWithJWK(options.JWK, []byte(signingString))
+	if err != nil {
+		return "", fmt.Errorf("failed to sign: %w", err)
+	}
+	
+	// Build signature header
+	signatureB64 := base64.StdEncoding.EncodeToString(signature)
+	
+	var parts []string
+	parts = append(parts, fmt.Sprintf("keyId=\"%s\"", options.KeyID))
+	parts = append(parts, fmt.Sprintf("algorithm=\"%s\"", getSignatureAlgorithm(options.JWK)))
+	parts = append(parts, fmt.Sprintf("headers=\"%s\"", strings.Join(headersToSign, " ")))
+	
+	if options.Created > 0 {
+		parts = append(parts, fmt.Sprintf("created=%d", options.Created))
+	}
+	if options.Expires > 0 {
+		parts = append(parts, fmt.Sprintf("expires=%d", options.Expires))
+	}
+	
+	parts = append(parts, fmt.Sprintf("signature=\"%s\"", signatureB64))
+	
+	return strings.Join(parts, ","), nil
+}
+
+func verifyHTTPSignature(message *HTTPMessage, options *HTTPSignatureOptions) (*HTTPSignatureResult, error) {
+	result := &HTTPSignatureResult{}
+	
+	// Parse signature header
+	signatureHeader, ok := message.Headers["signature"]
+	if !ok {
+		result.Reason = "missing signature header"
+		return result, nil
+	}
+	
+	sigParams, err := parseSignatureHeader(signatureHeader)
+	if err != nil {
+		result.Reason = "invalid signature header format"
+		return result, nil
+	}
+	
+	result.KeyID = sigParams["keyId"]
+	result.Algorithm = sigParams["algorithm"]
+	
+	// Check required headers
+	signedHeaders := strings.Fields(sigParams["headers"])
+	for _, required := range options.RequiredHeaders {
+		if !contains(signedHeaders, required) {
+			result.Reason = fmt.Sprintf("required header '%s' not signed", required)
+			return result, nil
+		}
+	}
+	
+	// Validate digest if digest header was signed
+	if contains(signedHeaders, "digest") {
+		digestHeader, ok := message.Headers["digest"]
+		if !ok {
+			result.Reason = "digest header missing but was signed"
+			return result, nil
+		}
+		
+		// Verify digest matches the body content
+		digestValid, err := verifyDigest(message.Body, digestHeader)
+		if err != nil {
+			result.Reason = "digest verification failed: " + err.Error()
+			return result, nil
+		}
+		
+		if !digestValid {
+			result.Reason = "digest mismatch - body content has been tampered"
+			return result, nil
+		}
+	}
+	
+	// Build signing string
+	created, _ := strconv.ParseInt(sigParams["created"], 10, 64)
+	expires, _ := strconv.ParseInt(sigParams["expires"], 10, 64)
+	
+	signingString, err := buildSigningString(message, signedHeaders, created, expires)
+	if err != nil {
+		result.Reason = "failed to build signing string"
+		return result, nil
+	}
+	
+	// Verify signature
+	signatureB64 := sigParams["signature"]
+	signature, err := base64.StdEncoding.DecodeString(signatureB64)
+	if err != nil {
+		result.Reason = "invalid signature encoding"
+		return result, nil
+	}
+	
+	valid, err := verifyWithJWK(options.JWK, []byte(signingString), signature)
+	if err != nil {
+		result.Reason = "signature verification failed"
+		return result, nil
+	}
+	
+	result.Valid = valid
+	if !valid {
+		result.Reason = "signature verification failed"
+	}
+	
+	return result, nil
+}
+
+func createDigest(content, algorithm string) (string, error) {
+	var hash []byte
+	var algName string
+	
+	switch strings.ToLower(algorithm) {
+	case "sha256":
+		h := sha256.Sum256([]byte(content))
+		hash = h[:]
+		algName = "SHA-256"
+	case "sha512":
+		h := sha512.Sum512([]byte(content))
+		hash = h[:]
+		algName = "SHA-512"
+	default:
+		return "", fmt.Errorf("unsupported digest algorithm: %s", algorithm)
+	}
+	
+	return algName + "=" + base64.StdEncoding.EncodeToString(hash), nil
+}
+
+func verifyDigest(content, digestHeader string) (bool, error) {
+	// Parse digest header (e.g., "SHA-256=X48E9qOokqqrvdts8nOJRJN3OWDUoyWxBf7kbu9DBPE=")
+	parts := strings.SplitN(digestHeader, "=", 2)
+	if len(parts) != 2 {
+		return false, fmt.Errorf("invalid digest header format")
+	}
+	
+	algorithm := strings.ToLower(strings.TrimSpace(parts[0]))
+	expectedDigest := strings.TrimSpace(parts[1])
+	
+	// Map algorithm names
+	switch algorithm {
+	case "sha-256":
+		algorithm = "sha256"
+	case "sha-512":
+		algorithm = "sha512"
+	}
+	
+	// Create digest for content
+	actualDigest, err := createDigest(content, algorithm)
+	if err != nil {
+		return false, err
+	}
+	
+	// Extract just the base64 part for comparison
+	actualParts := strings.SplitN(actualDigest, "=", 2)
+	if len(actualParts) != 2 {
+		return false, fmt.Errorf("failed to create digest")
+	}
+	
+	return actualParts[1] == expectedDigest, nil
+}
+
+func buildSigningString(message *HTTPMessage, headers []string, created, expires int64) (string, error) {
+	var lines []string
+	
+	for _, header := range headers {
+		switch header {
+		case "(request-target)":
+			if message.Type != "request" {
+				return "", fmt.Errorf("(request-target) can only be used with requests")
+			}
+			target := strings.ToLower(message.Method) + " " + message.Path
+			lines = append(lines, "(request-target): "+target)
+			
+		case "(status)":
+			if message.Type != "response" {
+				return "", fmt.Errorf("(status) can only be used with responses")
+			}
+			lines = append(lines, "(status): "+strconv.Itoa(message.Status))
+			
+		case "(created)":
+			if created <= 0 {
+				return "", fmt.Errorf("(created) header requires created timestamp")
+			}
+			lines = append(lines, "(created): "+strconv.FormatInt(created, 10))
+			
+		case "(expires)":
+			if expires <= 0 {
+				return "", fmt.Errorf("(expires) header requires expires timestamp")
+			}
+			lines = append(lines, "(expires): "+strconv.FormatInt(expires, 10))
+			
+		default:
+			// Regular header
+			value, ok := message.Headers[strings.ToLower(header)]
+			if !ok {
+				return "", fmt.Errorf("header '%s' not found in message", header)
+			}
+			lines = append(lines, strings.ToLower(header)+": "+value)
+		}
+	}
+	
+	return strings.Join(lines, "\n"), nil
+}
+
+func parseSignatureHeader(header string) (map[string]string, error) {
+	params := make(map[string]string)
+	
+	// Split by commas, but handle quoted strings
+	parts := strings.Split(header, ",")
+	for _, part := range parts {
+		part = strings.TrimSpace(part)
+		if part == "" {
+			continue
+		}
+		
+		// Find key=value
+		eqIdx := strings.Index(part, "=")
+		if eqIdx == -1 {
+			continue
+		}
+		
+		key := strings.TrimSpace(part[:eqIdx])
+		value := strings.TrimSpace(part[eqIdx+1:])
+		
+		// Remove quotes
+		if len(value) >= 2 && value[0] == '"' && value[len(value)-1] == '"' {
+			value = value[1 : len(value)-1]
+		}
+		
+		params[key] = value
+	}
+	
+	return params, nil
+}
+
+func getSignatureAlgorithm(jwk *JWK) string {
+	switch jwk.Alg {
+	case "RS256", "RS384", "RS512":
+		return "rsa-" + strings.ToLower(jwk.Alg[2:])
+	case "ES256", "ES384", "ES512":
+		return "ecdsa-" + strings.ToLower(jwk.Alg[2:])
+	case "EdDSA":
+		return "ed25519"
+	default:
+		return jwk.Alg
+	}
+}
+
+func luaTableToHTTPMessage(table *lua.LTable) (*HTTPMessage, error) {
+	message := &HTTPMessage{
+		Headers: make(map[string]string),
+	}
+	
+	table.ForEach(func(key, value lua.LValue) {
+		switch key.String() {
+		case "type":
+			message.Type = value.String()
+		case "method":
+			message.Method = value.String()
+		case "path":
+			message.Path = value.String()
+		case "status":
+			if num, ok := value.(lua.LNumber); ok {
+				message.Status = int(num)
+			}
+		case "body":
+			message.Body = value.String()
+		case "headers":
+			if headersTable, ok := value.(*lua.LTable); ok {
+				headersTable.ForEach(func(hkey, hvalue lua.LValue) {
+					message.Headers[strings.ToLower(hkey.String())] = hvalue.String()
+				})
+			}
+		}
+	})
+	
+	if message.Type == "" {
+		return nil, fmt.Errorf("missing message type")
+	}
+	
+	return message, nil
+}
+
+func luaTableToHTTPSignatureOptions(table *lua.LTable) (*HTTPSignatureOptions, error) {
+	options := &HTTPSignatureOptions{}
+	
+	table.ForEach(func(key, value lua.LValue) {
+		switch key.String() {
+		case "jwk":
+			if jwkTable, ok := value.(*lua.LTable); ok {
+				jwk, err := luaTableToJWK(jwkTable)
+				if err == nil {
+					options.JWK = jwk
+				}
+			}
+		case "key_id":
+			options.KeyID = value.String()
+		case "algorithm":
+			options.Algorithm = value.String()
+		case "headers":
+			if headersTable, ok := value.(*lua.LTable); ok {
+				var headers []string
+				for i := 1; ; i++ {
+					val := headersTable.RawGetInt(i)
+					if val == lua.LNil {
+						break
+					}
+					headers = append(headers, val.String())
+				}
+				options.Headers = headers
+			}
+		case "created":
+			if num, ok := value.(lua.LNumber); ok {
+				options.Created = int64(num)
+			}
+		case "expires":
+			if num, ok := value.(lua.LNumber); ok {
+				options.Expires = int64(num)
+			}
+		case "required_headers":
+			if headersTable, ok := value.(*lua.LTable); ok {
+				var headers []string
+				for i := 1; ; i++ {
+					val := headersTable.RawGetInt(i)
+					if val == lua.LNil {
+						break
+					}
+					headers = append(headers, val.String())
+				}
+				options.RequiredHeaders = headers
+			}
+		case "max_age":
+			if num, ok := value.(lua.LNumber); ok {
+				options.MaxAge = int64(num)
+			}
+		}
+	})
+	
+	if options.JWK == nil {
+		return nil, fmt.Errorf("missing JWK")
+	}
+	
+	return options, nil
+}
+
+// Utility functions
+func contains(slice []string, item string) bool {
+	for _, s := range slice {
+		if s == item {
+			return true
+		}
+	}
+	return false
+}
+
+func hasHeader(headers map[string]string, name string) bool {
+	_, exists := headers[strings.ToLower(name)]
+	return exists
 }
 
 `
