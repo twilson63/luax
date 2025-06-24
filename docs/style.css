@@ -897,6 +897,217 @@ a:hover {
 .number { color: var(--cyber-warning); }
 .operator { color: var(--cyber-accent); }
 
+/* Quick How-To Section */
+.quick-howto {
+    background: var(--cyber-bg);
+    padding: 4rem 0;
+}
+
+.howto-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.step {
+    display: flex;
+    align-items: flex-start;
+    gap: 2rem;
+    padding: 2rem;
+    background: var(--cyber-bg-secondary);
+    border: 1px solid var(--cyber-border);
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.step:hover {
+    border-color: var(--cyber-accent);
+    box-shadow: var(--cyber-glow);
+    transform: translateY(-3px);
+}
+
+.step-number {
+    background: var(--cyber-accent);
+    color: var(--cyber-bg);
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    font-weight: 700;
+    flex-shrink: 0;
+    box-shadow: var(--cyber-glow);
+}
+
+.step-content {
+    flex: 1;
+}
+
+.step-content h3 {
+    margin-bottom: 0.5rem;
+    color: var(--cyber-accent);
+}
+
+.step-content h3::before {
+    content: '';
+}
+
+.step-content p {
+    color: var(--cyber-text-light);
+    margin-bottom: 1rem;
+}
+
+.step .code-block {
+    margin: 1rem 0 0 0;
+}
+
+/* Built For Section */
+.built-for {
+    background: var(--cyber-bg-secondary);
+    padding: 4rem 0;
+}
+
+.audience-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+.audience-item {
+    background: var(--cyber-bg);
+    padding: 1.5rem;
+    border: 1px solid var(--cyber-border);
+    border-radius: 8px;
+    text-align: center;
+    font-size: 1.1rem;
+    color: var(--cyber-text);
+    transition: all 0.3s ease;
+    border-left: 4px solid var(--cyber-accent-dim);
+}
+
+.audience-item:hover {
+    border-color: var(--cyber-accent);
+    box-shadow: var(--cyber-glow);
+    transform: translateY(-3px);
+    border-left-color: var(--cyber-accent);
+}
+
+.audience-item.highlight {
+    background: linear-gradient(135deg, var(--cyber-bg) 0%, rgba(0, 212, 255, 0.05) 100%);
+    border: 2px solid var(--cyber-accent);
+    font-weight: 600;
+    color: var(--cyber-accent);
+    position: relative;
+}
+
+.audience-item.highlight::before {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    background: linear-gradient(45deg, var(--cyber-accent), var(--cyber-accent-bright), var(--cyber-accent));
+    border-radius: 8px;
+    z-index: -1;
+    animation: cyber-pulse 2s ease-in-out infinite alternate;
+}
+
+@keyframes cyber-pulse {
+    0% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
+
+/* Get Started Section */
+.get-started {
+    background: var(--cyber-bg);
+    padding: 4rem 0;
+}
+
+.get-started .install-options {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+.get-started .install-option {
+    background: var(--cyber-bg-secondary);
+    border: 1px solid var(--cyber-border);
+    padding: 2rem;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.get-started .install-option:hover {
+    border-color: var(--cyber-accent);
+    box-shadow: var(--cyber-glow);
+    transform: translateY(-3px);
+}
+
+.get-started .install-option.highlight {
+    border: 2px solid var(--cyber-accent);
+    background: linear-gradient(135deg, var(--cyber-bg-secondary) 0%, rgba(0, 212, 255, 0.05) 100%);
+}
+
+.get-started .install-option h3 {
+    color: var(--cyber-accent);
+    margin-bottom: 1rem;
+}
+
+.get-started .install-option h3::before {
+    content: '';
+}
+
+.download-links {
+    margin-top: 1rem;
+}
+
+.download-links .btn {
+    display: inline-block;
+    margin-right: 1rem;
+}
+
+/* Mobile adjustments for new sections */
+@media (max-width: 768px) {
+    .howto-steps {
+        gap: 1.5rem;
+    }
+    
+    .step {
+        flex-direction: column;
+        text-align: center;
+        gap: 1rem;
+        padding: 1.5rem;
+    }
+    
+    .step-number {
+        align-self: center;
+    }
+    
+    .audience-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+    
+    .audience-item {
+        padding: 1rem;
+        font-size: 1rem;
+    }
+    
+    .get-started .install-options {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+}
+
 /* Additional API-specific styling */
 .api-section {
     background: var(--cyber-bg);

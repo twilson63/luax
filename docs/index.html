@@ -42,9 +42,56 @@
             </div>
         </section>
 
+        <section class="quick-howto">
+            <div class="container">
+                <h2>🛠️ Quick How-To</h2>
+                <div class="howto-steps">
+                    <div class="step">
+                        <div class="step-number">1</div>
+                        <div class="step-content">
+                            <h3>Write your Lua file</h3>
+                            <p>(e.g., app.lua)</p>
+                        </div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">2</div>
+                        <div class="step-content">
+                            <h3>Run:</h3>
+                            <div class="code-block">
+                                <code>hype build app.lua -o mycoolapp</code>
+                                <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">3</div>
+                        <div class="step-content">
+                            <h3>Done.</h3>
+                            <p>Send <strong>mycoolapp</strong> to anyone. It just works.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="built-for">
+            <div class="container">
+                <h2>🧳 Built for:</h2>
+                <div class="audience-grid">
+                    <div class="audience-item">Hackers</div>
+                    <div class="audience-item">Scripters</div>
+                    <div class="audience-item">Tinkerers</div>
+                    <div class="audience-item">Sysadmins</div>
+                    <div class="audience-item">Engineers who want it just done already</div>
+                    <div class="audience-item">Anyone tired of setting up environments for "just one script"</div>
+                    <div class="audience-item highlight">And maybe… the next wave of AI devs 👀</div>
+                </div>
+            </div>
+        </section>
+
         <section class="features">
             <div class="container">
-                <h2>Features</h2>
+                <h2>What's Inside</h2>
                 <div class="features-grid">
                     <div class="feature-card">
                         <div class="feature-icon">📦</div>
@@ -80,14 +127,13 @@
             </div>
         </section>
 
-        <section id="installation" class="installation">
+        <section id="installation" class="get-started">
             <div class="container">
-                <h2>Installation</h2>
+                <h2>🔗 Get Started</h2>
                 
                 <div class="install-options">
                     <div class="install-option">
-                        <h3>📱 macOS (Recommended)</h3>
-                        <p>One-line installer with automatic architecture detection:</p>
+                        <h3>📱 One-line install:</h3>
                         <div class="code-block">
                             <code>curl -sSL https://raw.githubusercontent.com/twilson63/hype/main/install-mac.sh | bash</code>
                             <button class="copy-btn" onclick="copyCode(this)">Copy</button>
@@ -95,29 +141,18 @@
                     </div>
 
                     <div class="install-option">
-                        <h3>🔧 Manual Installation</h3>
-                        <ol>
-                            <li>Download the appropriate binary from <a href="https://github.com/twilson63/hype/releases" target="_blank">GitHub Releases</a></li>
-                            <li>For macOS: <code>hype-darwin-amd64</code> (Intel) or <code>hype-darwin-arm64</code> (Apple Silicon)</li>
-                            <li>Make executable: <code>chmod +x hype-*</code></li>
-                            <li>Move to PATH: <code>mv hype-* /usr/local/bin/hype</code></li>
-                        </ol>
-                    </div>
-
-                    <div class="install-option">
-                        <h3>🍎 macOS Gatekeeper Fix</h3>
-                        <p>If macOS blocks the binary:</p>
-                        <div class="code-block">
-                            <code>xattr -d com.apple.quarantine /path/to/hype</code>
-                            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                        <h3>🔧 Or download a prebuilt binary</h3>
+                        <p>Make it executable, and go.</p>
+                        <div class="download-links">
+                            <a href="https://github.com/twilson63/hype/releases" target="_blank" class="btn btn-secondary">GitHub Releases</a>
                         </div>
                     </div>
 
-                    <div class="install-option">
-                        <h3>🛠️ Build from Source</h3>
-                        <div class="code-block">
-                            <code>git clone https://github.com/twilson63/hype.git<br>cd hype<br>go build -o hype .</code>
-                            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    <div class="install-option highlight">
+                        <h3>📂 GitHub Repo</h3>
+                        <p>The source of truth</p>
+                        <div class="download-links">
+                            <a href="https://github.com/twilson63/hype" target="_blank" class="btn btn-primary">View on GitHub</a>
                         </div>
                     </div>
                 </div>
