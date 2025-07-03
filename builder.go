@@ -48,7 +48,8 @@ func buildExecutable(scriptPath, outputName, target string) error {
 	if err != nil {
 		return fmt.Errorf("failed to resolve dependencies: %w", err)
 	}
-	config.ScriptContent = bundledContent
+	// Escape the script content for safe embedding in Go code
+	config.ScriptContent = strconv.Quote(bundledContent)
 
 	tempDir, err := os.MkdirTemp("", "luax-build-*")
 	if err != nil {
@@ -98,7 +99,7 @@ import (
 	"net/http"
 )
 
-const luaScript = ` + "`" + `{{.ScriptContent}}` + "`" + `
+const luaScript = {{.ScriptContent}}
 
 func main() {
 	L := lua.NewState()
