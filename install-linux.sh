@@ -17,10 +17,10 @@ echo "=============================="
 # Detect architecture
 ARCH=$(uname -m)
 if [[ "$ARCH" == "x86_64" ]]; then
-    BINARY="hype-linux-amd64"
+    ARCHIVE="luax-v1.4.0-linux-amd64.tar.gz"
     echo -e "Detected: ${GREEN}Linux x86_64${NC}"
 elif [[ "$ARCH" == "aarch64" || "$ARCH" == "arm64" ]]; then
-    BINARY="hype-linux-arm64"
+    ARCHIVE="luax-v1.4.0-linux-arm64.tar.gz"
     echo -e "Detected: ${GREEN}Linux ARM64${NC}"
 else
     echo -e "${RED}Error: Unsupported architecture: $ARCH${NC}"
@@ -34,14 +34,25 @@ mkdir -p "$INSTALL_DIR"
 
 # Download latest version
 VERSION="v1.4.0"
-URL="https://github.com/twilson63/hype/releases/download/$VERSION/$BINARY"
+URL="https://github.com/twilson63/hype/releases/download/$VERSION/$ARCHIVE"
 
 echo -e "\n${YELLOW}Downloading Hype $VERSION...${NC}"
-curl -L -o "/tmp/hype" "$URL"
+curl -L -o "/tmp/$ARCHIVE" "$URL"
+
+echo -e "${YELLOW}Extracting archive...${NC}"
+cd /tmp
+tar -xzf "$ARCHIVE"
+
+# Find the binary in the extracted directory
+EXTRACTED_DIR=$(tar -tzf "$ARCHIVE" | head -1 | cut -f1 -d"/")
+BINARY_PATH="/tmp/$EXTRACTED_DIR/hype"
 
 # Make executable and install
-chmod +x "/tmp/hype"
-mv "/tmp/hype" "$INSTALL_DIR/hype"
+chmod +x "$BINARY_PATH"
+mv "$BINARY_PATH" "$INSTALL_DIR/hype"
+
+# Clean up
+rm -rf "/tmp/$ARCHIVE" "/tmp/$EXTRACTED_DIR"
 
 echo -e "${GREEN}✅ Hype installed successfully!${NC}"
 

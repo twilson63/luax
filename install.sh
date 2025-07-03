@@ -21,10 +21,10 @@ ARCH=$(uname -m)
 case "$OS" in
     Linux*)
         if [[ "$ARCH" == "x86_64" ]]; then
-            BINARY="hype-linux-amd64"
+            ARCHIVE="luax-v1.4.0-linux-amd64.tar.gz"
             echo -e "Detected: ${GREEN}Linux x86_64${NC}"
         elif [[ "$ARCH" == "aarch64" || "$ARCH" == "arm64" ]]; then
-            BINARY="hype-linux-arm64"
+            ARCHIVE="luax-v1.4.0-linux-arm64.tar.gz"
             echo -e "Detected: ${GREEN}Linux ARM64${NC}"
         else
             echo -e "${RED}Error: Unsupported Linux architecture: $ARCH${NC}"
@@ -33,10 +33,10 @@ case "$OS" in
         ;;
     Darwin*)
         if [[ "$ARCH" == "arm64" ]]; then
-            BINARY="hype-darwin-arm64"
+            ARCHIVE="luax-v1.4.0-darwin-arm64.tar.gz"
             echo -e "Detected: ${GREEN}macOS Apple Silicon (M1/M2)${NC}"
         elif [[ "$ARCH" == "x86_64" ]]; then
-            BINARY="hype-darwin-amd64"
+            ARCHIVE="luax-v1.4.0-darwin-amd64.tar.gz"
             echo -e "Detected: ${GREEN}macOS Intel${NC}"
         else
             echo -e "${RED}Error: Unsupported macOS architecture: $ARCH${NC}"
@@ -45,7 +45,7 @@ case "$OS" in
         ;;
     CYGWIN*|MINGW*|MSYS*)
         if [[ "$ARCH" == "x86_64" ]]; then
-            BINARY="hype-windows-amd64.exe"
+            ARCHIVE="luax-v1.4.0-windows-amd64.zip"
             echo -e "Detected: ${GREEN}Windows x86_64${NC}"
         else
             echo -e "${RED}Error: Unsupported Windows architecture: $ARCH${NC}"
@@ -65,21 +65,47 @@ mkdir -p "$INSTALL_DIR"
 
 # Download latest version
 VERSION="v1.4.0"
-URL="https://github.com/twilson63/hype/releases/download/$VERSION/$BINARY"
+URL="https://github.com/twilson63/hype/releases/download/$VERSION/$ARCHIVE"
 
 echo -e "\n${YELLOW}Downloading Hype $VERSION...${NC}"
 if command -v curl >/dev/null 2>&1; then
-    curl -L -o "/tmp/hype" "$URL"
+    curl -L -o "/tmp/$ARCHIVE" "$URL"
 elif command -v wget >/dev/null 2>&1; then
-    wget -O "/tmp/hype" "$URL"
+    wget -O "/tmp/$ARCHIVE" "$URL"
 else
     echo -e "${RED}Error: curl or wget is required for installation${NC}"
     exit 1
 fi
 
+echo -e "${YELLOW}Extracting archive...${NC}"
+cd /tmp
+
+# Extract based on file type
+if [[ "$ARCHIVE" == *.zip ]]; then
+    unzip -q "$ARCHIVE"
+    EXTRACTED_DIR=$(unzip -l "$ARCHIVE" | awk 'NR==4 {print $4}' | cut -f1 -d"/")
+else
+    tar -xzf "$ARCHIVE"
+    EXTRACTED_DIR=$(tar -tzf "$ARCHIVE" | head -1 | cut -f1 -d"/")
+fi
+
+# Find the binary
+if [[ "$OS" == CYGWIN* || "$OS" == MINGW* || "$OS" == MSYS* ]]; then
+    BINARY_PATH="/tmp/$EXTRACTED_DIR/hype.exe"
+else
+    BINARY_PATH="/tmp/$EXTRACTED_DIR/hype"
+fi
+
 # Make executable and install
-chmod +x "/tmp/hype"
-mv "/tmp/hype" "$INSTALL_DIR/hype"
+chmod +x "$BINARY_PATH"
+if [[ "$OS" == CYGWIN* || "$OS" == MINGW* || "$OS" == MSYS* ]]; then
+    mv "$BINARY_PATH" "$INSTALL_DIR/hype.exe"
+else
+    mv "$BINARY_PATH" "$INSTALL_DIR/hype"
+fi
+
+# Clean up
+rm -rf "/tmp/$ARCHIVE" "/tmp/$EXTRACTED_DIR"
 
 echo -e "${GREEN}✅ Hype installed successfully!${NC}"
 
