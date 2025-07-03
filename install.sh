@@ -21,10 +21,10 @@ ARCH=$(uname -m)
 case "$OS" in
     Linux*)
         if [[ "$ARCH" == "x86_64" ]]; then
-            ARCHIVE="luax-v1.4.1-linux-amd64.tar.gz"
+            ARCHIVE="hype-v1.4.2-linux-amd64.tar.gz"
             echo -e "Detected: ${GREEN}Linux x86_64${NC}"
         elif [[ "$ARCH" == "aarch64" || "$ARCH" == "arm64" ]]; then
-            ARCHIVE="luax-v1.4.1-linux-arm64.tar.gz"
+            ARCHIVE="hype-v1.4.2-linux-arm64.tar.gz"
             echo -e "Detected: ${GREEN}Linux ARM64${NC}"
         else
             echo -e "${RED}Error: Unsupported Linux architecture: $ARCH${NC}"
@@ -33,10 +33,10 @@ case "$OS" in
         ;;
     Darwin*)
         if [[ "$ARCH" == "arm64" ]]; then
-            ARCHIVE="luax-v1.4.1-darwin-arm64.tar.gz"
+            ARCHIVE="hype-v1.4.2-darwin-arm64.tar.gz"
             echo -e "Detected: ${GREEN}macOS Apple Silicon (M1/M2)${NC}"
         elif [[ "$ARCH" == "x86_64" ]]; then
-            ARCHIVE="luax-v1.4.1-darwin-amd64.tar.gz"
+            ARCHIVE="hype-v1.4.2-darwin-amd64.tar.gz"
             echo -e "Detected: ${GREEN}macOS Intel${NC}"
         else
             echo -e "${RED}Error: Unsupported macOS architecture: $ARCH${NC}"
@@ -45,7 +45,7 @@ case "$OS" in
         ;;
     CYGWIN*|MINGW*|MSYS*)
         if [[ "$ARCH" == "x86_64" ]]; then
-            ARCHIVE="luax-v1.4.1-windows-amd64.zip"
+            ARCHIVE="hype-v1.4.2-windows-amd64.zip"
             echo -e "Detected: ${GREEN}Windows x86_64${NC}"
         else
             echo -e "${RED}Error: Unsupported Windows architecture: $ARCH${NC}"
@@ -64,7 +64,7 @@ INSTALL_DIR="$HOME/.local/bin"
 mkdir -p "$INSTALL_DIR"
 
 # Download latest version
-VERSION="v1.4.1"
+VERSION="v1.4.2"
 URL="https://github.com/twilson63/hype/releases/download/$VERSION/$ARCHIVE"
 
 echo -e "\n${YELLOW}Downloading Hype $VERSION...${NC}"

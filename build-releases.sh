@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Build script for creating LuaX releases for multiple platforms
+# Build script for creating Hype releases for multiple platforms
 # This script builds binaries for different platforms and packages them for distribution
 
 set -e
@@ -93,12 +93,12 @@ package_release() {
     
     if [[ "$platform" == *"windows"* ]]; then
         # Create ZIP for Windows
-        zip -r "luax-${VERSION}-${platform}.zip" "$platform"
-        log_success "Created luax-${VERSION}-${platform}.zip"
+        zip -r "hype-${VERSION}-${platform}.zip" "$platform"
+        log_success "Created hype-${VERSION}-${platform}.zip"
     else
         # Create tar.gz for Unix systems
-        tar -czf "luax-${VERSION}-${platform}.tar.gz" "$platform"
-        log_success "Created luax-${VERSION}-${platform}.tar.gz"
+        tar -czf "hype-${VERSION}-${platform}.tar.gz" "$platform"
+        log_success "Created hype-${VERSION}-${platform}.tar.gz"
     fi
     
     cd ..
@@ -111,14 +111,14 @@ generate_checksums() {
     
     # Generate SHA256 checksums
     if command -v sha256sum >/dev/null 2>&1; then
-        sha256sum *.tar.gz *.zip > "luax-${VERSION}-checksums.txt" 2>/dev/null || true
+        sha256sum *.tar.gz *.zip > "hype-${VERSION}-checksums.txt" 2>/dev/null || true
     elif command -v shasum >/dev/null 2>&1; then
-        shasum -a 256 *.tar.gz *.zip > "luax-${VERSION}-checksums.txt" 2>/dev/null || true
+        shasum -a 256 *.tar.gz *.zip > "hype-${VERSION}-checksums.txt" 2>/dev/null || true
     fi
     
     cd ..
     
-    if [[ -f "$BUILD_DIR/luax-${VERSION}-checksums.txt" ]]; then
+    if [[ -f "$BUILD_DIR/hype-${VERSION}-checksums.txt" ]]; then
         log_success "Generated checksums file"
     fi
 }
@@ -163,7 +163,7 @@ EOF
 }
 
 main() {
-    echo "Building LuaX releases for version $VERSION"
+    echo "Building Hype releases for version $VERSION"
     echo
     
     # Clean build directory
