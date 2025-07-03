@@ -118,6 +118,11 @@
                         <p>Key-value store with ACID transactions using BoltDB</p>
                     </div>
                     <div class="feature-card">
+                        <div class="feature-icon">📁</div>
+                        <h3>Multi-File Projects</h3>
+                        <p>Bundle multiple Lua files with dependency resolution</p>
+                    </div>
+                    <div class="feature-card">
                         <div class="feature-icon">✨</div>
                         <h3>Zero Dependencies</h3>
                         <p>Final executables have no external dependencies</p>
@@ -240,6 +245,32 @@ db:close()</code></pre>
                             <button class="copy-btn" onclick="copyCode(this)">Copy</button>
                         </div>
                     </div>
+
+                    <div class="example-card">
+                        <h3>📁 Multi-File Project</h3>
+                        <div class="code-block">
+                            <pre><code>-- utils.lua
+local M = {}
+function M.greet(name)
+    return "Hello, " .. name .. "!"
+end
+return M
+
+-- main.lua
+local utils = require('./utils')
+local http = require('http')
+
+local server = http.newServer()
+server:handle("/", function(req, res)
+    res:json({ message = utils.greet("World") })
+end)
+server:listen(8080)</code></pre>
+                        </div>
+                        <div class="code-block">
+                            <code>./hype build main.lua -o app<br>./app</code>
+                            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </section>
@@ -253,7 +284,7 @@ db:close()</code></pre>
                         <h3>📦 Build Mode</h3>
                         <p>Compile Lua scripts into standalone executables:</p>
                         <div class="code-block">
-                            <code># Build for current platform<br>
+                            <code># Build with auto-bundling (handles dependencies)<br>
 ./hype build script.lua<br><br>
 # Specify output name<br>
 ./hype build script.lua -o myapp<br><br>
@@ -261,6 +292,19 @@ db:close()</code></pre>
 ./hype build script.lua --target linux<br>
 ./hype build script.lua --target windows<br>
 ./hype build script.lua --target darwin</code>
+                        </div>
+                    </div>
+
+                    <div class="usage-option">
+                        <h3>📦 Bundle Mode</h3>
+                        <p>Create single Lua files from multi-file projects (optional):</p>
+                        <div class="code-block">
+                            <code># Bundle dependencies into single file<br>
+./hype bundle main.lua<br><br>
+# Specify output file<br>
+./hype bundle main.lua -o bundled.lua<br><br>
+# Build handles bundling automatically<br>
+./hype build main.lua -o myapp</code>
                         </div>
                     </div>
 

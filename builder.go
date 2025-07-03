@@ -43,11 +43,12 @@ func buildExecutable(scriptPath, outputName, target string) error {
 		config.Target = runtime.GOOS
 	}
 
-	scriptContent, err := os.ReadFile(scriptPath)
+	// Auto-bundle dependencies if they exist
+	bundledContent, err := resolveDependencies(scriptPath, make(map[string]bool))
 	if err != nil {
-		return fmt.Errorf("failed to read script file: %w", err)
+		return fmt.Errorf("failed to resolve dependencies: %w", err)
 	}
-	config.ScriptContent = string(scriptContent)
+	config.ScriptContent = bundledContent
 
 	tempDir, err := os.MkdirTemp("", "luax-build-*")
 	if err != nil {

@@ -11,6 +11,7 @@ Hype is a powerful tool that packages Lua scripts into standalone executables wi
 - 🗄️ **Embedded key-value database** with BoltDB
 - 🔄 **Transaction support** with ACID properties
 - 🔍 **Database iteration and querying** with cursor support
+- 📁 **Multi-file project support** with dependency bundling
 - ✨ **Zero external dependencies** in final executables
 - 🚀 **Simple deployment** - single binary distribution
 
@@ -62,7 +63,7 @@ app:Run()' > hello.lua
 ### Command Line Interface
 
 ```bash
-# Build a Lua script into an executable
+# Build a Lua script into an executable (auto-bundles dependencies)
 ./hype build script.lua
 
 # Specify output name
@@ -73,12 +74,60 @@ app:Run()' > hello.lua
 ./hype build script.lua -t windows
 ./hype build script.lua -t darwin
 
+# Bundle multi-file Lua projects into single file (optional)
+./hype bundle script.lua
+./hype bundle script.lua -o bundled-script.lua
+
 # Run a Lua script directly (development/testing)
 ./hype run script.lua
 
 # Pass arguments to Lua scripts
 ./hype run server.lua -- --port 8080 --dir ./public
 ```
+
+## Multi-File Projects
+
+Hype supports multi-file Lua projects through its bundling system. You can split your code across multiple files and use `require()` to import them:
+
+```lua
+-- utils.lua
+local M = {}
+
+function M.greet(name)
+    return "Hello, " .. (name or "World") .. "!"
+end
+
+return M
+```
+
+```lua
+-- main.lua
+local utils = require('./utils')
+local http = require('http')
+
+print(utils.greet("Hype"))
+
+local server = http.newServer()
+server:handle("/", function(req, res)
+    res:json({ message = utils.greet("API User") })
+end)
+server:listen(8080)
+```
+
+**Building Multi-File Projects:**
+```bash
+# Build automatically bundles dependencies
+./hype build main.lua -o myapp
+
+# Optional: Bundle into single file first
+./hype bundle main.lua -o bundled.lua
+./hype build bundled.lua -o myapp
+```
+
+**Module Resolution:**
+- Relative paths: `require('./utils')`, `require('../shared/helpers')`
+- Module names: `require('utils')` (looks for `utils.lua` or `utils/init.lua`)
+- Built-in modules: `require('http')`, `require('kv')`, `require('tui')` (always available)
 
 ## Development Mode
 
@@ -88,7 +137,7 @@ For faster development and testing, Hype provides a `run` command that runs Lua 
 # Run script directly (great for development)
 ./hype run myapp.lua
 
-# All Hype APIs work the same way
+# Run multi-file projects (auto-resolves dependencies)
 ./hype run examples/showcase.lua
 ```
 
@@ -99,9 +148,10 @@ For faster development and testing, Hype provides a `run` command that runs Lua 
 - 📦 **Same APIs** - identical behavior to built executables
 - 🛠️ **Development workflow** - perfect for prototyping
 
-**When to use run vs build:**
+**When to use run vs build vs bundle:**
 - Use `run` during development and testing
-- Use `build` for production deployments and distribution
+- Use `build` for production deployments (auto-handles dependencies)
+- Use `bundle` when you need a single Lua file (optional step)
 
 ## Command Line Arguments
 

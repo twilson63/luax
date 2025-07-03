@@ -9,7 +9,7 @@ import (
 
 // Version information - can be set at build time with -ldflags
 var (
-	version = "1.3.1"
+	version = "1.4.0"
 	commit  = "unknown"
 	date    = "unknown"
 )
@@ -25,7 +25,7 @@ cross-platform executable applications with TUI support.`, version),
 
 var buildCmd = &cobra.Command{
 	Use:   "build [lua-script]",
-	Short: "Build a Lua script into an executable",
+	Short: "Build a Lua script into an executable (auto-bundles dependencies)",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		scriptPath := args[0]
@@ -63,6 +63,24 @@ Examples:
 	},
 }
 
+var bundleCmd = &cobra.Command{
+	Use:   "bundle [lua-script]",
+	Short: "Bundle a Lua script with its dependencies into a single file",
+	Args:  cobra.ExactArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		scriptPath := args[0]
+		outputFile, _ := cmd.Flags().GetString("output")
+		
+		fmt.Printf("Bundling %s with dependencies...\n", scriptPath)
+		
+		if err := bundleScript(scriptPath, outputFile); err != nil {
+			fmt.Fprintf(os.Stderr, "Error bundling script: %v\n", err)
+			os.Exit(1)
+		}
+	},
+}
+
+
 var versionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "Print the version number",
@@ -80,8 +98,12 @@ var versionCmd = &cobra.Command{
 func init() {
 	buildCmd.Flags().StringP("output", "o", "", "Output executable name")
 	buildCmd.Flags().StringP("target", "t", "current", "Target platform (current, linux, windows, darwin)")
+	
+	bundleCmd.Flags().StringP("output", "o", "", "Output bundled script file (default: [script]-bundled.lua)")
+	
 	rootCmd.AddCommand(buildCmd)
 	rootCmd.AddCommand(runCmd)
+	rootCmd.AddCommand(bundleCmd)
 	rootCmd.AddCommand(versionCmd)
 }
 
