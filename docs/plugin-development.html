@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, maximum-scale=5.0">
+    <meta name="theme-color" content="#00d4ff">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <title>Plugin Development - Hype - Zero-Dependency App Dev</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <h2>🚀 Hype</h2>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="index.html" class="nav-link">Home</a></li>
+                <li><a href="api.html" class="nav-link">API Reference</a></li>
+                <li><a href="examples.html" class="nav-link">Examples</a></li>
+                <li><a href="plugins.html" class="nav-link">Plugins</a></li>
+                <li><a href="https://github.com/twilson63/hype" class="nav-link">GitHub</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <section class="hero">
+            <div class="container">
+                <h1>Plugin Development Guide</h1>
+                <p class="hero-subtitle">Create Your Own Plugins</p>
+                <p class="hero-description">
+                    Learn how to create Hype plugins from scratch with practical examples and best practices.
+                    Build reusable components that extend Hype's capabilities.
+                </p>
+                <div class="hero-buttons">
+                    <a href="#first-plugin" class="btn btn-primary">Create Your First Plugin</a>
+                    <a href="plugins.html" class="btn btn-secondary">Plugin System Overview</a>
+                </div>
+            </div>
+        </section>
+
+        <section class="dev-section">
+            <div class="container">
+                <h2>📋 Prerequisites</h2>
+                <ul class="prereq-list">
+                    <li>✅ Basic Lua knowledge</li>
+                    <li>✅ Hype installed and working</li>
+                    <li>✅ Text editor</li>
+                </ul>
+            </div>
+        </section>
+
+        <section id="first-plugin" class="dev-section">
+            <div class="container">
+                <h2>🎯 Creating Your First Plugin</h2>
+                
+                <div class="tutorial-steps">
+                    <div class="step-card">
+                        <h3>Step 1: Plugin Setup</h3>
+                        <p>Create a new directory for your plugin:</p>
+                        <div class="code-block">
+                            <pre><code>mkdir my-first-plugin
+cd my-first-plugin</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="step-card">
+                        <h3>Step 2: Create the Manifest</h3>
+                        <p>Create <code>hype-plugin.yaml</code>:</p>
+                        <div class="code-block">
+                            <pre><code>name: "my-first-plugin"
+version: "1.0.0"
+type: "lua"
+main: "plugin.lua"
+description: "My first Hype plugin"
+author: "Your Name"
+license: "MIT"</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="step-card">
+                        <h3>Step 3: Create the Plugin Code</h3>
+                        <p>Create <code>plugin.lua</code>:</p>
+                        <div class="code-block">
+                            <pre><code class="language-lua">-- My first Hype plugin
+local myfirst = {}
+
+-- Simple greeting function
+function myfirst.greet(name)
+    return "Hello, " .. (name or "World") .. " from my first plugin!"
+end
+
+-- Function with error handling
+function myfirst.divide(a, b)
+    -- Validate inputs
+    if type(a) ~= "number" or type(b) ~= "number" then
+        return nil, "Both arguments must be numbers"
+    end
+    
+    if b == 0 then
+        return nil, "Division by zero"
+    end
+    
+    return a / b, nil
+end
+
+-- Plugin metadata
+myfirst._VERSION = "1.0.0"
+myfirst._DESCRIPTION = "My first Hype plugin"
+
+-- Must return the plugin table
+return myfirst</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="step-card">
+                        <h3>Step 4: Test the Plugin</h3>
+                        <p>Create a test script <code>test.lua</code>:</p>
+                        <div class="code-block">
+                            <pre><code class="language-lua">-- Test script for my-first-plugin
+local myfirst = require("my-first-plugin")
+
+-- Test greeting
+print(myfirst.greet("Developer"))
+
+-- Test division
+local result, err = myfirst.divide(10, 2)
+if result then
+    print("10 / 2 =", result)
+else
+    print("Error:", err)
+end
+
+-- Test error handling
+local result, err = myfirst.divide(10, 0)
+if result then
+    print("Result:", result)
+else
+    print("Expected error:", err)
+end</code></pre>
+                        </div>
+                        <p>Run the test:</p>
+                        <div class="code-block">
+                            <code>./hype run test.lua --plugins ./my-first-plugin</code>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="dev-section">
+            <div class="container">
+                <h2>🔧 Development Patterns</h2>
+                
+                <div class="pattern-grid">
+                    <div class="pattern-card">
+                        <h3>Error Handling Pattern</h3>
+                        <div class="code-block">
+                            <pre><code class="language-lua">function myplugin.operation(input)
+    -- Validate input
+    if not input then
+        return nil, "Input is required"
+    end
+    
+    if type(input) ~= "string" then
+        return nil, "Input must be a string"
+    end
+    
+    -- Perform operation
+    local result = processInput(input)
+    
+    -- Check for errors
+    if not result then
+        return nil, "Processing failed"
+    end
+    
+    return result, nil
+end</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="pattern-card">
+                        <h3>Optional Parameters Pattern</h3>
+                        <div class="code-block">
+                            <pre><code class="language-lua">function myplugin.format(text, options)
+    -- Default options
+    options = options or {}
+    
+    local prefix = options.prefix or ""
+    local suffix = options.suffix or ""
+    local uppercase = options.uppercase or false
+    
+    local result = prefix .. text .. suffix
+    
+    if uppercase then
+        result = result:upper()
+    end
+    
+    return result
+end</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="pattern-card">
+                        <h3>State Management Pattern</h3>
+                        <div class="code-block">
+                            <pre><code class="language-lua">local myplugin = {}
+
+-- Private state
+local cache = {}
+local initialized = false
+
+-- Private functions
+local function init()
+    if initialized then return end
+    
+    -- Initialize plugin state
+    cache = {}
+    initialized = true
+end
+
+-- Public functions
+function myplugin.set(key, value)
+    init()
+    cache[key] = value
+    return true
+end
+
+function myplugin.get(key)
+    init()
+    return cache[key]
+end
+
+return myplugin</code></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="dev-section">
+            <div class="container">
+                <h2>🌟 Real-World Examples</h2>
+                
+                <div class="examples-showcase">
+                    <div class="example-card">
+                        <h3>📁 File Watcher Plugin</h3>
+                        <p>Monitor file changes and detect modifications</p>
+                        <div class="code-block">
+                            <pre><code class="language-lua">local watcher = {}
+
+-- Store watched files and their last modification times
+local watched = {}
+
+function watcher.watch(filepath)
+    local file = io.open(filepath, "r")
+    if not file then
+        return false, "File not found: " .. filepath
+    end
+    file:close()
+    
+    -- Get file modification time
+    local handle = io.popen("stat -c %Y " .. filepath .. " 2>/dev/null")
+    local mtime = handle:read("*a")
+    handle:close()
+    
+    watched[filepath] = tonumber(mtime) or 0
+    return true, nil
+end
+
+function watcher.checkChanges()
+    local changes = {}
+    
+    for filepath, oldtime in pairs(watched) do
+        local handle = io.popen("stat -c %Y " .. filepath .. " 2>/dev/null")
+        local newtime = tonumber(handle:read("*a")) or 0
+        handle:close()
+        
+        if newtime > oldtime then
+            table.insert(changes, filepath)
+            watched[filepath] = newtime
+        end
+    end
+    
+    return changes
+end
+
+watcher._VERSION = "1.0.0"
+return watcher</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="example-card">
+                        <h3>⚙️ Configuration Plugin</h3>
+                        <p>Parse and manage INI-style configuration files</p>
+                        <div class="code-block">
+                            <pre><code class="language-lua">local config = {}
+
+-- Private state
+local settings = {}
+
+-- Parse simple INI-style config
+local function parseINI(content)
+    local result = {}
+    local section = "default"
+    
+    for line in content:gmatch("[^\r\n]+") do
+        line = line:match("^%s*(.-)%s*$") -- trim whitespace
+        
+        if line:match("^%[(.+)%]$") then
+            -- Section header
+            section = line:match("^%[(.+)%]$")
+            result[section] = result[section] or {}
+        elseif line:match("^([^=]+)=(.*)$") then
+            -- Key=value pair
+            local key, value = line:match("^([^=]+)=(.*)$")
+            key = key:match("^%s*(.-)%s*$")
+            value = value:match("^%s*(.-)%s*$")
+            
+            result[section] = result[section] or {}
+            result[section][key] = value
+        end
+    end
+    
+    return result
+end
+
+function config.load(filepath)
+    local file = io.open(filepath, "r")
+    if not file then
+        return false, "Could not read config file: " .. filepath
+    end
+    
+    local content = file:read("*a")
+    file:close()
+    
+    settings = parseINI(content)
+    return true, nil
+end
+
+function config.get(section, key, default)
+    if not settings[section] then
+        return default
+    end
+    
+    local value = settings[section][key]
+    if value == nil then
+        return default
+    end
+    
+    -- Try to convert to number or boolean
+    if value == "true" then
+        return true
+    elseif value == "false" then
+        return false
+    elseif tonumber(value) then
+        return tonumber(value)
+    else
+        return value
+    end
+end
+
+config._VERSION = "1.0.0"
+return config</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="example-card">
+                        <h3>📝 Template Engine Plugin</h3>
+                        <p>Simple template engine with variable substitution</p>
+                        <div class="code-block">
+                            <pre><code class="language-lua">local template = {}
+
+-- Simple template engine with {{variable}} syntax
+function template.render(templateStr, variables)
+    if type(templateStr) ~= "string" then
+        return nil, "Template must be a string"
+    end
+    
+    if type(variables) ~= "table" then
+        return nil, "Variables must be a table"
+    end
+    
+    local result = templateStr
+    
+    -- Replace {{variable}} with values
+    result = result:gsub("{{%s*([%w_]+)%s*}}", function(varname)
+        local value = variables[varname]
+        if value ~= nil then
+            return tostring(value)
+        else
+            return "{{" .. varname .. "}}" -- leave unchanged
+        end
+    end)
+    
+    return result, nil
+end
+
+function template.renderFile(templatePath, variables, outputPath)
+    -- Read template
+    local file = io.open(templatePath, "r")
+    if not file then
+        return false, "Could not read template: " .. templatePath
+    end
+    
+    local templateStr = file:read("*a")
+    file:close()
+    
+    -- Render template
+    local result, err = template.render(templateStr, variables)
+    if not result then
+        return false, "Template rendering failed: " .. err
+    end
+    
+    -- Write output if specified
+    if outputPath then
+        local outFile = io.open(outputPath, "w")
+        if not outFile then
+            return false, "Could not write output: " .. outputPath
+        end
+        
+        outFile:write(result)
+        outFile:close()
+    end
+    
+    return result, nil
+end
+
+template._VERSION = "1.0.0"
+return template</code></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="dev-section">
+            <div class="container">
+                <h2>🧪 Testing Your Plugins</h2>
+                
+                <div class="testing-info">
+                    <h3>Unit Testing Approach</h3>
+                    <p>Create a simple test framework for your plugins:</p>
+                    <div class="code-block">
+                        <pre><code class="language-lua">-- tests/test_plugin.lua
+local tests = {}
+local passed = 0
+local failed = 0
+
+function tests.assert(condition, message)
+    if condition then
+        passed = passed + 1
+        print("✓ " .. (message or "Test passed"))
+    else
+        failed = failed + 1
+        print("✗ " .. (message or "Test failed"))
+    end
+end
+
+function tests.assertEqual(actual, expected, message)
+    local condition = actual == expected
+    if not condition then
+        message = (message or "Values not equal") .. 
+                 " (expected: " .. tostring(expected) .. 
+                 ", actual: " .. tostring(actual) .. ")"
+    end
+    tests.assert(condition, message)
+end
+
+function tests.finish()
+    print("\nTest Results:")
+    print("Passed: " .. passed)
+    print("Failed: " .. failed)
+    print("Total: " .. (passed + failed))
+    
+    if failed > 0 then
+        os.exit(1)
+    end
+end
+
+-- Test the plugin
+local myplugin = require("my-plugin")
+
+-- Test greeting
+local result = myplugin.greet("Test")
+tests.assertEqual(result, "Hello, Test from my first plugin!", "Greeting test")
+
+-- Test division success
+local result, err = myplugin.divide(10, 2)
+tests.assertEqual(result, 5, "Division success")
+tests.assertEqual(err, nil, "No error on success")
+
+-- Test division by zero
+local result, err = myplugin.divide(10, 0)
+tests.assertEqual(result, nil, "Division by zero returns nil")
+tests.assert(err ~= nil, "Division by zero returns error")
+
+tests.finish()</code></pre>
+                    </div>
+                    <p>Run tests:</p>
+                    <div class="code-block">
+                        <code>./hype run tests/test_plugin.lua --plugins ./my-plugin</code>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="dev-section">
+            <div class="container">
+                <h2>🚀 Advanced Development</h2>
+                
+                <div class="advanced-topics">
+                    <div class="topic-card">
+                        <h3>Version Evolution</h3>
+                        <p>Maintain backward compatibility when updating plugins:</p>
+                        <div class="code-block">
+                            <pre><code class="language-lua">-- plugin.lua v2.0.0
+local myplugin = {}
+
+-- New function in v2.0.0
+function myplugin.newFeature()
+    return "This is new in v2.0.0"
+end
+
+-- Existing function (maintain compatibility)
+function myplugin.oldFunction(arg)
+    -- v2.0.0: enhanced but still compatible
+    return "Enhanced: " .. (arg or "default")
+end
+
+-- Version-specific behavior
+function myplugin.adaptiveFunction()
+    -- Check if we're in a newer version context
+    if myplugin._VERSION >= "2.0.0" then
+        return myplugin.newFeature()
+    else
+        return "Fallback behavior"
+    end
+end
+
+myplugin._VERSION = "2.0.0"
+return myplugin</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="topic-card">
+                        <h3>Performance Optimization</h3>
+                        <p>Optimize your plugins for better performance:</p>
+                        <div class="code-block">
+                            <pre><code class="language-lua">-- Optimize for performance
+local myplugin = {}
+
+-- Cache expensive computations
+local cache = {}
+
+-- Pre-compile patterns
+local emailPattern = "[%w%._%+%-]+@[%w%._%+%-]+%.%w+"
+
+function myplugin.validateEmail(email)
+    -- Use cached result if available
+    if cache[email] ~= nil then
+        return cache[email]
+    end
+    
+    local isValid = email:match(emailPattern) ~= nil
+    cache[email] = isValid
+    
+    return isValid
+end
+
+-- Limit cache size to prevent memory leaks
+local function limitCache()
+    local count = 0
+    for _ in pairs(cache) do
+        count = count + 1
+        if count > 1000 then
+            cache = {} -- Clear cache if too large
+            break
+        end
+    end
+end
+
+-- Clean up periodically
+function myplugin.cleanup()
+    limitCache()
+    return true
+end
+
+return myplugin</code></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="dev-section">
+            <div class="container">
+                <h2>📦 Distribution and Sharing</h2>
+                
+                <div class="distribution-info">
+                    <h3>Plugin Checklist</h3>
+                    <p>Before releasing your plugin:</p>
+                    <ul class="checklist">
+                        <li>☐ Plugin manifest is complete and valid</li>
+                        <li>☐ Plugin code follows Lua conventions</li>
+                        <li>☐ Error handling is comprehensive</li>
+                        <li>☐ Functions are documented</li>
+                        <li>☐ Version metadata is included</li>
+                        <li>☐ Tests are written and passing</li>
+                        <li>☐ README documentation exists</li>
+                        <li>☐ Examples are provided</li>
+                        <li>☐ License is specified</li>
+                    </ul>
+
+                    <h3>Versioning Strategy</h3>
+                    <p>Follow semantic versioning:</p>
+                    <div class="version-table">
+                        <div class="version-row">
+                            <div class="version-type">Major (1.0.0 → 2.0.0)</div>
+                            <div class="version-desc">Breaking changes</div>
+                        </div>
+                        <div class="version-row">
+                            <div class="version-type">Minor (1.0.0 → 1.1.0)</div>
+                            <div class="version-desc">New features, backward compatible</div>
+                        </div>
+                        <div class="version-row">
+                            <div class="version-type">Patch (1.0.0 → 1.0.1)</div>
+                            <div class="version-desc">Bug fixes, backward compatible</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="dev-section">
+            <div class="container">
+                <h2>🎯 Next Steps</h2>
+                
+                <div class="next-steps">
+                    <ol class="steps-list">
+                        <li><strong>Study existing plugins</strong> in <code>examples/plugins/</code></li>
+                        <li><strong>Create your own plugin</strong> following this guide</li>
+                        <li><strong>Share with the community</strong> by creating a repository</li>
+                        <li><strong>Contribute improvements</strong> to the plugin system</li>
+                    </ol>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h4>Plugin Development</h4>
+                    <p>Create powerful extensions</p>
+                    <p>Share with the community</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Resources</h4>
+                    <ul>
+                        <li><a href="plugins.html">Plugin System</a></li>
+                        <li><a href="examples.html">Plugin Examples</a></li>
+                        <li><a href="api.html#plugin-api">Plugin API</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Community</h4>
+                    <ul>
+                        <li><a href="https://github.com/twilson63/hype/tree/main/examples/plugins">Example Plugins</a></li>
+                        <li><a href="https://github.com/twilson63/hype/issues">Report Issues</a></li>
+                        <li><a href="https://github.com/twilson63/hype/discussions">Discussions</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 Hype. Open source project.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+    
+    <style>
+        .dev-section {
+            padding: 4rem 0;
+        }
+        
+        .dev-section:nth-child(even) {
+            background: var(--terminal-bg-light);
+        }
+        
+        .prereq-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        
+        .prereq-list li {
+            background: var(--terminal-bg);
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            border: 1px solid var(--terminal-accent-dim);
+        }
+        
+        .tutorial-steps {
+            margin-top: 2rem;
+        }
+        
+        .step-card {
+            background: var(--terminal-bg);
+            padding: 2rem;
+            border-radius: 8px;
+            border: 1px solid var(--terminal-accent-dim);
+            margin-bottom: 2rem;
+        }
+        
+        .step-card h3 {
+            color: var(--terminal-accent);
+            margin-bottom: 1rem;
+        }
+        
+        .pattern-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+        
+        .pattern-card {
+            background: var(--terminal-bg);
+            padding: 2rem;
+            border-radius: 8px;
+            border: 1px solid var(--terminal-accent-dim);
+        }
+        
+        .pattern-card h3 {
+            color: var(--terminal-accent);
+            margin-bottom: 1rem;
+        }
+        
+        .examples-showcase {
+            margin-top: 2rem;
+        }
+        
+        .example-card {
+            background: var(--terminal-bg);
+            padding: 2rem;
+            border-radius: 8px;
+            border: 1px solid var(--terminal-accent-dim);
+            margin-bottom: 2rem;
+        }
+        
+        .example-card h3 {
+            color: var(--terminal-accent);
+            margin-bottom: 0.5rem;
+        }
+        
+        .testing-info {
+            margin-top: 2rem;
+        }
+        
+        .testing-info h3 {
+            color: var(--terminal-accent);
+            margin-bottom: 1rem;
+        }
+        
+        .advanced-topics {
+            margin-top: 2rem;
+        }
+        
+        .topic-card {
+            background: var(--terminal-bg);
+            padding: 2rem;
+            border-radius: 8px;
+            border: 1px solid var(--terminal-accent-dim);
+            margin-bottom: 2rem;
+        }
+        
+        .topic-card h3 {
+            color: var(--terminal-accent);
+            margin-bottom: 1rem;
+        }
+        
+        .checklist {
+            list-style: none;
+            margin-left: 0;
+        }
+        
+        .checklist li {
+            padding: 0.25rem 0;
+            font-family: var(--font-mono);
+        }
+        
+        .version-table {
+            margin-top: 1rem;
+        }
+        
+        .version-row {
+            display: flex;
+            margin-bottom: 0.5rem;
+            align-items: center;
+        }
+        
+        .version-type {
+            width: 200px;
+            font-family: var(--font-mono);
+            font-weight: bold;
+            color: var(--terminal-accent);
+        }
+        
+        .version-desc {
+            color: var(--terminal-text-dim);
+        }
+        
+        .steps-list {
+            margin-top: 1rem;
+        }
+        
+        .steps-list li {
+            margin-bottom: 0.5rem;
+        }
+        
+        @media (max-width: 768px) {
+            .pattern-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</body>
+</html>

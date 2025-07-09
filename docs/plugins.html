@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, maximum-scale=5.0">
+    <meta name="theme-color" content="#00d4ff">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <title>Plugin System - Hype - Zero-Dependency App Dev</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <h2>🚀 Hype</h2>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="index.html" class="nav-link">Home</a></li>
+                <li><a href="api.html" class="nav-link">API Reference</a></li>
+                <li><a href="examples.html" class="nav-link">Examples</a></li>
+                <li><a href="plugins.html" class="nav-link active">Plugins</a></li>
+                <li><a href="https://github.com/twilson63/hype" class="nav-link">GitHub</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <section class="hero">
+            <div class="container">
+                <h1>Plugin System</h1>
+                <p class="hero-subtitle">Extend Your Applications</p>
+                <p class="hero-description">
+                    Hype's plugin system allows you to extend your applications with reusable Lua modules. 
+                    Plugins support versioning, automatic discovery, and are embedded into your built executables.
+                </p>
+                <div class="hero-buttons">
+                    <a href="#quick-start" class="btn btn-primary">Quick Start</a>
+                    <a href="plugin-development.html" class="btn btn-secondary">Plugin Development</a>
+                </div>
+            </div>
+        </section>
+
+        <section id="quick-start" class="plugin-section">
+            <div class="container">
+                <h2>🚀 Quick Start</h2>
+                
+                <div class="plugin-showcase">
+                    <div class="showcase-item">
+                        <h3>Using an Existing Plugin</h3>
+                        <div class="code-block">
+                            <pre><code># Run a script with a plugin
+./hype run myapp.lua --plugins fs@1.0.0
+
+# Build an executable with embedded plugin
+./hype build myapp.lua --plugins fs@1.0.0 -o myapp</code></pre>
+                        </div>
+                        <div class="code-block">
+                            <pre><code class="language-lua">-- In your Lua script
+local fs = require("fs")
+local content, err = fs.readFile("config.txt")
+if content then
+    print("Config:", content)
+else
+    print("Error:", err)
+end</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="showcase-item">
+                        <h3>Creating a Simple Plugin</h3>
+                        <div class="step-by-step">
+                            <div class="step">
+                                <h4>1. Create plugin directory</h4>
+                                <div class="code-block">
+                                    <code>mkdir my-plugin && cd my-plugin</code>
+                                </div>
+                            </div>
+                            <div class="step">
+                                <h4>2. Create manifest (hype-plugin.yaml)</h4>
+                                <div class="code-block">
+                                    <pre><code>name: "my-plugin"
+version: "1.0.0"
+type: "lua"
+main: "plugin.lua"
+description: "My awesome plugin"</code></pre>
+                                </div>
+                            </div>
+                            <div class="step">
+                                <h4>3. Create plugin code (plugin.lua)</h4>
+                                <div class="code-block">
+                                    <pre><code class="language-lua">local myplugin = {}
+
+function myplugin.greet(name)
+    return "Hello, " .. (name or "World") .. "!"
+end
+
+return myplugin</code></pre>
+                                </div>
+                            </div>
+                            <div class="step">
+                                <h4>4. Use the plugin</h4>
+                                <div class="code-block">
+                                    <code>./hype run test.lua --plugins ./my-plugin</code>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="plugin-section">
+            <div class="container">
+                <h2>📦 Using Plugins</h2>
+                
+                <div class="plugin-grid">
+                    <div class="plugin-card">
+                        <h3>Command Line Usage</h3>
+                        <div class="code-block">
+                            <pre><code># Single plugin by name
+./hype run app.lua --plugins fs
+
+# With specific version
+./hype run app.lua --plugins fs@1.0.0
+
+# Multiple plugins
+./hype run app.lua --plugins fs@1.0.0,json,utils@2.0.0
+
+# With custom aliases
+./hype run app.lua --plugins filesystem=fs@1.0.0,parser=json@1.5.0</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="plugin-card">
+                        <h3>Plugin Specifications</h3>
+                        <div class="spec-table">
+                            <div class="spec-row">
+                                <div class="spec-format"><code>fs</code></div>
+                                <div class="spec-desc">Simple name, auto-discovery</div>
+                            </div>
+                            <div class="spec-row">
+                                <div class="spec-format"><code>fs@1.0.0</code></div>
+                                <div class="spec-desc">Name with version</div>
+                            </div>
+                            <div class="spec-row">
+                                <div class="spec-format"><code>myfs=./path/to/plugin</code></div>
+                                <div class="spec-desc">Custom alias</div>
+                            </div>
+                            <div class="spec-row">
+                                <div class="spec-format"><code>myfs=./path/to/plugin@2.0.0</code></div>
+                                <div class="spec-desc">Alias with version</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="plugin-section">
+            <div class="container">
+                <h2>🔍 Plugin Discovery</h2>
+                
+                <div class="discovery-info">
+                    <h3>Auto-Discovery Locations</h3>
+                    <p>When using simple names, Hype searches these locations:</p>
+                    <ul class="discovery-list">
+                        <li><code>./plugins/[name]/</code></li>
+                        <li><code>./examples/plugins/[name]/</code></li>
+                        <li><code>./[name]-plugin/</code></li>
+                        <li><code>./examples/plugins/[name]-plugin/</code></li>
+                    </ul>
+                </div>
+
+                <div class="plugin-structure">
+                    <h3>Plugin Structure</h3>
+                    <div class="code-block">
+                        <pre><code>my-plugin/
+├── hype-plugin.yaml    # Required: Plugin manifest
+├── plugin.lua          # Required: Main plugin code
+├── README.md           # Optional: Documentation
+├── LICENSE             # Optional: License file
+└── examples/           # Optional: Usage examples
+    └── demo.lua</code></pre>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="plugin-section">
+            <div class="container">
+                <h2>⚙️ Plugin Manifest</h2>
+                
+                <div class="manifest-info">
+                    <h3>Required Fields</h3>
+                    <div class="code-block">
+                        <pre><code>name: "my-plugin"           # Plugin name (used in require())
+version: "1.0.0"           # Semantic version
+type: "lua"                # Plugin type (currently only "lua")
+main: "plugin.lua"         # Entry point file</code></pre>
+                    </div>
+
+                    <h3>Optional Fields</h3>
+                    <div class="code-block">
+                        <pre><code>description: "Description of what the plugin does"
+author: "Your Name <email@example.com>"
+license: "MIT"
+homepage: "https://github.com/user/my-plugin"
+repository: "https://github.com/user/my-plugin.git"</code></pre>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="plugin-section">
+            <div class="container">
+                <h2>🏗️ Plugin Development</h2>
+                
+                <div class="dev-guidelines">
+                    <h3>Plugin Code Structure</h3>
+                    <div class="code-block">
+                        <pre><code class="language-lua">-- plugin.lua
+local myplugin = {}
+
+-- Simple function
+function myplugin.hello(name)
+    return "Hello, " .. (name or "World") .. "!"
+end
+
+-- Function with error handling (Lua convention)
+function myplugin.divide(a, b)
+    if b == 0 then
+        return nil, "Division by zero"
+    end
+    return a / b, nil
+end
+
+-- Plugin metadata (optional but recommended)
+myplugin._VERSION = "1.0.0"
+myplugin._DESCRIPTION = "My awesome plugin"
+
+-- Must return the plugin table
+return myplugin</code></pre>
+                    </div>
+
+                    <h3>Best Practices</h3>
+                    <ul class="best-practices">
+                        <li><strong>Follow Lua conventions:</strong> Return <code>value, error</code> for functions that can fail</li>
+                        <li><strong>Include metadata:</strong> Add <code>_VERSION</code> and <code>_DESCRIPTION</code> fields</li>
+                        <li><strong>Validate inputs:</strong> Check parameter types and values</li>
+                        <li><strong>Document functions:</strong> Include clear function descriptions</li>
+                        <li><strong>Handle errors gracefully:</strong> Use proper error handling patterns</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <section class="plugin-section">
+            <div class="container">
+                <h2>📚 Available Plugins</h2>
+                
+                <div class="available-plugins">
+                    <div class="plugin-card">
+                        <h3>🗂️ Filesystem Plugin (fs@1.0.0)</h3>
+                        <p>Basic file and directory operations</p>
+                        <ul class="plugin-functions">
+                            <li><code>fs.readFile(path)</code> - Read file contents</li>
+                            <li><code>fs.writeFile(path, content)</code> - Write file contents</li>
+                            <li><code>fs.exists(path)</code> - Check file existence</li>
+                            <li><code>fs.size(path)</code> - Get file size</li>
+                            <li><code>fs.listDir(path)</code> - List directory contents</li>
+                            <li><code>fs.mkdir(path)</code> - Create directory</li>
+                        </ul>
+                    </div>
+
+                    <div class="plugin-card">
+                        <h3>🗂️ Enhanced Filesystem Plugin (fs@2.0.0)</h3>
+                        <p>Advanced file operations with additional features</p>
+                        <ul class="plugin-functions">
+                            <li>All v1.0.0 features plus:</li>
+                            <li><code>fs.copyFile(src, dst)</code> - Copy file</li>
+                            <li><code>fs.moveFile(src, dst)</code> - Move file</li>
+                            <li><code>fs.deleteFile(path)</code> - Delete file</li>
+                            <li><code>fs.version()</code> - Get plugin version</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="plugin-section">
+            <div class="container">
+                <h2>💡 Examples</h2>
+                
+                <div class="example-showcase">
+                    <div class="showcase-item">
+                        <h3>File Operations Example</h3>
+                        <div class="code-block">
+                            <pre><code class="language-lua">local fs = require("fs")
+
+-- Read configuration
+local config, err = fs.readFile("config.json")
+if not config then
+    print("Error:", err)
+    return
+end
+
+-- Create backup
+local success, err = fs.copyFile("data.txt", "backup.txt")
+if success then
+    print("Backup created successfully")
+end
+
+-- List files
+local files, err = fs.listDir("./logs")
+if files then
+    for _, file in ipairs(files) do
+        print("Found:", file)
+    end
+end</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="showcase-item">
+                        <h3>Multiple Plugins Example</h3>
+                        <div class="code-block">
+                            <pre><code class="language-lua">-- Use multiple plugins
+local fs = require("fs")
+local utils = require("utils")
+
+-- Enhanced file operations
+local data = fs.readFile("data.json")
+if data then
+    local processed = utils.processData(data)
+    fs.writeFile("processed.json", processed)
+end
+
+-- Version information
+print("FS Plugin Version:", fs._VERSION)
+print("Utils Plugin Version:", utils._VERSION)</code></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="plugin-section">
+            <div class="container">
+                <h2>🔧 Version Management</h2>
+                
+                <div class="version-info">
+                    <h3>Plugin Versioning</h3>
+                    <div class="code-block">
+                        <pre><code># Use specific version
+./hype run app.lua --plugins fs@1.0.0
+
+# Use latest available
+./hype run app.lua --plugins fs
+
+# Multiple versions with aliases
+./hype run app.lua --plugins fs1=fs@1.0.0,fs2=fs@2.0.0</code></pre>
+                    </div>
+
+                    <h3>Version Compatibility</h3>
+                    <div class="code-block">
+                        <pre><code class="language-lua">-- Check plugin version in your code
+local fs = require("fs")
+
+if fs._VERSION then
+    print("Using fs plugin version:", fs._VERSION)
+    
+    -- Version-specific features
+    if fs._VERSION >= "2.0.0" and fs.copyFile then
+        fs.copyFile("source.txt", "dest.txt")
+    else
+        print("copyFile not available in this version")
+    end
+end</code></pre>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="plugin-section">
+            <div class="container">
+                <h2>🔍 Troubleshooting</h2>
+                
+                <div class="troubleshooting">
+                    <h3>Common Issues</h3>
+                    <div class="issue-card">
+                        <h4>Plugin not found</h4>
+                        <div class="code-block">
+                            <code>Error: failed to load plugin fs: failed to fetch plugin: unsupported plugin source: fs</code>
+                        </div>
+                        <ul>
+                            <li>Check plugin exists in search paths</li>
+                            <li>Try explicit path: <code>--plugins ./path/to/plugin</code></li>
+                        </ul>
+                    </div>
+
+                    <div class="issue-card">
+                        <h4>Version mismatch</h4>
+                        <div class="code-block">
+                            <code>Error: version validation failed: plugin version mismatch: requested 2.0.0, found 1.0.0</code>
+                        </div>
+                        <ul>
+                            <li>Check plugin manifest version</li>
+                            <li>Use correct version or <code>@latest</code></li>
+                        </ul>
+                    </div>
+
+                    <h3>Debug Tips</h3>
+                    <ol>
+                        <li><strong>Test plugin independently:</strong> <code>lua plugin.lua</code></li>
+                        <li><strong>Use development mode:</strong> <code>./hype run --plugins fs test.lua</code></li>
+                        <li><strong>Check plugin locations:</strong> <code>ls -la ./plugins/fs/</code></li>
+                        <li><strong>Validate manifest:</strong> Check YAML syntax</li>
+                    </ol>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h4>Plugin System</h4>
+                    <p>Extend your Hype applications</p>
+                    <p>Versioned, discoverable, embeddable</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Resources</h4>
+                    <ul>
+                        <li><a href="plugin-development.html">Plugin Development</a></li>
+                        <li><a href="examples.html">Plugin Examples</a></li>
+                        <li><a href="api.html#plugin-api">Plugin API</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Community</h4>
+                    <ul>
+                        <li><a href="https://github.com/twilson63/hype/tree/main/examples/plugins">Example Plugins</a></li>
+                        <li><a href="https://github.com/twilson63/hype/issues">Report Issues</a></li>
+                        <li><a href="https://github.com/twilson63/hype/discussions">Discussions</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 Hype. Open source project.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+    
+    <style>
+        .plugin-section {
+            padding: 4rem 0;
+        }
+        
+        .plugin-section:nth-child(even) {
+            background: var(--terminal-bg-light);
+        }
+        
+        .plugin-showcase {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+        
+        .showcase-item {
+            background: var(--terminal-bg);
+            padding: 2rem;
+            border-radius: 8px;
+            border: 1px solid var(--terminal-accent-dim);
+        }
+        
+        .step-by-step {
+            margin-top: 1rem;
+        }
+        
+        .step {
+            margin-bottom: 1.5rem;
+        }
+        
+        .step h4 {
+            color: var(--terminal-accent);
+            margin-bottom: 0.5rem;
+        }
+        
+        .plugin-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+        
+        .plugin-card {
+            background: var(--terminal-bg);
+            padding: 2rem;
+            border-radius: 8px;
+            border: 1px solid var(--terminal-accent-dim);
+        }
+        
+        .spec-table {
+            margin-top: 1rem;
+        }
+        
+        .spec-row {
+            display: flex;
+            margin-bottom: 0.5rem;
+            align-items: center;
+        }
+        
+        .spec-format {
+            width: 200px;
+            font-family: var(--font-mono);
+        }
+        
+        .spec-desc {
+            color: var(--terminal-text-dim);
+        }
+        
+        .discovery-info {
+            margin-bottom: 2rem;
+        }
+        
+        .discovery-list {
+            list-style: none;
+            margin-left: 0;
+        }
+        
+        .discovery-list li {
+            padding: 0.5rem 0;
+            font-family: var(--font-mono);
+            color: var(--terminal-accent);
+        }
+        
+        .plugin-structure {
+            background: var(--terminal-bg);
+            padding: 2rem;
+            border-radius: 8px;
+            border: 1px solid var(--terminal-accent-dim);
+        }
+        
+        .manifest-info h3 {
+            color: var(--terminal-accent);
+            margin-bottom: 1rem;
+        }
+        
+        .best-practices {
+            margin-top: 2rem;
+        }
+        
+        .best-practices li {
+            margin-bottom: 0.5rem;
+        }
+        
+        .available-plugins {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+        }
+        
+        .plugin-functions {
+            list-style: none;
+            margin-left: 0;
+        }
+        
+        .plugin-functions li {
+            padding: 0.25rem 0;
+            font-family: var(--font-mono);
+            font-size: 0.9rem;
+        }
+        
+        .version-info {
+            margin-top: 2rem;
+        }
+        
+        .version-info h3 {
+            color: var(--terminal-accent);
+            margin-bottom: 1rem;
+        }
+        
+        .troubleshooting {
+            margin-top: 2rem;
+        }
+        
+        .issue-card {
+            background: var(--terminal-bg);
+            padding: 1.5rem;
+            border-radius: 8px;
+            border: 1px solid var(--terminal-accent-dim);
+            margin-bottom: 1rem;
+        }
+        
+        .issue-card h4 {
+            color: var(--terminal-accent);
+            margin-bottom: 0.5rem;
+        }
+        
+        .issue-card ul {
+            margin-top: 0.5rem;
+        }
+        
+        @media (max-width: 768px) {
+            .plugin-showcase,
+            .plugin-grid,
+            .available-plugins {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</body>
+</html>
