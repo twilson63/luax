@@ -20,6 +20,7 @@
                 <li><a href="index.html" class="nav-link">Home</a></li>
                 <li><a href="api.html" class="nav-link active">API Reference</a></li>
                 <li><a href="examples.html" class="nav-link">Examples</a></li>
+                <li><a href="PLUGINS.md" class="nav-link">Plugins</a></li>
                 <li><a href="https://github.com/twilson63/hype" class="nav-link">GitHub</a></li>
             </ul>
         </div>
@@ -32,7 +33,7 @@
                 <p class="hero-subtitle">Everything You Can Build With</p>
                 <p class="hero-description">
                     All the modules, functions, and capabilities built into Hype. TUI components, HTTP servers, 
-                    databases, crypto, and more—everything you need to ship complete applications.
+                    databases, crypto, plugins, and more—everything you need to ship complete applications.
                 </p>
             </div>
         </section>
@@ -70,6 +71,12 @@
                         <h3>HTTP Signatures</h3>
                         <p>RFC-compliant HTTP message signing and verification</p>
                         <a href="#httpsig-api" class="btn btn-secondary">View API</a>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">🔌</div>
+                        <h3>Plugin System</h3>
+                        <p>Extend functionality with versioned Lua modules</p>
+                        <a href="#plugin-api" class="btn btn-secondary">View API</a>
                     </div>
                 </div>
             </div>
@@ -1037,6 +1044,241 @@ local service_request = httpsig.sign({
             </div>
         </section>
 
+        <!-- Plugin System API Section -->
+        <section id="plugin-api" class="api-section">
+            <div class="container">
+                <h2>Plugin System</h2>
+                <p>Extend Hype applications with versioned Lua modules that embed seamlessly into your executables.</p>
+                
+                <div class="api-group">
+                    <h3>Using Plugins</h3>
+                    <p>Plugins are loaded using the <code>--plugins</code> command line flag and accessed in Lua using <code>require()</code>.</p>
+                    
+                    <h4>Plugin Specifications</h4>
+                    <ul class="api-list">
+                        <li><code>fs</code> - Simple name (uses auto-discovery)</li>
+                        <li><code>fs@1.0.0</code> - Name with specific version</li>
+                        <li><code>myfs=./path/to/plugin</code> - Custom alias with path</li>
+                        <li><code>myfs=./path/to/plugin@2.0.0</code> - Alias with path and version</li>
+                    </ul>
+                    
+                    <div class="example-card">
+                        <h4>Example: Using Plugins</h4>
+                        <div class="code-block">
+                            <pre><code>-- app.lua
+local fs = require("fs")
+local config = require("config")
+
+-- Use filesystem plugin
+local content, err = fs.readFile("data.txt")
+if content then
+    print("File content:", content)
+else
+    print("Error:", err)
+end
+
+-- Use configuration plugin
+config.load("app.conf")
+local port = config.get("server", "port", 8080)</code></pre>
+                        </div>
+                        <div class="code-block">
+                            <code># Run with plugins
+./hype run app.lua --plugins fs@1.0.0,config@2.1.0
+
+# Build with embedded plugins
+./hype build app.lua --plugins fs@1.0.0,config@2.1.0 -o myapp</code>
+                            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="api-group">
+                    <h3>Plugin Discovery</h3>
+                    <p>Hype automatically searches for plugins in conventional directories:</p>
+                    <ul class="api-list">
+                        <li><code>./plugins/[name]/</code> - Local plugins directory</li>
+                        <li><code>./examples/plugins/[name]/</code> - Example plugins</li>
+                        <li><code>./[name]-plugin/</code> - Plugin suffix convention</li>
+                        <li><code>./examples/plugins/[name]-plugin/</code> - Example plugin suffix</li>
+                    </ul>
+                    
+                    <div class="example-card">
+                        <h4>Example: Plugin Directory Structure</h4>
+                        <div class="code-block">
+                            <pre><code>project/
+├── app.lua
+├── plugins/
+│   ├── fs/
+│   │   ├── hype-plugin.yaml
+│   │   └── plugin.lua
+│   └── utils/
+│       ├── hype-plugin.yaml
+│       └── plugin.lua
+└── examples/
+    └── plugins/
+        └── fs-plugin/
+            ├── hype-plugin.yaml
+            └── plugin.lua</code></pre>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="api-group">
+                    <h3>Plugin Manifest</h3>
+                    <p>Each plugin requires a <code>hype-plugin.yaml</code> manifest file:</p>
+                    <div class="code-block">
+                        <pre><code>name: "fs"
+version: "1.0.0"
+type: "lua"
+main: "plugin.lua"
+description: "Basic filesystem operations"</code></pre>
+                    </div>
+                    
+                    <h4>Manifest Fields</h4>
+                    <ul class="api-list">
+                        <li><code>name</code> - Plugin identifier (required)</li>
+                        <li><code>version</code> - Semantic version string (required)</li>
+                        <li><code>type</code> - Plugin type, currently only "lua" (required)</li>
+                        <li><code>main</code> - Entry point file (required)</li>
+                        <li><code>description</code> - Human-readable description (optional)</li>
+                    </ul>
+                </div>
+
+                <div class="api-group">
+                    <h3>Plugin Development</h3>
+                    <p>Plugins are standard Lua modules that return a table of functions:</p>
+                    
+                    <div class="example-card">
+                        <h4>Example: Simple Plugin</h4>
+                        <div class="code-block">
+                            <pre><code>-- plugin.lua
+local fs = {}
+
+function fs.readFile(path)
+    local file = io.open(path, "r")
+    if not file then
+        return nil, "File not found: " .. path
+    end
+    
+    local content = file:read("*all")
+    file:close()
+    return content, nil
+end
+
+function fs.writeFile(path, content)
+    local file = io.open(path, "w")
+    if not file then
+        return nil, "Cannot write file: " .. path
+    end
+    
+    file:write(content)
+    file:close()
+    return true, nil
+end
+
+function fs.exists(path)
+    local file = io.open(path, "r")
+    if file then
+        file:close()
+        return true
+    end
+    return false
+end
+
+return fs</code></pre>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="api-group">
+                    <h3>Version Management</h3>
+                    <p>Plugins support exact version matching for compatibility:</p>
+                    <ul class="api-list">
+                        <li><code>fs@1.0.0</code> - Exact version match required</li>
+                        <li><code>fs</code> or <code>fs@latest</code> - Any version accepted</li>
+                        <li>Version validation prevents compatibility issues</li>
+                    </ul>
+                    
+                    <div class="example-card">
+                        <h4>Example: Version-Specific Usage</h4>
+                        <div class="code-block">
+                            <pre><code># Use specific version
+./hype run app.lua --plugins fs@1.0.0
+
+# Use latest version
+./hype run app.lua --plugins fs
+
+# Multiple plugins with versions
+./hype run app.lua --plugins fs@1.0.0,json@2.1.0,utils</code></pre>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="api-group">
+                    <h3>Available Plugins</h3>
+                    <p>Hype includes example plugins for common use cases:</p>
+                    
+                    <h4>Filesystem Plugin (fs@1.0.0)</h4>
+                    <ul class="api-list">
+                        <li><code>fs.readFile(path)</code> - Read file contents</li>
+                        <li><code>fs.writeFile(path, content)</code> - Write file contents</li>
+                        <li><code>fs.exists(path)</code> - Check file existence</li>
+                        <li><code>fs.size(path)</code> - Get file size</li>
+                        <li><code>fs.listDir(path)</code> - List directory contents</li>
+                        <li><code>fs.mkdir(path)</code> - Create directory</li>
+                    </ul>
+                    
+                    <h4>Enhanced Filesystem Plugin (fs@2.0.0)</h4>
+                    <ul class="api-list">
+                        <li>All v1.0.0 features plus:</li>
+                        <li><code>fs.copyFile(src, dst)</code> - Copy file</li>
+                        <li><code>fs.moveFile(src, dst)</code> - Move file</li>
+                        <li><code>fs.deleteFile(path)</code> - Delete file</li>
+                        <li><code>fs.version()</code> - Get plugin version</li>
+                    </ul>
+                    
+                    <div class="example-card">
+                        <h4>Example: Filesystem Operations</h4>
+                        <div class="code-block">
+                            <pre><code>local fs = require("fs")
+
+-- Read configuration
+local config, err = fs.readFile("config.json")
+if not config then
+    print("Error:", err)
+    return
+end
+
+-- Create backup
+local success, err = fs.copyFile("data.txt", "backup.txt")
+if success then
+    print("Backup created successfully")
+end
+
+-- List files
+local files, err = fs.listDir("./logs")
+if files then
+    for _, file in ipairs(files) do
+        print("Found:", file)
+    end
+end</code></pre>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="api-group">
+                    <h3>Plugin Best Practices</h3>
+                    <ul class="api-list">
+                        <li><strong>Error Handling:</strong> Return <code>nil, error_message</code> on failure</li>
+                        <li><strong>Consistent API:</strong> Follow standard Lua conventions</li>
+                        <li><strong>Version Compatibility:</strong> Use semantic versioning</li>
+                        <li><strong>Documentation:</strong> Include clear function descriptions</li>
+                        <li><strong>Testing:</strong> Test plugins with <code>hype run</code> before building</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
         <!-- Command Line Interface -->
         <section id="cli-api" class="api-section">
             <div class="container">
@@ -1053,6 +1295,7 @@ local service_request = httpsig.sign({
                     <ul class="api-list">
                         <li><code>-o, --output NAME</code> - Set executable name</li>
                         <li><code>--target PLATFORM</code> - Target platform (current, linux, windows, darwin)</li>
+                        <li><code>--plugins LIST</code> - Comma-separated list of plugins to embed</li>
                     </ul>
                     
                     <div class="example-card">
@@ -1063,6 +1306,9 @@ hype build myapp.lua
 
 # Specify output name
 hype build myapp.lua -o myserver
+
+# Build with plugins
+hype build myapp.lua --plugins fs@1.0.0,json -o myapp
 
 # Cross-compile for different platforms
 hype build myapp.lua --target linux
@@ -1076,8 +1322,13 @@ hype build myapp.lua --target darwin</code></pre>
                     <h3>Run Command</h3>
                     <p>Run Lua scripts directly for development and testing.</p>
                     <div class="code-block">
-                        <pre><code>hype run script.lua [-- args...]</code></pre>
+                        <pre><code>hype run script.lua [--plugins LIST] [-- args...]</code></pre>
                     </div>
+                    
+                    <h4>Options</h4>
+                    <ul class="api-list">
+                        <li><code>--plugins LIST</code> - Comma-separated list of plugins to load</li>
+                    </ul>
                     
                     <div class="example-card">
                         <h4>Run Examples</h4>
@@ -1085,8 +1336,14 @@ hype build myapp.lua --target darwin</code></pre>
                             <pre><code># Run script directly
 hype run server.lua
 
+# Run with plugins
+hype run myapp.lua --plugins fs@1.0.0,json
+
 # Pass command line arguments
-hype run myapp.lua -- --port 3000 --debug</code></pre>
+hype run myapp.lua -- --port 3000 --debug
+
+# Plugins with arguments
+hype run myapp.lua --plugins fs@1.0.0 -- --debug</code></pre>
                         </div>
                     </div>
                 </div>
@@ -1196,6 +1453,8 @@ end
                     <ul>
                         <li><a href="api.html">API Reference</a></li>
                         <li><a href="examples.html">Examples</a></li>
+                        <li><a href="PLUGINS.md">Plugin System</a></li>
+                        <li><a href="PLUGIN_DEVELOPMENT.md">Plugin Development</a></li>
                         <li><a href="index.html#installation">Installation</a></li>
                     </ul>
                 </div>

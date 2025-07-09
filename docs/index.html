@@ -20,6 +20,7 @@
                 <li><a href="index.html" class="nav-link active">Home</a></li>
                 <li><a href="api.html" class="nav-link">API Reference</a></li>
                 <li><a href="examples.html" class="nav-link">Examples</a></li>
+                <li><a href="PLUGINS.md" class="nav-link">Plugins</a></li>
                 <li><a href="https://github.com/twilson63/hype" class="nav-link">GitHub</a></li>
             </ul>
         </div>
@@ -31,7 +32,7 @@
                 <h1>Hype</h1>
                 <p class="hero-subtitle">Zero-Dependency App Dev</p>
                 <p class="hero-description">
-                    Write a Lua script. Build for your target platforms. Ship binaries that need zero dependencies. 
+                    Write a Lua script. Add plugins for extra functionality. Build for your target platforms. Ship binaries that need zero dependencies. 
                     No runtime installs, no "missing library" headaches. Just executables that work.
                 </p>
                 <div class="hero-buttons">
@@ -121,6 +122,11 @@
                         <div class="feature-icon">📁</div>
                         <h3>Multi-File Projects</h3>
                         <p>Bundle multiple Lua files with dependency resolution</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">🔌</div>
+                        <h3>Plugin System</h3>
+                        <p>Extend functionality with versioned Lua plugins that embed into your executables</p>
                     </div>
                     <div class="feature-card">
                         <div class="feature-icon">✨</div>
@@ -271,6 +277,32 @@ server:listen(8080)</code></pre>
                             <button class="copy-btn" onclick="copyCode(this)">Copy</button>
                         </div>
                     </div>
+
+                    <div class="example-card">
+                        <h3>🔌 Plugin Usage</h3>
+                        <div class="code-block">
+                            <pre><code>-- app.lua
+local fs = require("fs")
+local http = require('http')
+
+-- Read config file using plugin
+local config, err = fs.readFile("config.json")
+if not config then
+    print("Error:", err)
+    return
+end
+
+local server = http.newServer()
+server:handle("/", function(req, res)
+    res:json({ config = config })
+end)
+server:listen(8080)</code></pre>
+                        </div>
+                        <div class="code-block">
+                            <code>./hype build app.lua --plugins fs@1.0.0 -o app<br>./app</code>
+                            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </section>
@@ -314,8 +346,25 @@ server:listen(8080)</code></pre>
                         <div class="code-block">
                             <code># Run script directly<br>
 ./hype run script.lua<br><br>
+# Run with plugins<br>
+./hype run script.lua --plugins fs@1.0.0,json<br><br>
 # Pass command line arguments<br>
 ./hype run script.lua -- arg1 arg2 arg3</code>
+                        </div>
+                    </div>
+
+                    <div class="usage-option">
+                        <h3>🔌 Plugin Mode</h3>
+                        <p>Extend functionality with versioned plugins:</p>
+                        <div class="code-block">
+                            <code># Use specific plugin version<br>
+./hype run app.lua --plugins fs@1.0.0<br><br>
+# Multiple plugins<br>
+./hype run app.lua --plugins fs,json@2.1.0<br><br>
+# Custom plugin paths<br>
+./hype run app.lua --plugins myfs=./plugins/fs@1.0.0<br><br>
+# Build with embedded plugins<br>
+./hype build app.lua --plugins fs@1.0.0 -o app</code>
                         </div>
                     </div>
 
@@ -380,6 +429,8 @@ end</code></pre>
                     <ul>
                         <li><a href="api.html">API Reference</a></li>
                         <li><a href="examples.html">Examples</a></li>
+                        <li><a href="PLUGINS.md">Plugin System</a></li>
+                        <li><a href="PLUGIN_DEVELOPMENT.md">Plugin Development</a></li>
                         <li><a href="#installation">Installation</a></li>
                     </ul>
                 </div>

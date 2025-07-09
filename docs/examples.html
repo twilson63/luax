@@ -23,6 +23,7 @@
                 <li><a href="index.html" class="nav-link">Home</a></li>
                 <li><a href="api.html" class="nav-link">API Reference</a></li>
                 <li><a href="examples.html" class="nav-link active">Examples</a></li>
+                <li><a href="PLUGINS.md" class="nav-link">Plugins</a></li>
                 <li><a href="https://github.com/twilson63/hype" class="nav-link">GitHub</a></li>
             </ul>
         </div>
@@ -35,7 +36,7 @@
                 <p class="hero-subtitle">Code That Ships and Works</p>
                 <p class="hero-description">
                     Real examples you can copy, build, and run. Each example demonstrates specific Hype capabilities 
-                    and includes instructions for building standalone executables.
+                    including plugins, and includes instructions for building standalone executables.
                 </p>
                 <div class="hero-buttons">
                     <a href="https://github.com/twilson63/hype/tree/main/examples" target="_blank" class="btn btn-primary">View All Examples</a>
@@ -97,6 +98,39 @@ server:listen(8080)</code></pre>
                             <a href="https://github.com/twilson63/hype/blob/main/examples/simple-server.lua" target="_blank" class="btn btn-secondary">View Source</a>
                         </div>
                     </div>
+
+                    <div class="showcase-item">
+                        <h3>🔌 Plugin Usage</h3>
+                        <p>File operations using the filesystem plugin</p>
+                        <div class="code-block">
+                            <pre><code class="language-lua">-- plugin-demo.lua
+local fs = require("fs")
+local http = require('http')
+
+-- Read config file
+local config, err = fs.readFile("config.json")
+if not config then
+    config = '{"port": 8080}'
+    fs.writeFile("config.json", config)
+end
+
+-- Create simple web server
+local server = http.newServer()
+server:handle("/", function(req, res)
+    res:json({config = config, files = fs.listDir(".") or {}})
+end)
+server:listen(8080)</code></pre>
+                        </div>
+                        <div class="example-actions">
+                            <div class="build-example">
+                                <strong>Build & Run:</strong>
+                                <div class="code-block">
+                                    <code>hype build plugin-demo.lua --plugins fs@1.0.0 -o demo && ./demo</code>
+                                </div>
+                            </div>
+                            <a href="https://github.com/twilson63/hype/blob/main/examples/test-fs-plugin.lua" target="_blank" class="btn btn-secondary">View Source</a>
+                        </div>
+                    </div>
                 </div>
             </div>
         </section>
@@ -147,6 +181,76 @@ local signed = httpsig.sign(request, {
                         </div>
                         <div class="example-actions">
                             <a href="https://github.com/twilson63/hype/blob/main/examples/httpsig-basic.lua" target="_blank" class="btn btn-secondary">View Full Example</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Plugin Examples -->
+        <section class="examples-section">
+            <div class="container">
+                <h2>🔌 Plugin System Examples</h2>
+                <div class="example-showcase">
+                    <div class="showcase-item">
+                        <h3>📁 Filesystem Plugin</h3>
+                        <p>File operations with the built-in filesystem plugin</p>
+                        <div class="code-block">
+                            <pre><code class="language-lua">-- Use filesystem plugin
+local fs = require("fs")
+
+-- Read and write files
+local content, err = fs.readFile("input.txt")
+if content then
+    fs.writeFile("output.txt", "Processed: " .. content)
+end
+
+-- Directory operations
+local files = fs.listDir(".")
+for _, file in ipairs(files or {}) do
+    if fs.exists(file) then
+        print("Size:", fs.size(file))
+    end
+end</code></pre>
+                        </div>
+                        <div class="example-actions">
+                            <div class="build-example">
+                                <strong>Run with Plugin:</strong>
+                                <div class="code-block">
+                                    <code>hype run example.lua --plugins fs@1.0.0</code>
+                                </div>
+                            </div>
+                            <a href="https://github.com/twilson63/hype/blob/main/examples/test-fs-plugin.lua" target="_blank" class="btn btn-secondary">View Source</a>
+                        </div>
+                    </div>
+
+                    <div class="showcase-item">
+                        <h3>🔄 Multiple Plugins</h3>
+                        <p>Using multiple plugins in a single application</p>
+                        <div class="code-block">
+                            <pre><code class="language-lua">-- Use multiple plugins
+local fs = require("fs")
+local utils = require("utils")
+
+-- Enhanced file operations
+local data = fs.readFile("data.json")
+if data then
+    local processed = utils.processData(data)
+    fs.writeFile("processed.json", processed)
+end
+
+-- Version information
+print("FS Plugin Version:", fs.version())
+print("Utils Plugin Version:", utils.version())</code></pre>
+                        </div>
+                        <div class="example-actions">
+                            <div class="build-example">
+                                <strong>Run with Multiple Plugins:</strong>
+                                <div class="code-block">
+                                    <code>hype run example.lua --plugins fs@2.0.0,utils@1.0.0</code>
+                                </div>
+                            </div>
+                            <a href="https://github.com/twilson63/hype/blob/main/examples/test-multiple-plugins.lua" target="_blank" class="btn btn-secondary">View Source</a>
                         </div>
                     </div>
                 </div>
@@ -218,6 +322,17 @@ local signed = httpsig.sign(request, {
                             <li><a href="https://github.com/twilson63/hype/blob/main/examples/showcase.lua" target="_blank">Feature Showcase</a></li>
                         </ul>
                     </div>
+
+                    <div class="feature-card">
+                        <div class="feature-icon">🔌</div>
+                        <h3>Plugin Examples</h3>
+                        <ul class="example-list">
+                            <li><a href="https://github.com/twilson63/hype/blob/main/examples/test-fs-plugin.lua" target="_blank">Filesystem Plugin</a></li>
+                            <li><a href="https://github.com/twilson63/hype/blob/main/examples/test-versioned-plugins.lua" target="_blank">Versioned Plugins</a></li>
+                            <li><a href="https://github.com/twilson63/hype/blob/main/examples/test-multiple-plugins.lua" target="_blank">Multiple Plugins</a></li>
+                            <li><a href="https://github.com/twilson63/hype/tree/main/examples/plugins" target="_blank">Plugin Development</a></li>
+                        </ul>
+                    </div>
                 </div>
 
                 <div class="terminal-window">
@@ -231,11 +346,18 @@ cd hype/examples
 # Run an example directly
 hype run hello.lua
 
+# Run with plugins
+hype run test-fs-plugin.lua --plugins fs@1.0.0
+
 # Build a standalone executable  
 hype build hello.lua -o hello
 
+# Build with embedded plugins
+hype build test-fs-plugin.lua --plugins fs@1.0.0 -o fs-app
+
 # Run the executable (zero dependencies!)
-./hello</code></pre>
+./hello
+./fs-app</code></pre>
                         </div>
                     </div>
                 </div>
@@ -256,6 +378,7 @@ hype build hello.lua -o hello
                     <ul>
                         <li><a href="https://github.com/twilson63/hype/tree/main/examples">GitHub Examples</a></li>
                         <li><a href="api.html">API Reference</a></li>
+                        <li><a href="PLUGINS.md">Plugin System</a></li>
                         <li><a href="index.html">Getting Started</a></li>
                     </ul>
                 </div>
