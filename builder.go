@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"crypto/sha256"
 	"crypto/sha512"
 	"encoding/base64"
@@ -20,18 +21,28 @@ import (
 // Removed embed for now - we'll generate everything at build time
 
 type BuildConfig struct {
-	ScriptPath   string
-	OutputName   string
-	Target       string
-	ScriptContent string
+	ScriptPath               string
+	OutputName               string
+	Target                   string
+	ScriptContent            string
+	PluginSpecs              []PluginSpec
+	PluginRegistry           *PluginRegistry
+	PluginRegistrationCode   string
+	PluginImports            string
+	PluginDependencies       []string
 }
 
 
 func buildExecutable(scriptPath, outputName, target string) error {
+	return buildExecutableWithPlugins(scriptPath, outputName, target, []PluginSpec{})
+}
+
+func buildExecutableWithPlugins(scriptPath, outputName, target string, pluginSpecs []PluginSpec) error {
 	config := &BuildConfig{
-		ScriptPath: scriptPath,
-		OutputName: outputName,
-		Target:     target,
+		ScriptPath:  scriptPath,
+		OutputName:  outputName,
+		Target:      target,
+		PluginSpecs: pluginSpecs,
 	}
 
 	if config.OutputName == "" {
@@ -51,6 +62,27 @@ func buildExecutable(scriptPath, outputName, target string) error {
 	// Escape the script content for safe embedding in Go code
 	config.ScriptContent = strconv.Quote(bundledContent)
 
+	// Load plugins if specified
+	if len(config.PluginSpecs) > 0 {
+		config.PluginRegistry = NewPluginRegistry()
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
+		defer cancel()
+		
+		if err := config.PluginRegistry.LoadPlugins(ctx, config.PluginSpecs); err != nil {
+			return fmt.Errorf("failed to load plugins: %w", err)
+		}
+		defer config.PluginRegistry.Close()
+		
+		// Generate plugin registration code
+		if err := generatePluginCode(config); err != nil {
+			return fmt.Errorf("failed to generate plugin code: %w", err)
+		}
+	} else {
+		config.PluginRegistrationCode = ""
+		config.PluginImports = ""
+		config.PluginDependencies = []string{}
+	}
+
 	tempDir, err := os.MkdirTemp("", "luax-build-*")
 	if err != nil {
 		return fmt.Errorf("failed to create temp directory: %w", err)
@@ -65,6 +97,54 @@ func buildExecutable(scriptPath, outputName, target string) error {
 		return fmt.Errorf("failed to build executable: %w", err)
 	}
 
+	return nil
+}
+
+func generatePluginCode(config *BuildConfig) error {
+	if config.PluginRegistry == nil {
+		return nil
+	}
+	
+	var registrationCode strings.Builder
+	var deps []string
+	
+	// For now, we'll embed Lua plugins as string constants and register them dynamically
+	// This is simpler than Go plugin compilation
+	
+	registrationCode.WriteString("\t// Register plugin modules\n")
+	
+	for _, plugin := range config.PluginRegistry.plugins {
+		// For Lua plugins, we can use direct registration
+		if wrapper, ok := plugin.(*LuaPluginWrapper); ok {
+			pluginName := plugin.Name()
+			registrationCode.WriteString(fmt.Sprintf("\t// Register %s plugin\n", pluginName))
+			registrationCode.WriteString(fmt.Sprintf("\tL.PreloadModule(\"%s\", func(L *lua.LState) int {\n", pluginName))
+			registrationCode.WriteString(fmt.Sprintf("\t\tpluginCode := `%s`\n", strings.ReplaceAll(wrapper.content, "`", "` + \"`\" + `")))
+			registrationCode.WriteString("\t\ttempL := lua.NewState()\n")
+			registrationCode.WriteString("\t\tdefer tempL.Close()\n")
+			registrationCode.WriteString("\t\tif err := tempL.DoString(pluginCode); err != nil {\n")
+			registrationCode.WriteString("\t\t\tfmt.Fprintf(os.Stderr, \"Error loading plugin: %v\\n\", err)\n")
+			registrationCode.WriteString("\t\t\tos.Exit(1)\n")
+			registrationCode.WriteString("\t\t}\n")
+			registrationCode.WriteString("\t\tpluginTable := tempL.Get(-1)\n")
+			registrationCode.WriteString("\t\tif pluginTable.Type() == lua.LTTable {\n")
+			registrationCode.WriteString("\t\t\tnewTable := L.NewTable()\n")
+			registrationCode.WriteString("\t\t\tpluginTable.(*lua.LTable).ForEach(func(key, value lua.LValue) {\n")
+			registrationCode.WriteString("\t\t\t\tL.SetField(newTable, key.String(), value)\n")
+			registrationCode.WriteString("\t\t\t})\n")
+			registrationCode.WriteString("\t\t\tL.Push(newTable)\n")
+			registrationCode.WriteString("\t\t} else {\n")
+			registrationCode.WriteString("\t\t\tL.Push(lua.LNil)\n")
+			registrationCode.WriteString("\t\t}\n")
+			registrationCode.WriteString("\t\treturn 1\n")
+			registrationCode.WriteString("\t})\n")
+		}
+		deps = append(deps, plugin.Dependencies()...)
+	}
+	
+	config.PluginRegistrationCode = registrationCode.String()
+	config.PluginDependencies = deps
+	
 	return nil
 }
 
@@ -133,6 +213,8 @@ func main() {
 
 	// Register HTTP Signatures module
 	registerHTTPSigModule(L)
+
+{{.PluginRegistrationCode}}
 
 	if err := L.DoString(luaScript); err != nil {
 		fmt.Fprintf(os.Stderr, "Error running Lua script: %v\n", err)

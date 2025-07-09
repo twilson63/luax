@@ -17,9 +17,25 @@ import (
 )
 
 func runScript(scriptPath string, scriptArgs []string) error {
+	return runScriptWithPlugins(scriptPath, scriptArgs, []PluginSpec{})
+}
+
+func runScriptWithPlugins(scriptPath string, scriptArgs []string, pluginSpecs []PluginSpec) error {
 	scriptContent, err := os.ReadFile(scriptPath)
 	if err != nil {
 		return fmt.Errorf("failed to read script file: %w", err)
+	}
+
+	// Load plugins
+	registry := NewPluginRegistry()
+	if len(pluginSpecs) > 0 {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+		defer cancel()
+		
+		if err := registry.LoadPlugins(ctx, pluginSpecs); err != nil {
+			return fmt.Errorf("failed to load plugins: %w", err)
+		}
+		defer registry.Close()
 	}
 
 	L := lua.NewState()
@@ -39,20 +55,17 @@ func runScript(scriptPath string, scriptArgs []string) error {
 	// Set up command line arguments
 	setupCommandLineArgs(L, scriptPath, scriptArgs)
 	
-	// Register HTTP module
+	// Register built-in modules
 	registerHTTPModule(L)
-
-	// Register KV module
 	registerKVModule(L)
-
-	// Register TUI functions
 	registerTUIFunctions(L)
-
-	// Register Crypto module
 	registerCryptoModule(L)
-
-	// Register HTTP Signatures module
 	registerHTTPSigModule(L)
+
+	// Register plugin modules
+	if err := registry.RegisterAll(L); err != nil {
+		return fmt.Errorf("failed to register plugins: %w", err)
+	}
 
 	if err := L.DoString(string(scriptContent)); err != nil {
 		return fmt.Errorf("lua runtime error: %w", err)

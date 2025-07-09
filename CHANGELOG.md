@@ -7,6 +7,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.0] - 2025-07-09
+
+### Added
+- **🔌 Plugin System**: Complete plugin system with versioned Lua modules
+  - Support for `name@version` syntax (e.g., `fs@1.0.0`)
+  - Automatic plugin discovery in conventional directories
+  - Version validation and exact version matching
+  - Multiple plugin loading with custom aliases
+  - Plugin embedding in built executables (zero-dependency deployment)
+  - Plugin configuration files with YAML support
+- **📚 Comprehensive Plugin Documentation**:
+  - Complete plugin development guide with step-by-step tutorials
+  - Plugin system reference with API documentation
+  - Real-world plugin examples (filesystem, JSON, HTTP utilities)
+  - Best practices and testing strategies
+- **🛠️ CLI Plugin Integration**:
+  - `--plugins` flag for both `run` and `build` commands
+  - `--plugins-config` for YAML configuration files
+  - Enhanced help text with plugin usage examples
+- **📦 Example Plugins**:
+  - Filesystem plugin (v1.0.0) with basic file operations
+  - Enhanced filesystem plugin (v2.0.0) with copy, move, delete
+  - Comprehensive test scripts for plugin validation
+
+### Enhanced
+- **CLI Interface**: Updated help text and examples for plugin usage
+- **Documentation**: Added plugin system to README and created detailed guides
+- **Build System**: Plugin embedding support for standalone executables
+- **Development Workflow**: Plugin discovery and loading for rapid iteration
+
+### Plugin Specification Formats
+- `fs` - Simple name with auto-discovery
+- `fs@1.0.0` - Name with specific version requirement
+- `myfs=./path/to/plugin` - Custom alias with explicit path
+- `myfs=./path/to/plugin@2.0.0` - Alias with path and version
+- `github.com/user/plugin@v1.0.0` - Go module support (framework ready)
+
 ## [1.3.1] - 2024-06-24
 
 ### Fixed

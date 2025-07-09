@@ -113,8 +113,8 @@ func TestBuildExecutableInvalidScript(t *testing.T) {
 		t.Fatalf("Expected error for non-existent script, but got none")
 	}
 
-	if !strings.Contains(err.Error(), "failed to read script file") {
-		t.Fatalf("Expected 'failed to read script file' error, got: %v", err)
+	if !strings.Contains(err.Error(), "failed to resolve dependencies") {
+		t.Fatalf("Expected 'failed to resolve dependencies' error, got: %v", err)
 	}
 }
 

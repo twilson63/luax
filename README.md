@@ -12,6 +12,7 @@ Hype is a powerful tool that packages Lua scripts into standalone executables wi
 - 🔄 **Transaction support** with ACID properties
 - 🔍 **Database iteration and querying** with cursor support
 - 📁 **Multi-file project support** with dependency bundling
+- 🔌 **Plugin system** with versioned Lua modules
 - ✨ **Zero external dependencies** in final executables
 - 🚀 **Simple deployment** - single binary distribution
 
@@ -152,6 +153,129 @@ For faster development and testing, Hype provides a `run` command that runs Lua 
 - Use `run` during development and testing
 - Use `build` for production deployments (auto-handles dependencies)
 - Use `bundle` when you need a single Lua file (optional step)
+
+## Plugin System
+
+Hype features a powerful plugin system that allows you to extend functionality with custom Lua modules. Plugins can be easily shared, versioned, and embedded into your applications.
+
+### Using Plugins
+
+```bash
+# Use a plugin by name with automatic discovery
+./hype run myapp.lua --plugins fs
+
+# Specify exact version
+./hype run myapp.lua --plugins fs@1.0.0
+
+# Use multiple plugins
+./hype run myapp.lua --plugins fs@1.0.0,json,http-utils@2.1.0
+
+# Custom alias for plugins
+./hype run myapp.lua --plugins myfs=./path/to/plugin@1.2.0
+
+# Build with embedded plugins
+./hype build myapp.lua --plugins fs@1.0.0 -o myapp
+```
+
+**In your Lua scripts:**
+```lua
+-- Use plugins like built-in modules
+local fs = require("fs")
+local content, err = fs.readFile("config.txt")
+if content then
+    print("File content:", content)
+else
+    print("Error:", err)
+end
+```
+
+### Plugin Specification Formats
+
+- **`fs`** - Simple name, auto-discovers in conventional locations
+- **`fs@1.0.0`** - Name with specific version requirement  
+- **`myfs=./path/to/plugin`** - Custom alias with explicit path
+- **`myfs=./path/to/plugin@2.0.0`** - Alias with path and version
+- **`github.com/user/plugin@v1.0.0`** - Go module (future support)
+
+### Creating Lua Plugins
+
+**Plugin Structure:**
+```
+my-plugin/
+├── hype-plugin.yaml    # Plugin manifest
+└── plugin.lua          # Main plugin code
+```
+
+**hype-plugin.yaml:**
+```yaml
+name: "my-plugin"
+version: "1.0.0"
+type: "lua"
+main: "plugin.lua"
+description: "Description of your plugin"
+author: "your-name"
+license: "MIT"
+```
+
+**plugin.lua:**
+```lua
+-- Plugin must return a table with functions
+local myplugin = {}
+
+function myplugin.hello(name)
+    return "Hello, " .. (name or "World") .. "!"
+end
+
+function myplugin.calculate(a, b)
+    if not a or not b then
+        return nil, "Both arguments required"
+    end
+    return a + b, nil
+end
+
+return myplugin
+```
+
+**Usage in scripts:**
+```lua
+local myplugin = require("my-plugin")
+
+local greeting = myplugin.hello("Hype")
+print(greeting)  -- "Hello, Hype!"
+
+local result, err = myplugin.calculate(5, 3)
+if result then
+    print("Result:", result)  -- "Result: 8"
+else
+    print("Error:", err)
+end
+```
+
+### Plugin Discovery
+
+Hype automatically searches for plugins in conventional locations:
+- `./plugins/[name]/`
+- `./examples/plugins/[name]/` 
+- `./[name]-plugin/`
+- `./examples/plugins/[name]-plugin/`
+
+### Plugin Examples
+
+See `examples/plugins/` for working plugin examples:
+- **`fs-plugin`** - Filesystem operations (read, write, list, mkdir)
+- **`fs-plugin-v2`** - Enhanced filesystem with copy, move, delete
+
+```bash
+# Try the filesystem plugin
+./hype run examples/test-fs-plugin.lua --plugins fs@1.0.0
+
+# Try the enhanced version
+./hype run examples/test-versioned-plugins.lua --plugins fs=./examples/plugins/fs-plugin-v2@2.0.0
+```
+
+**📖 For comprehensive plugin documentation and development guide, see:**
+- **[docs/PLUGINS.md](docs/PLUGINS.md)** - Complete plugin system reference
+- **[docs/PLUGIN_DEVELOPMENT.md](docs/PLUGIN_DEVELOPMENT.md)** - Step-by-step plugin development guide
 
 ## Command Line Arguments
 
