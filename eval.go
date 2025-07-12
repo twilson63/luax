@@ -5,12 +5,16 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/gdamore/tcell/v2"
+	"github.com/gorilla/websocket"
 	"github.com/rivo/tview"
 	"github.com/yuin/gopher-lua"
 	"go.etcd.io/bbolt"
@@ -61,6 +65,7 @@ func runScriptWithPlugins(scriptPath string, scriptArgs []string, pluginSpecs []
 	registerTUIFunctions(L)
 	registerCryptoModule(L)
 	registerHTTPSigModule(L)
+	registerWebSocketModule(L)
 
 	// Register plugin modules
 	if err := registry.RegisterAll(L); err != nil {
@@ -1141,5 +1146,339 @@ func kvCursorIndex(L *lua.LState) int {
 	}
 	
 	return 1
+}
+
+// WebSocket Module
+func registerWebSocketModule(L *lua.LState) {
+	L.PreloadModule("websocket", func(L *lua.LState) int {
+		wsModule := L.NewTable()
+		L.SetField(wsModule, "newServer", L.NewFunction(wsNewServer))
+		L.SetField(wsModule, "connect", L.NewFunction(wsConnect))
+		L.Push(wsModule)
+		return 1
+	})
+	
+	// Set up WebSocket server metatable
+	serverMT := L.NewTypeMetatable("WSServer")
+	L.SetField(serverMT, "__index", L.NewFunction(wsServerIndex))
+	
+	// Set up WebSocket connection metatable
+	connMT := L.NewTypeMetatable("WSConnection")
+	L.SetField(connMT, "__index", L.NewFunction(wsConnectionIndex))
+}
+
+type WSServer struct {
+	server   *http.Server
+	mux      *http.ServeMux
+	upgrader websocket.Upgrader
+}
+
+type WSConnection struct {
+	conn          *websocket.Conn
+	messageHandler *lua.LFunction
+	closeHandler   *lua.LFunction
+	errorHandler   *lua.LFunction
+	mutex         sync.RWMutex
+	L             *lua.LState
+}
+
+func wsNewServer(L *lua.LState) int {
+	server := &WSServer{
+		mux: http.NewServeMux(),
+		upgrader: websocket.Upgrader{
+			CheckOrigin: func(r *http.Request) bool {
+				return true // Allow connections from any origin
+			},
+		},
+	}
+	
+	ud := L.NewUserData()
+	ud.Value = server
+	L.SetMetatable(ud, L.GetTypeMetatable("WSServer"))
+	L.Push(ud)
+	return 1
+}
+
+func wsConnect(L *lua.LState) int {
+	urlStr := L.CheckString(1)
+	
+	// Parse URL
+	u, err := url.Parse(urlStr)
+	if err != nil {
+		L.Push(lua.LNil)
+		L.Push(lua.LString("Invalid URL: " + err.Error()))
+		return 2
+	}
+	
+	// Connect to WebSocket
+	conn, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
+	if err != nil {
+		L.Push(lua.LNil)
+		L.Push(lua.LString("Connection failed: " + err.Error()))
+		return 2
+	}
+	
+	wsConn := &WSConnection{
+		conn: conn,
+		L:    L,
+	}
+	
+	ud := L.NewUserData()
+	ud.Value = wsConn
+	L.SetMetatable(ud, L.GetTypeMetatable("WSConnection"))
+	
+	// Start reading messages
+	go wsConn.readMessages()
+	
+	L.Push(ud)
+	L.Push(lua.LNil)
+	return 2
+}
+
+func wsServerIndex(L *lua.LState) int {
+	ud := L.CheckUserData(1)
+	server := ud.Value.(*WSServer)
+	method := L.CheckString(2)
+	
+	switch method {
+	case "handle":
+		L.Push(L.NewFunction(func(L *lua.LState) int {
+			pattern := L.CheckString(2)
+			handlerFunc := L.CheckFunction(3)
+			
+			server.mux.HandleFunc(pattern, func(w http.ResponseWriter, r *http.Request) {
+				conn, err := server.upgrader.Upgrade(w, r, nil)
+				if err != nil {
+					log.Printf("WebSocket upgrade failed: %v", err)
+					return
+				}
+				
+				wsConn := &WSConnection{
+					conn: conn,
+					L:    L,
+				}
+				
+				connUD := L.NewUserData()
+				connUD.Value = wsConn
+				L.SetMetatable(connUD, L.GetTypeMetatable("WSConnection"))
+				
+				// Start reading messages
+				go wsConn.readMessages()
+				
+				// Call the handler with the connection
+				if err := L.CallByParam(lua.P{
+					Fn:      handlerFunc,
+					NRet:    0,
+					Protect: true,
+				}, connUD); err != nil {
+					log.Printf("WebSocket handler error: %v", err)
+				}
+			})
+			
+			return 0
+		}))
+	case "listen":
+		L.Push(L.NewFunction(func(L *lua.LState) int {
+			port := L.CheckInt(2)
+			
+			server.server = &http.Server{
+				Addr:    fmt.Sprintf(":%d", port),
+				Handler: server.mux,
+			}
+			
+			// Start server in goroutine
+			go func() {
+				if err := server.server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+					log.Printf("WebSocket server error: %v", err)
+				}
+			}()
+			
+			return 0
+		}))
+	case "stop":
+		L.Push(L.NewFunction(func(L *lua.LState) int {
+			if server.server != nil {
+				ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+				defer cancel()
+				server.server.Shutdown(ctx)
+			}
+			return 0
+		}))
+	}
+	
+	return 1
+}
+
+func wsConnectionIndex(L *lua.LState) int {
+	ud := L.CheckUserData(1)
+	conn := ud.Value.(*WSConnection)
+	method := L.CheckString(2)
+	
+	switch method {
+	case "send":
+		L.Push(L.NewFunction(func(L *lua.LState) int {
+			message := L.CheckString(2)
+			
+			conn.mutex.Lock()
+			err := conn.conn.WriteMessage(websocket.TextMessage, []byte(message))
+			conn.mutex.Unlock()
+			
+			if err != nil {
+				L.Push(lua.LFalse)
+				L.Push(lua.LString("Send failed: " + err.Error()))
+				return 2
+			}
+			
+			L.Push(lua.LTrue)
+			L.Push(lua.LNil)
+			return 2
+		}))
+	case "sendBinary":
+		L.Push(L.NewFunction(func(L *lua.LState) int {
+			message := L.CheckString(2)
+			
+			conn.mutex.Lock()
+			err := conn.conn.WriteMessage(websocket.BinaryMessage, []byte(message))
+			conn.mutex.Unlock()
+			
+			if err != nil {
+				L.Push(lua.LFalse)
+				L.Push(lua.LString("Send failed: " + err.Error()))
+				return 2
+			}
+			
+			L.Push(lua.LTrue)
+			L.Push(lua.LNil)
+			return 2
+		}))
+	case "onMessage":
+		L.Push(L.NewFunction(func(L *lua.LState) int {
+			handler := L.CheckFunction(2)
+			conn.mutex.Lock()
+			conn.messageHandler = handler
+			conn.mutex.Unlock()
+			return 0
+		}))
+	case "onClose":
+		L.Push(L.NewFunction(func(L *lua.LState) int {
+			handler := L.CheckFunction(2)
+			conn.mutex.Lock()
+			conn.closeHandler = handler
+			conn.mutex.Unlock()
+			return 0
+		}))
+	case "onError":
+		L.Push(L.NewFunction(func(L *lua.LState) int {
+			handler := L.CheckFunction(2)
+			conn.mutex.Lock()
+			conn.errorHandler = handler
+			conn.mutex.Unlock()
+			return 0
+		}))
+	case "close":
+		L.Push(L.NewFunction(func(L *lua.LState) int {
+			conn.mutex.Lock()
+			err := conn.conn.Close()
+			conn.mutex.Unlock()
+			
+			if err != nil {
+				L.Push(lua.LFalse)
+				L.Push(lua.LString("Close failed: " + err.Error()))
+				return 2
+			}
+			
+			L.Push(lua.LTrue)
+			L.Push(lua.LNil)
+			return 2
+		}))
+	case "ping":
+		L.Push(L.NewFunction(func(L *lua.LState) int {
+			conn.mutex.Lock()
+			err := conn.conn.WriteMessage(websocket.PingMessage, nil)
+			conn.mutex.Unlock()
+			
+			if err != nil {
+				L.Push(lua.LFalse)
+				L.Push(lua.LString("Ping failed: " + err.Error()))
+				return 2
+			}
+			
+			L.Push(lua.LTrue)
+			L.Push(lua.LNil)
+			return 2
+		}))
+	}
+	
+	return 1
+}
+
+func (wsConn *WSConnection) readMessages() {
+	defer func() {
+		if wsConn.closeHandler != nil {
+			wsConn.mutex.RLock()
+			handler := wsConn.closeHandler
+			wsConn.mutex.RUnlock()
+			
+			if handler != nil {
+				if err := wsConn.L.CallByParam(lua.P{
+					Fn:      handler,
+					NRet:    0,
+					Protect: true,
+				}); err != nil {
+					log.Printf("WebSocket close handler error: %v", err)
+				}
+			}
+		}
+		wsConn.conn.Close()
+	}()
+	
+	for {
+		messageType, message, err := wsConn.conn.ReadMessage()
+		if err != nil {
+			if wsConn.errorHandler != nil {
+				wsConn.mutex.RLock()
+				handler := wsConn.errorHandler
+				wsConn.mutex.RUnlock()
+				
+				if handler != nil {
+					if err := wsConn.L.CallByParam(lua.P{
+						Fn:      handler,
+						NRet:    0,
+						Protect: true,
+					}, lua.LString(err.Error())); err != nil {
+						log.Printf("WebSocket error handler error: %v", err)
+					}
+				}
+			}
+			break
+		}
+		
+		if messageType == websocket.TextMessage || messageType == websocket.BinaryMessage {
+			if wsConn.messageHandler != nil {
+				wsConn.mutex.RLock()
+				handler := wsConn.messageHandler
+				wsConn.mutex.RUnlock()
+				
+				if handler != nil {
+					messageTable := wsConn.L.NewTable()
+					wsConn.L.SetField(messageTable, "data", lua.LString(string(message)))
+					wsConn.L.SetField(messageTable, "type", lua.LString(func() string {
+						if messageType == websocket.TextMessage {
+							return "text"
+						}
+						return "binary"
+					}()))
+					
+					if err := wsConn.L.CallByParam(lua.P{
+						Fn:      handler,
+						NRet:    0,
+						Protect: true,
+					}, messageTable); err != nil {
+						log.Printf("WebSocket message handler error: %v", err)
+					}
+				}
+			}
+		}
+	}
 }
 

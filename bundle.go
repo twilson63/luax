@@ -100,7 +100,7 @@ func resolveDependencies(scriptPath string, visited map[string]bool) (string, er
 
 // isBuiltinModule checks if a module is a built-in Hype module
 func isBuiltinModule(moduleName string) bool {
-	builtins := []string{"http", "kv", "tui", "crypto", "httpsig"}
+	builtins := []string{"http", "kv", "tui", "crypto", "httpsig", "websocket"}
 	for _, builtin := range builtins {
 		if moduleName == builtin {
 			return true
