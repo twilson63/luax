@@ -1,0 +1,65 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.23'
+
+    - name: Extract version from tag
+      id: version
+      run: |
+        VERSION=${GITHUB_REF#refs/tags/}
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "version_no_v=${VERSION#v}" >> $GITHUB_OUTPUT
+
+    - name: Update version in main.go
+      run: |
+        sed -i 's/version = "[^"]*"/version = "${{ steps.version.outputs.version_no_v }}"/' main.go
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add main.go
+        git diff --staged --quiet || git commit -m "chore: update version to ${{ steps.version.outputs.version }}"
+
+    - name: Update install scripts
+      run: |
+        # Update all install scripts with new version
+        find . -name "install*.sh" -exec sed -i "s/hype-v[0-9]\+\.[0-9]\+\.[0-9]\+/hype-${{ steps.version.outputs.version }}/g" {} \;
+        git add install*.sh
+        git diff --staged --quiet || git commit -m "chore: update install scripts to ${{ steps.version.outputs.version }}"
+
+    - name: Build binaries
+      run: |
+        make releases
+
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          dist/hype-${{ steps.version.outputs.version }}-*.tar.gz
+          dist/hype-${{ steps.version.outputs.version }}-*.zip
+        generate_release_notes: true
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Update install scripts in repository
+      run: |
+        # Push the updated files back to main branch
+        git push origin HEAD:main || echo "No changes to push"

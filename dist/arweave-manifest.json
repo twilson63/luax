@@ -1,0 +1,33 @@
+{
+  "manifest": "arweave/paths",
+  "version": "0.1.0",
+  "index": {
+    "path": "install.sh"
+  },
+  "paths": {
+    "install.sh": {
+      "id": "INSTALL_SCRIPT_TX_ID"
+    }
+    ,
+    "hype-v1.5.0-darwin-amd64.tar.gz": {
+      "id": "REPLACE_WITH_TX_ID"
+    }
+    ,
+    "hype-v1.5.0-darwin-arm64.tar.gz": {
+      "id": "REPLACE_WITH_TX_ID"
+    }
+    ,
+    "hype-v1.5.0-linux-amd64.tar.gz": {
+      "id": "REPLACE_WITH_TX_ID"
+    }
+    ,
+    "hype-v1.5.0-linux-arm64.tar.gz": {
+      "id": "REPLACE_WITH_TX_ID"
+    }
+    ,
+    "hype-v1.5.0-windows-amd64.zip": {
+      "id": "REPLACE_WITH_TX_ID"
+    }
+
+  }
+}

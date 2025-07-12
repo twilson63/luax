@@ -47,3 +47,21 @@ version: ## Print version information
 	@echo "Version: $(VERSION)"
 	@echo "Commit:  $(COMMIT)"
 	@echo "Date:    $(DATE)"
+
+# Release automation targets
+pre-release-check: ## Run pre-release validation checks
+	@./scripts/pre-release-check.sh
+
+release: ## Create a new release (interactive)
+	@./scripts/release.sh
+
+release-patch: ## Create a patch release (auto-bump)
+	@./scripts/release.sh
+
+release-minor: ## Create a minor release (requires manual version)
+	@echo "For minor releases, specify version manually:"
+	@echo "  make release VERSION=x.y.0"
+
+release-major: ## Create a major release (requires manual version)
+	@echo "For major releases, specify version manually:"
+	@echo "  make release VERSION=x.0.0"
