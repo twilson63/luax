@@ -131,6 +131,52 @@ server:listen(8080)</code></pre>
                             <a href="https://github.com/twilson63/hype/blob/main/examples/test-fs-plugin.lua" target="_blank" class="btn btn-secondary">View Source</a>
                         </div>
                     </div>
+
+                    <div class="showcase-item">
+                        <h3>🔌 WebSocket Chat</h3>
+                        <p>Real-time chat server with message broadcasting</p>
+                        <div class="code-block">
+                            <pre><code class="language-lua">-- chat.lua
+local websocket = require('websocket')
+local clients = {}
+
+local server = websocket.newServer()
+
+server:handle("/chat", function(conn)
+    table.insert(clients, conn)
+    local clientId = #clients
+    
+    conn:onMessage(function(message)
+        local msg = "Client " .. clientId .. ": " .. message.data
+        -- Broadcast to all clients
+        for i, client in ipairs(clients) do
+            client:send(msg)
+        end
+    end)
+    
+    conn:onClose(function()
+        -- Remove client from list
+        for i, client in ipairs(clients) do
+            if client == conn then
+                table.remove(clients, i)
+                break
+            end
+        end
+    end)
+end)
+
+server:listen(8080)</code></pre>
+                        </div>
+                        <div class="example-actions">
+                            <div class="build-example">
+                                <strong>Build & Run:</strong>
+                                <div class="code-block">
+                                    <code>hype build chat.lua -o chat && ./chat</code>
+                                </div>
+                            </div>
+                            <a href="https://github.com/twilson63/hype/blob/main/examples/websocket-server-simple.lua" target="_blank" class="btn btn-secondary">View Source</a>
+                        </div>
+                    </div>
                 </div>
             </div>
         </section>
@@ -181,6 +227,197 @@ local signed = httpsig.sign(request, {
                         </div>
                         <div class="example-actions">
                             <a href="https://github.com/twilson63/hype/blob/main/examples/httpsig-basic.lua" target="_blank" class="btn btn-secondary">View Full Example</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- WebSocket Examples -->
+        <section class="examples-section">
+            <div class="container">
+                <h2>🔌 WebSocket Examples</h2>
+                <div class="example-showcase">
+                    <div class="showcase-item">
+                        <h3>💬 Echo Server</h3>
+                        <p>Simple WebSocket server that echoes messages back to clients</p>
+                        <div class="code-block">
+                            <pre><code class="language-lua">local websocket = require('websocket')
+local server = websocket.newServer()
+
+server:handle("/echo", function(conn)
+    print("New WebSocket connection")
+    
+    conn:onMessage(function(message)
+        print("Received:", message.data)
+        -- Echo message back to client
+        conn:send("Echo: " .. message.data)
+    end)
+    
+    conn:onClose(function()
+        print("Client disconnected")
+    end)
+    
+    conn:onError(function(err)
+        print("WebSocket error:", err)
+    end)
+    
+    -- Send welcome message
+    conn:send("Welcome to echo server!")
+end)
+
+server:listen(8080)
+print("WebSocket server running at ws://localhost:8080/echo")
+
+-- Keep server running
+while true do
+    os.execute("sleep 1")
+end</code></pre>
+                        </div>
+                        <div class="example-actions">
+                            <div class="build-example">
+                                <strong>Build & Run:</strong>
+                                <div class="code-block">
+                                    <code>hype build echo-server.lua -o echo-server && ./echo-server</code>
+                                </div>
+                            </div>
+                            <a href="https://github.com/twilson63/hype/blob/main/examples/websocket-server-simple.lua" target="_blank" class="btn btn-secondary">View Source</a>
+                        </div>
+                    </div>
+
+                    <div class="showcase-item">
+                        <h3>📡 WebSocket Client</h3>
+                        <p>Client that connects to WebSocket servers and handles real-time communication</p>
+                        <div class="code-block">
+                            <pre><code class="language-lua">local websocket = require('websocket')
+
+-- Connect to WebSocket server
+local client = websocket.connect("ws://localhost:8080/echo")
+
+if not client then
+    print("Failed to connect to WebSocket server")
+    os.exit(1)
+end
+
+print("Connected to WebSocket server!")
+
+-- Set up event handlers
+client:onMessage(function(message)
+    print("Received:", message.data)
+    print("Message type:", message.type)  -- "text" or "binary"
+end)
+
+client:onClose(function()
+    print("Connection closed")
+end)
+
+client:onError(function(err)
+    print("WebSocket error:", err)
+end)
+
+-- Send test messages
+client:send("Hello from Lua client!")
+client:send("This is a test message")
+client:sendBinary("Binary data")
+
+-- Ping the server
+client:ping()
+
+-- Wait for responses
+os.execute("sleep 2")
+
+-- Close connection
+client:close()
+print("Client example completed")</code></pre>
+                        </div>
+                        <div class="example-actions">
+                            <div class="build-example">
+                                <strong>Build & Run:</strong>
+                                <div class="code-block">
+                                    <code>hype build ws-client.lua -o ws-client && ./ws-client</code>
+                                </div>
+                            </div>
+                            <a href="https://github.com/twilson63/hype/blob/main/examples/websocket-client.lua" target="_blank" class="btn btn-secondary">View Source</a>
+                        </div>
+                    </div>
+
+                    <div class="showcase-item">
+                        <h3>🌐 Multi-Client Chat Server</h3>
+                        <p>Real-time chat server that broadcasts messages to all connected clients</p>
+                        <div class="code-block">
+                            <pre><code class="language-lua">local websocket = require('websocket')
+local clients = {}  -- Store connected clients
+
+local server = websocket.newServer()
+
+server:handle("/chat", function(conn)
+    -- Add client to list
+    table.insert(clients, conn)
+    local clientId = #clients
+    print("Client " .. clientId .. " connected")
+    
+    -- Send welcome message to new client
+    conn:send("Welcome to the chat! You are client " .. clientId)
+    
+    -- Broadcast to all other clients
+    for i, client in ipairs(clients) do
+        if client ~= conn then
+            client:send("Client " .. clientId .. " joined the chat")
+        end
+    end
+    
+    -- Handle incoming messages
+    conn:onMessage(function(message)
+        local msg = "Client " .. clientId .. ": " .. message.data
+        print(msg)
+        
+        -- Broadcast message to all clients
+        for i, client in ipairs(clients) do
+            client:send(msg)
+        end
+    end)
+    
+    -- Handle client disconnect
+    conn:onClose(function()
+        -- Remove client from list
+        for i, client in ipairs(clients) do
+            if client == conn then
+                table.remove(clients, i)
+                break
+            end
+        end
+        
+        print("Client " .. clientId .. " disconnected")
+        
+        -- Notify other clients
+        for i, client in ipairs(clients) do
+            client:send("Client " .. clientId .. " left the chat")
+        end
+    end)
+    
+    conn:onError(function(err)
+        print("Client " .. clientId .. " error:", err)
+    end)
+end)
+
+server:listen(8080)
+print("Chat server running at ws://localhost:8080/chat")
+print("Connect multiple WebSocket clients to test")
+
+-- Keep server running
+while true do
+    os.execute("sleep 1")
+end</code></pre>
+                        </div>
+                        <div class="example-actions">
+                            <div class="build-example">
+                                <strong>Test the Chat Server:</strong>
+                                <div class="code-block">
+                                    <code>hype build chat-server.lua -o chat && ./chat</code>
+                                </div>
+                                <p><small>Use multiple browser tabs with JavaScript WebSocket clients to test</small></p>
+                            </div>
+                            <a href="https://github.com/twilson63/hype/blob/main/examples/websocket-server.lua" target="_blank" class="btn btn-secondary">View Source</a>
                         </div>
                     </div>
                 </div>

@@ -55,6 +55,12 @@
                         <a href="#http-api" class="btn btn-secondary">View API</a>
                     </div>
                     <div class="feature-card">
+                        <div class="feature-icon">🔌</div>
+                        <h3>WebSocket Module</h3>
+                        <p>Real-time bidirectional communication with WebSocket servers and clients</p>
+                        <a href="#websocket-api" class="btn btn-secondary">View API</a>
+                    </div>
+                    <div class="feature-card">
                         <div class="feature-icon">🗄️</div>
                         <h3>Key-Value Module</h3>
                         <p>Embedded BoltDB database for persistent data storage</p>
@@ -73,7 +79,7 @@
                         <a href="#httpsig-api" class="btn btn-secondary">View API</a>
                     </div>
                     <div class="feature-card">
-                        <div class="feature-icon">🔌</div>
+                        <div class="feature-icon">🧩</div>
                         <h3>Plugin System</h3>
                         <p>Extend functionality with versioned Lua modules</p>
                         <a href="#plugin-api" class="btn btn-secondary">View API</a>
@@ -392,6 +398,217 @@ end)
 
 server:listen(8080)
 print("Server running on :8080")</code></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- WebSocket API Section -->
+        <section id="websocket-api" class="api-section">
+            <div class="container">
+                <h2>WebSocket Module</h2>
+                <p>Real-time bidirectional communication with WebSocket servers and clients for building interactive applications.</p>
+                
+                <div class="api-group">
+                    <h3>WebSocket Server</h3>
+                    <div class="code-block">
+                        <pre><code>local websocket = require('websocket')
+local server = websocket.newServer()</code></pre>
+                    </div>
+                    
+                    <h4>Server Methods</h4>
+                    <ul class="api-list">
+                        <li><code>server:handle(path, handler)</code> - Register WebSocket route handler</li>
+                        <li><code>server:listen(port)</code> - Start server on port</li>
+                        <li><code>server:stop()</code> - Stop server gracefully</li>
+                    </ul>
+                    
+                    <h4>Connection Handler</h4>
+                    <p>Route handlers receive a WebSocket connection object:</p>
+                    <div class="code-block">
+                        <pre><code>server:handle("/ws", function(conn)
+    -- Set up event handlers for this connection
+    conn:onMessage(function(message)
+        print("Received:", message.data)
+        conn:send("Echo: " .. message.data)
+    end)
+    
+    conn:onClose(function()
+        print("Connection closed")
+    end)
+    
+    conn:onError(function(err)
+        print("Error:", err)
+    end)
+    
+    -- Send welcome message
+    conn:send("Connected to WebSocket server!")
+end)</code></pre>
+                    </div>
+                    
+                    <div class="example-card">
+                        <h4>Example: WebSocket Echo Server</h4>
+                        <div class="code-block">
+                            <pre><code>local websocket = require('websocket')
+local server = websocket.newServer()
+
+server:handle("/echo", function(conn)
+    print("New WebSocket connection")
+    
+    conn:onMessage(function(message)
+        print("Received:", message.data)
+        -- Echo message back to client
+        conn:send("Echo: " .. message.data)
+    end)
+    
+    conn:onClose(function()
+        print("Client disconnected")
+    end)
+    
+    conn:onError(function(err)
+        print("WebSocket error:", err)
+    end)
+    
+    -- Send welcome message
+    conn:send("Welcome to echo server!")
+end)
+
+server:listen(8080)
+print("WebSocket server running at ws://localhost:8080/echo")
+
+-- Keep server running
+while true do
+    os.execute("sleep 1")
+end</code></pre>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="api-group">
+                    <h3>WebSocket Client</h3>
+                    <div class="code-block">
+                        <pre><code>local client = websocket.connect(url)</code></pre>
+                    </div>
+                    
+                    <p><strong>Parameters:</strong></p>
+                    <ul class="api-list">
+                        <li><code>url</code> - WebSocket URL (e.g., "ws://localhost:8080/ws")</li>
+                    </ul>
+                    
+                    <p><strong>Returns:</strong> WebSocket connection object or nil on failure</p>
+                    
+                    <div class="example-card">
+                        <h4>Example: WebSocket Client</h4>
+                        <div class="code-block">
+                            <pre><code>local websocket = require('websocket')
+local client = websocket.connect("ws://localhost:8080/echo")
+
+if not client then
+    print("Failed to connect to WebSocket server")
+    os.exit(1)
+end
+
+-- Set up event handlers
+client:onMessage(function(message)
+    print("Received:", message.data)
+    print("Type:", message.type)  -- "text" or "binary"
+end)
+
+client:onClose(function()
+    print("Connection closed")
+end)
+
+client:onError(function(err)
+    print("WebSocket error:", err)
+end)
+
+-- Send messages
+client:send("Hello from Lua client!")
+client:sendBinary("Binary message")
+
+-- Ping the server
+client:ping()
+
+-- Close when done
+client:close()</code></pre>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="api-group">
+                    <h3>Connection Methods</h3>
+                    <p>Both server and client connections support these methods:</p>
+                    <ul class="api-list">
+                        <li><code>conn:send(message)</code> - Send text message</li>
+                        <li><code>conn:sendBinary(data)</code> - Send binary message</li>
+                        <li><code>conn:onMessage(handler)</code> - Set message event handler</li>
+                        <li><code>conn:onClose(handler)</code> - Set close event handler</li>
+                        <li><code>conn:onError(handler)</code> - Set error event handler</li>
+                        <li><code>conn:close()</code> - Close connection</li>
+                        <li><code>conn:ping()</code> - Send ping frame</li>
+                    </ul>
+                    
+                    <h4>Message Object Structure</h4>
+                    <div class="code-block">
+                        <pre><code>{
+  data = "message content",  -- String content of the message
+  type = "text"              -- "text" or "binary"
+}</code></pre>
+                    </div>
+                </div>
+
+                <div class="api-group">
+                    <h3>Real-Time Chat Example</h3>
+                    <div class="example-card">
+                        <h4>Multi-Client Chat Server</h4>
+                        <div class="code-block">
+                            <pre><code>local websocket = require('websocket')
+local clients = {}
+
+local server = websocket.newServer()
+
+server:handle("/chat", function(conn)
+    -- Add client to list
+    table.insert(clients, conn)
+    local clientId = #clients
+    print("Client " .. clientId .. " connected")
+    
+    -- Broadcast join message
+    for i, client in ipairs(clients) do
+        if client ~= conn then
+            client:send("Client " .. clientId .. " joined")
+        end
+    end
+    
+    conn:onMessage(function(message)
+        local msg = "Client " .. clientId .. ": " .. message.data
+        print(msg)
+        
+        -- Broadcast to all clients
+        for i, client in ipairs(clients) do
+            client:send(msg)
+        end
+    end)
+    
+    conn:onClose(function()
+        -- Remove client from list
+        for i, client in ipairs(clients) do
+            if client == conn then
+                table.remove(clients, i)
+                break
+            end
+        end
+        
+        -- Notify others
+        for i, client in ipairs(clients) do
+            client:send("Client " .. clientId .. " left")
+        end
+    end)
+end)
+
+server:listen(8080)
+print("Chat server running at ws://localhost:8080/chat")</code></pre>
                         </div>
                     </div>
                 </div>
