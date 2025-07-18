@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.7.1] - 2025-07-18
+
+### Fixed
+- **🔧 Build System**: Fixed unused `reflect` import issue when building scripts without plugins
+- **🌍 Cross-compilation**: Enhanced `hype build` to properly respect GOOS/GOARCH environment variables
+- **⚙️ CI/CD Support**: Improved compatibility with GitHub Actions and automated build systems
+
+### Added
+- **📖 Documentation**: Enhanced README with detailed cross-compilation examples
+- **🔗 Examples**: Added LMDB Tree Viewer as showcase project demonstrating cross-platform builds
+- **🛠️ GitHub Actions**: Templates and examples for automated multi-platform releases
+
+### Technical
+- Template engine now conditionally includes `reflect` import only when plugins are present
+- Build process respects external GOOS/GOARCH environment variables for precise platform targeting
+- Improved error messages and debugging output for build failures
+
 ## [1.5.0] - 2025-07-09
 
 ### Added

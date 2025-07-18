@@ -38,6 +38,13 @@ make releases
 ./hype build script.lua -t linux -o myapp-linux
 ./hype build script.lua -t darwin -o myapp-darwin
 
+# Cross-compilation with GOOS/GOARCH (v1.7.1+)
+GOOS=linux GOARCH=amd64 ./hype build script.lua -o myapp-linux-amd64
+GOOS=linux GOARCH=arm64 ./hype build script.lua -o myapp-linux-arm64
+GOOS=darwin GOARCH=amd64 ./hype build script.lua -o myapp-macos-intel
+GOOS=darwin GOARCH=arm64 ./hype build script.lua -o myapp-macos-arm64
+GOOS=windows GOARCH=amd64 ./hype build script.lua -o myapp-windows.exe
+
 # Test with provided examples
 ./hype run examples/hello.lua
 ./hype run examples/webserver.lua

@@ -927,6 +927,9 @@ go build -o hype .
 
 ## Cross-Platform Builds
 
+Hype supports cross-compilation for multiple platforms and architectures:
+
+### Basic Cross-Platform Building
 ```bash
 # Build for Linux
 ./hype build myapp.lua -t linux -o myapp-linux
@@ -937,6 +940,45 @@ go build -o hype .
 # Build for macOS
 ./hype build myapp.lua -t darwin -o myapp-macos
 ```
+
+### Advanced Cross-Compilation (v1.7.1+)
+Use GOOS/GOARCH environment variables for precise platform targeting:
+
+```bash
+# Linux x86_64
+GOOS=linux GOARCH=amd64 ./hype build myapp.lua -o myapp-linux-amd64
+
+# Linux ARM64 (Raspberry Pi, etc.)
+GOOS=linux GOARCH=arm64 ./hype build myapp.lua -o myapp-linux-arm64
+
+# macOS Intel
+GOOS=darwin GOARCH=amd64 ./hype build myapp.lua -o myapp-macos-intel
+
+# macOS Apple Silicon
+GOOS=darwin GOARCH=arm64 ./hype build myapp.lua -o myapp-macos-arm64
+
+# Windows x86_64
+GOOS=windows GOARCH=amd64 ./hype build myapp.lua -o myapp-windows.exe
+```
+
+### GitHub Actions / CI/CD
+Perfect for automated builds:
+
+```yaml
+- name: Build Cross-Platform Binaries
+  run: |
+    GOOS=linux GOARCH=amd64 ./hype build myapp.lua -o myapp-linux-amd64
+    GOOS=linux GOARCH=arm64 ./hype build myapp.lua -o myapp-linux-arm64
+    GOOS=darwin GOARCH=amd64 ./hype build myapp.lua -o myapp-macos-intel
+    GOOS=darwin GOARCH=arm64 ./hype build myapp.lua -o myapp-macos-arm64
+    GOOS=windows GOARCH=amd64 ./hype build myapp.lua -o myapp-windows.exe
+```
+
+**Supported Platforms:**
+- Linux: amd64, arm64, 386, arm
+- macOS: amd64, arm64
+- Windows: amd64, 386
+- FreeBSD: amd64, arm64
 
 ## Use Cases
 
