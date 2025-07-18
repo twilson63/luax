@@ -3388,16 +3388,25 @@ require (
 	cmd := exec.Command("go", "build", "-o", outputPath, ".")
 	cmd.Dir = tempDir
 	
-	// Use current architecture unless building for a different OS
-	targetArch := runtime.GOARCH
-	if config.Target != runtime.GOOS {
-		// For cross-compilation to different OS, default to amd64
-		targetArch = "amd64"
+	// Use environment variables if set, otherwise use current architecture
+	targetGOOS := os.Getenv("GOOS")
+	targetGOARCH := os.Getenv("GOARCH")
+	
+	if targetGOOS == "" {
+		targetGOOS = config.Target
+	}
+	
+	if targetGOARCH == "" {
+		targetGOARCH = runtime.GOARCH
+		if config.Target != runtime.GOOS {
+			// For cross-compilation to different OS, default to amd64
+			targetGOARCH = "amd64"
+		}
 	}
 	
 	cmd.Env = append(os.Environ(),
-		"GOOS="+config.Target,
-		"GOARCH="+targetArch,
+		"GOOS="+targetGOOS,
+		"GOARCH="+targetGOARCH,
 	)
 
 	output, err := cmd.CombinedOutput()
