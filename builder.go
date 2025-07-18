@@ -30,6 +30,8 @@ type BuildConfig struct {
 	PluginRegistrationCode   string
 	PluginImports            string
 	PluginDependencies       []string
+	PluginSourceFiles        []string
+	HasPlugins               bool
 }
 
 
@@ -54,15 +56,8 @@ func buildExecutableWithPlugins(scriptPath, outputName, target string, pluginSpe
 		config.Target = runtime.GOOS
 	}
 
-	// Auto-bundle dependencies if they exist
-	bundledContent, err := resolveDependencies(scriptPath, make(map[string]bool))
-	if err != nil {
-		return fmt.Errorf("failed to resolve dependencies: %w", err)
-	}
-	// Escape the script content for safe embedding in Go code
-	config.ScriptContent = strconv.Quote(bundledContent)
-
-	// Load plugins if specified
+	// Load plugins first if specified
+	var availableModules map[string]bool
 	if len(config.PluginSpecs) > 0 {
 		config.PluginRegistry = NewPluginRegistry()
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
@@ -77,11 +72,29 @@ func buildExecutableWithPlugins(scriptPath, outputName, target string, pluginSpe
 		if err := generatePluginCode(config); err != nil {
 			return fmt.Errorf("failed to generate plugin code: %w", err)
 		}
+		
+		config.HasPlugins = true
+		
+		// Create a map of available modules from plugins
+		availableModules = make(map[string]bool)
+		for _, plugin := range config.PluginRegistry.plugins {
+			availableModules[plugin.Name()] = true
+		}
 	} else {
 		config.PluginRegistrationCode = ""
 		config.PluginImports = ""
 		config.PluginDependencies = []string{}
+		config.HasPlugins = false
+		availableModules = make(map[string]bool)
 	}
+
+	// Auto-bundle dependencies if they exist, taking into account plugin modules
+	bundledContent, err := resolveDependenciesWithModules(scriptPath, make(map[string]bool), availableModules)
+	if err != nil {
+		return fmt.Errorf("failed to resolve dependencies: %w", err)
+	}
+	// Escape the script content for safe embedding in Go code
+	config.ScriptContent = strconv.Quote(bundledContent)
 
 	tempDir, err := os.MkdirTemp("", "luax-build-*")
 	if err != nil {
@@ -91,6 +104,11 @@ func buildExecutableWithPlugins(scriptPath, outputName, target string, pluginSpe
 
 	if err := generateRuntimeCode(tempDir, config); err != nil {
 		return fmt.Errorf("failed to generate runtime code: %w", err)
+	}
+	
+	// Copy plugin source files to build directory
+	if err := copyPluginSourceFiles(tempDir, config); err != nil {
+		return fmt.Errorf("failed to copy plugin source files: %w", err)
 	}
 
 	if err := buildExecutableFromRuntime(tempDir, config); err != nil {
@@ -107,9 +125,10 @@ func generatePluginCode(config *BuildConfig) error {
 	
 	var registrationCode strings.Builder
 	var deps []string
+	var pluginSourceFiles []string
 	
 	// For now, we'll embed Lua plugins as string constants and register them dynamically
-	// This is simpler than Go plugin compilation
+	// For Go plugins, we'll embed the source code directly
 	
 	registrationCode.WriteString("\t// Register plugin modules\n")
 	
@@ -138,14 +157,110 @@ func generatePluginCode(config *BuildConfig) error {
 			registrationCode.WriteString("\t\t}\n")
 			registrationCode.WriteString("\t\treturn 1\n")
 			registrationCode.WriteString("\t})\n")
+		} else if _, ok := plugin.(*GoPluginWrapper); ok {
+			// For Go plugins, we need to embed the plugin code directly
+			pluginName := plugin.Name()
+			
+			// Find the plugin source file
+			pluginSourcePath, err := findPluginSourceFile(config.PluginSpecs, pluginName)
+			if err != nil {
+				return fmt.Errorf("failed to find plugin source for %s: %w", pluginName, err)
+			}
+			
+			pluginSourceFiles = append(pluginSourceFiles, pluginSourcePath)
+			
+			registrationCode.WriteString(fmt.Sprintf("\t// Register %s Go plugin\n", pluginName))
+			registrationCode.WriteString(fmt.Sprintf("\t%sPluginInstance := NewPlugin()\n", pluginName))
+			registrationCode.WriteString(fmt.Sprintf("\t// Use reflection to call Register method\n"))
+			registrationCode.WriteString(fmt.Sprintf("\tpluginValue := reflect.ValueOf(%sPluginInstance)\n", pluginName))
+			registrationCode.WriteString(fmt.Sprintf("\tregisterMethod := pluginValue.MethodByName(\"Register\")\n"))
+			registrationCode.WriteString(fmt.Sprintf("\tif registerMethod.IsValid() {\n"))
+			registrationCode.WriteString(fmt.Sprintf("\t\tresults := registerMethod.Call([]reflect.Value{reflect.ValueOf(L)})\n"))
+			registrationCode.WriteString(fmt.Sprintf("\t\tif len(results) > 0 && !results[0].IsNil() {\n"))
+			registrationCode.WriteString(fmt.Sprintf("\t\t\tif err, ok := results[0].Interface().(error); ok {\n"))
+			registrationCode.WriteString(fmt.Sprintf("\t\t\t\tfmt.Fprintf(os.Stderr, \"Error registering plugin %s: %%v\\n\", err)\n", pluginName))
+			registrationCode.WriteString(fmt.Sprintf("\t\t\t\tos.Exit(1)\n"))
+			registrationCode.WriteString(fmt.Sprintf("\t\t\t}\n"))
+			registrationCode.WriteString(fmt.Sprintf("\t\t}\n"))
+			registrationCode.WriteString(fmt.Sprintf("\t}\n"))
 		}
 		deps = append(deps, plugin.Dependencies()...)
 	}
 	
 	config.PluginRegistrationCode = registrationCode.String()
 	config.PluginDependencies = deps
+	config.PluginSourceFiles = pluginSourceFiles
 	
 	return nil
+}
+
+// findPluginSourceFile finds the source file for a plugin
+func findPluginSourceFile(pluginSpecs []PluginSpec, pluginName string) (string, error) {
+	for _, spec := range pluginSpecs {
+		if spec.Name == pluginName || spec.Alias == pluginName {
+			// For local plugins, find the plugin.go file
+			if filepath.IsAbs(spec.Source) || strings.HasPrefix(spec.Source, "./") || strings.HasPrefix(spec.Source, "../") {
+				pluginGoFile := filepath.Join(spec.Source, "plugin.go")
+				if _, err := os.Stat(pluginGoFile); err == nil {
+					return pluginGoFile, nil
+				}
+			}
+		}
+	}
+	return "", fmt.Errorf("plugin source not found for %s", pluginName)
+}
+
+// copyPluginSourceFiles copies Go plugin source files to the build directory
+func copyPluginSourceFiles(tempDir string, config *BuildConfig) error {
+	for _, pluginSourceFile := range config.PluginSourceFiles {
+		// Read the plugin source file
+		sourceContent, err := os.ReadFile(pluginSourceFile)
+		if err != nil {
+			return fmt.Errorf("failed to read plugin source %s: %w", pluginSourceFile, err)
+		}
+		
+		// Get the filename
+		filename := filepath.Base(pluginSourceFile)
+		
+		// Create a modified version that doesn't include the HypePlugin interface
+		// and changes the package to main
+		modifiedContent := strings.ReplaceAll(string(sourceContent), "package main", "package main\n\n// Plugin code embedded in build")
+		
+		// Remove the HypePlugin interface definition if present
+		modifiedContent = removeHypePluginInterface(modifiedContent)
+		
+		// Write to the build directory
+		destPath := filepath.Join(tempDir, filename)
+		if err := os.WriteFile(destPath, []byte(modifiedContent), 0644); err != nil {
+			return fmt.Errorf("failed to write plugin source to %s: %w", destPath, err)
+		}
+	}
+	
+	return nil
+}
+
+// removeHypePluginInterface removes the HypePlugin interface definition from plugin code
+func removeHypePluginInterface(content string) string {
+	// Remove the interface definition
+	lines := strings.Split(content, "\n")
+	var result []string
+	inInterface := false
+	
+	for _, line := range lines {
+		if strings.Contains(line, "type HypePlugin interface") {
+			inInterface = true
+			continue
+		}
+		if inInterface && strings.Contains(line, "}") {
+			inInterface = false
+			continue
+		}
+		if !inInterface {
+			result = append(result, line)
+		}
+	}
+	
+	return strings.Join(result, "\n")
 }
 
 func generateRuntimeCode(tempDir string, config *BuildConfig) error {
@@ -167,6 +282,7 @@ import (
 	"fmt"
 	"math/big"
 	"os"
+	{{if .HasPlugins}}"reflect"{{end}}
 	"strconv"
 	"strings"
 	"sync"

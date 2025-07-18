@@ -35,6 +35,10 @@ func bundleScript(scriptPath, outputFile string) error {
 
 // resolveDependencies recursively resolves and bundles Lua dependencies
 func resolveDependencies(scriptPath string, visited map[string]bool) (string, error) {
+	return resolveDependenciesWithModules(scriptPath, visited, make(map[string]bool))
+}
+
+func resolveDependenciesWithModules(scriptPath string, visited map[string]bool, availableModules map[string]bool) (string, error) {
 	// Convert to absolute path for tracking
 	absPath, err := filepath.Abs(scriptPath)
 	if err != nil {
@@ -68,8 +72,8 @@ func resolveDependencies(scriptPath string, visited map[string]bool) (string, er
 		
 		moduleName := match[1]
 		
-		// Skip built-in modules
-		if isBuiltinModule(moduleName) {
+		// Skip built-in modules and plugin modules
+		if isBuiltinModule(moduleName) || availableModules[moduleName] {
 			continue
 		}
 		
@@ -80,7 +84,7 @@ func resolveDependencies(scriptPath string, visited map[string]bool) (string, er
 		}
 		
 		// Recursively resolve dependencies
-		moduleContent, err := resolveDependencies(modulePath, visited)
+		moduleContent, err := resolveDependenciesWithModules(modulePath, visited, availableModules)
 		if err != nil {
 			return "", fmt.Errorf("failed to resolve dependencies for %s: %v", modulePath, err)
 		}

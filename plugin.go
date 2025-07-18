@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"plugin"
+	"reflect"
 	"strings"
 
 	"github.com/yuin/gopher-lua"
@@ -303,13 +304,25 @@ func (r *PluginRegistry) loadGoPlugin(ctx context.Context, spec PluginSpec, mani
 		return nil, fmt.Errorf("plugin missing NewPlugin function: %w", err)
 	}
 
-	newPluginFunc, ok := newPluginSym.(func() HypePlugin)
-	if !ok {
-		return nil, fmt.Errorf("NewPlugin function has wrong signature")
+	// Use reflection to call NewPlugin function
+	newPluginValue := reflect.ValueOf(newPluginSym)
+	if newPluginValue.Kind() != reflect.Func {
+		return nil, fmt.Errorf("NewPlugin is not a function")
 	}
-
-	// Create the plugin instance
-	pluginInstance := newPluginFunc()
+	
+	// Check function signature: should have no parameters and return one value
+	funcType := newPluginValue.Type()
+	if funcType.NumIn() != 0 || funcType.NumOut() != 1 {
+		return nil, fmt.Errorf("NewPlugin function has wrong signature: expected func() interface{}, got %s", funcType)
+	}
+	
+	// Call the function
+	results := newPluginValue.Call(nil)
+	if len(results) != 1 {
+		return nil, fmt.Errorf("NewPlugin function returned wrong number of values")
+	}
+	
+	pluginInstance := results[0].Interface()
 	
 	return &GoPluginWrapper{
 		plugin:   pluginInstance,
@@ -339,7 +352,7 @@ func (r *PluginRegistry) loadLuaPlugin(spec PluginSpec, manifest *PluginManifest
 
 // GoPluginWrapper wraps a Go plugin
 type GoPluginWrapper struct {
-	plugin   HypePlugin
+	plugin   interface{} // Use interface{} instead of HypePlugin to avoid type assertion issues
 	manifest *PluginManifest
 	spec     PluginSpec
 }
@@ -348,18 +361,69 @@ func (w *GoPluginWrapper) Name() string {
 	if w.spec.Alias != "" {
 		return w.spec.Alias
 	}
-	return w.plugin.Name()
+	return w.callPluginMethod("Name").(string)
 }
 
-func (w *GoPluginWrapper) Version() string     { return w.plugin.Version() }
-func (w *GoPluginWrapper) Description() string { return w.plugin.Description() }
+func (w *GoPluginWrapper) Version() string { 
+	return w.callPluginMethod("Version").(string)
+}
+
+func (w *GoPluginWrapper) Description() string { 
+	return w.callPluginMethod("Description").(string)
+}
+
 func (w *GoPluginWrapper) Dependencies() []string {
-	deps := w.plugin.Dependencies()
+	deps := w.callPluginMethod("Dependencies").([]string)
 	deps = append(deps, w.manifest.Dependencies...)
 	return deps
 }
-func (w *GoPluginWrapper) Register(L *lua.LState) error { return w.plugin.Register(L) }
-func (w *GoPluginWrapper) Close() error                 { return w.plugin.Close() }
+
+func (w *GoPluginWrapper) Register(L *lua.LState) error { 
+	result := w.callPluginMethodWithArgs("Register", L)
+	if result == nil {
+		return nil
+	}
+	return result.(error)
+}
+
+func (w *GoPluginWrapper) Close() error {
+	result := w.callPluginMethod("Close")
+	if result == nil {
+		return nil
+	}
+	return result.(error)
+}
+
+// callPluginMethod calls a method on the plugin using reflection
+func (w *GoPluginWrapper) callPluginMethod(methodName string) interface{} {
+	return w.callPluginMethodWithArgs(methodName)
+}
+
+// callPluginMethodWithArgs calls a method on the plugin with arguments using reflection
+func (w *GoPluginWrapper) callPluginMethodWithArgs(methodName string, args ...interface{}) interface{} {
+	pluginValue := reflect.ValueOf(w.plugin)
+	method := pluginValue.MethodByName(methodName)
+	
+	if !method.IsValid() {
+		panic(fmt.Sprintf("plugin method %s not found", methodName))
+	}
+	
+	// Convert arguments to reflect.Value
+	argValues := make([]reflect.Value, len(args))
+	for i, arg := range args {
+		argValues[i] = reflect.ValueOf(arg)
+	}
+	
+	// Call the method
+	results := method.Call(argValues)
+	
+	// Return the first result (or nil if no results)
+	if len(results) == 0 {
+		return nil
+	}
+	
+	return results[0].Interface()
+}
 
 // LuaPluginWrapper wraps a Lua plugin
 type LuaPluginWrapper struct {

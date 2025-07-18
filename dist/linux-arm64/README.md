@@ -8,6 +8,7 @@ Hype is a powerful tool that packages Lua scripts into standalone executables wi
 - 🌍 **Cross-platform support** (Linux, macOS, Windows)
 - 🖥️ **Built-in TUI library** for creating terminal applications
 - 🌐 **HTTP client and server** support for web applications
+- 🔌 **WebSocket server and client** for real-time communication
 - 🗄️ **Embedded key-value database** with BoltDB
 - 🔄 **Transaction support** with ACID properties
 - 🔍 **Database iteration and querying** with cursor support
@@ -128,7 +129,7 @@ server:listen(8080)
 **Module Resolution:**
 - Relative paths: `require('./utils')`, `require('../shared/helpers')`
 - Module names: `require('utils')` (looks for `utils.lua` or `utils/init.lua`)
-- Built-in modules: `require('http')`, `require('kv')`, `require('tui')` (always available)
+- Built-in modules: `require('http')`, `require('kv')`, `require('tui')`, `require('websocket')` (always available)
 
 ## Development Mode
 
@@ -415,6 +416,116 @@ end
 - `server:listen(port)` - Start server on port
 - `server:stop()` - Stop server gracefully
 
+### WebSocket Module
+
+Build real-time applications with WebSocket support for bidirectional communication:
+
+```lua
+local websocket = require('websocket')
+```
+
+#### WebSocket Server
+
+Create WebSocket servers for real-time communication:
+
+```lua
+local server = websocket.newServer()
+
+-- Handle WebSocket connections
+server:handle("/ws", function(conn)
+    print("New WebSocket connection established")
+    
+    -- Set up event handlers
+    conn:onMessage(function(message)
+        print("Received:", message.data)
+        -- Echo message back to client
+        conn:send("Echo: " .. message.data)
+    end)
+    
+    conn:onClose(function()
+        print("Connection closed")
+    end)
+    
+    conn:onError(function(err)
+        print("WebSocket error:", err)
+    end)
+    
+    -- Send welcome message
+    conn:send("Welcome to WebSocket server!")
+end)
+
+-- Start server
+server:listen(8080)
+print("WebSocket server running at ws://localhost:8080/ws")
+
+-- Keep server running
+while true do
+    os.execute("sleep 1")
+end
+```
+
+#### WebSocket Client
+
+Connect to WebSocket servers and handle real-time communication:
+
+```lua
+-- Connect to WebSocket server
+local client = websocket.connect("ws://localhost:8080/ws")
+
+if not client then
+    print("Failed to connect to WebSocket server")
+    os.exit(1)
+end
+
+-- Set up client event handlers
+client:onMessage(function(message)
+    print("Received:", message.data)
+    print("Message type:", message.type) -- "text" or "binary"
+end)
+
+client:onClose(function()
+    print("Connection closed")
+end)
+
+client:onError(function(err)
+    print("WebSocket error:", err)
+end)
+
+-- Send messages
+client:send("Hello from Lua client!")
+client:sendBinary("Binary data")
+
+-- Ping the server
+client:ping()
+
+-- Close connection when done
+client:close()
+```
+
+#### WebSocket Methods
+
+**Server Methods:**
+- `websocket.newServer()` - Create new WebSocket server
+- `server:handle(path, handler)` - Add WebSocket route handler
+- `server:listen(port)` - Start server on port
+- `server:stop()` - Stop server gracefully
+
+**Client Methods:**
+- `websocket.connect(url)` - Connect to WebSocket server
+
+**Connection Methods (both server and client):**
+- `conn:send(message)` - Send text message
+- `conn:sendBinary(data)` - Send binary message
+- `conn:onMessage(handler)` - Set message handler
+- `conn:onClose(handler)` - Set close handler
+- `conn:onError(handler)` - Set error handler
+- `conn:close()` - Close connection
+- `conn:ping()` - Send ping frame
+
+**Message Object:**
+- `message.data` - Message content as string
+- `message.type` - Message type ("text" or "binary")
+
 ### Key-Value Database
 
 Embedded database with no external dependencies:
@@ -578,6 +689,94 @@ end
 ./hype run server.lua -- --port 3000 --dir /var/www
 ```
 
+### Real-Time Chat Server (WebSocket)
+
+```lua
+-- WebSocket chat server with message broadcasting
+local websocket = require('websocket')
+
+local clients = {}  -- Store connected clients
+
+local server = websocket.newServer()
+
+-- Handle WebSocket connections
+server:handle("/chat", function(conn)
+    -- Add client to list
+    table.insert(clients, conn)
+    local clientId = #clients
+    print("Client " .. clientId .. " connected")
+    
+    -- Send welcome message to new client
+    conn:send("Welcome to the chat! You are client " .. clientId)
+    
+    -- Broadcast to all other clients
+    for i, client in ipairs(clients) do
+        if client ~= conn then
+            client:send("Client " .. clientId .. " joined the chat")
+        end
+    end
+    
+    -- Handle incoming messages
+    conn:onMessage(function(message)
+        local msg = "Client " .. clientId .. ": " .. message.data
+        print(msg)
+        
+        -- Broadcast message to all clients
+        for i, client in ipairs(clients) do
+            client:send(msg)
+        end
+    end)
+    
+    -- Handle client disconnect
+    conn:onClose(function()
+        -- Remove client from list
+        for i, client in ipairs(clients) do
+            if client == conn then
+                table.remove(clients, i)
+                break
+            end
+        end
+        
+        print("Client " .. clientId .. " disconnected")
+        
+        -- Notify other clients
+        for i, client in ipairs(clients) do
+            client:send("Client " .. clientId .. " left the chat")
+        end
+    end)
+    
+    conn:onError(function(err)
+        print("Client " .. clientId .. " error:", err)
+    end)
+end)
+
+-- Start the chat server
+server:listen(8080)
+print("Chat server running at ws://localhost:8080/chat")
+print("Connect multiple WebSocket clients to test")
+
+-- Keep server running
+while true do
+    os.execute("sleep 1")
+end
+```
+
+**Test the chat server:**
+```bash
+# Run the server
+./hype run chat-server.lua
+
+# In another terminal, test with a simple client
+echo 'local websocket = require("websocket")
+local client = websocket.connect("ws://localhost:8080/chat")
+client:onMessage(function(msg) print("Received:", msg.data) end)
+client:send("Hello from client!")
+os.execute("sleep 5")
+client:close()' > chat-client.lua
+
+./hype run chat-client.lua
+```
+
 ### Plain Text Browser
 
 ```lua
@@ -713,6 +912,7 @@ go build -o hype .
 ./hype run examples/kv-test.lua
 ./hype run examples/browser.lua
 ./hype run examples/webserver.lua
+./hype run examples/websocket-server-simple.lua
 ./hype run examples/static-server.lua -- --port 3000
 ./hype run examples/showcase.lua
 
@@ -721,6 +921,7 @@ go build -o hype .
 ./hype build examples/kv-test.lua -o kv-test && ./kv-test
 ./hype build examples/browser.lua -o browser && ./browser
 ./hype build examples/webserver.lua -o webserver && ./webserver
+./hype build examples/websocket-server-simple.lua -o websocket-server && ./websocket-server
 ./hype build examples/showcase.lua -o showcase && ./showcase
 ```
 
@@ -741,6 +942,7 @@ go build -o hype .
 
 - 🖥️ **Terminal Applications**: Interactive CLI tools, system monitors, development utilities
 - 🌐 **Web Applications**: REST APIs, web servers, microservices  
+- 🔌 **Real-Time Applications**: Chat servers, live dashboards, streaming services, multiplayer games
 - 🗄️ **Data Tools**: Database utilities, data processing scripts, ETL tools
 - 📦 **Distributed Software**: Single-binary deployments, embedded systems
 - 🔧 **DevOps Tools**: Build scripts, deployment automation, monitoring tools
