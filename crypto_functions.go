@@ -72,7 +72,7 @@ func cryptoGenerateJWK(L *lua.LState) int {
 	var err error
 	
 	switch algorithm {
-	case "RS256", "RS384", "RS512":
+	case "RS256", "RS384", "RS512", "PS256", "PS384", "PS512":
 		jwk, err = generateRSAJWK(algorithm)
 	case "ES256", "ES384", "ES512":
 		jwk, err = generateECDSAJWK(algorithm)
@@ -99,7 +99,7 @@ func cryptoGenerateJWK(L *lua.LState) int {
 // generateRSAJWK creates an RSA JWK
 func generateRSAJWK(algorithm string) (*JWK, error) {
 	keySize := 2048
-	if algorithm == "RS384" || algorithm == "RS512" {
+	if algorithm == "RS384" || algorithm == "RS512" || algorithm == "PS384" || algorithm == "PS512" {
 		keySize = 3072
 	}
 	
@@ -323,11 +323,11 @@ func signRSA(jwk *JWK, data []byte) ([]byte, error) {
 	
 	var hash crypto.Hash
 	switch jwk.Alg {
-	case "RS256":
+	case "RS256", "PS256":
 		hash = crypto.SHA256
-	case "RS384":
+	case "RS384", "PS384":
 		hash = crypto.SHA384
-	case "RS512":
+	case "RS512", "PS512":
 		hash = crypto.SHA512
 	default:
 		return nil, fmt.Errorf("unsupported RSA algorithm: %s", jwk.Alg)
@@ -337,7 +337,17 @@ func signRSA(jwk *JWK, data []byte) ([]byte, error) {
 	hasher.Write(data)
 	hashed := hasher.Sum(nil)
 	
-	return rsa.SignPKCS1v15(rand.Reader, privateKey, hash, hashed)
+	// Use PSS for PS algorithms
+	switch jwk.Alg {
+	case "PS256", "PS384", "PS512":
+		opts := &rsa.PSSOptions{
+			SaltLength: rsa.PSSSaltLengthEqualsHash,
+			Hash:       hash,
+		}
+		return rsa.SignPSS(rand.Reader, privateKey, hash, hashed, opts)
+	default:
+		return rsa.SignPKCS1v15(rand.Reader, privateKey, hash, hashed)
+	}
 }
 
 // verifyRSA verifies an RSA signature
@@ -349,11 +359,11 @@ func verifyRSA(jwk *JWK, data []byte, signature []byte) (bool, error) {
 	
 	var hash crypto.Hash
 	switch jwk.Alg {
-	case "RS256":
+	case "RS256", "PS256":
 		hash = crypto.SHA256
-	case "RS384":
+	case "RS384", "PS384":
 		hash = crypto.SHA384
-	case "RS512":
+	case "RS512", "PS512":
 		hash = crypto.SHA512
 	default:
 		return false, fmt.Errorf("unsupported RSA algorithm: %s", jwk.Alg)
@@ -363,7 +373,17 @@ func verifyRSA(jwk *JWK, data []byte, signature []byte) (bool, error) {
 	hasher.Write(data)
 	hashed := hasher.Sum(nil)
 	
-	err = rsa.VerifyPKCS1v15(publicKey, hash, hashed, signature)
+	// Use PSS for PS algorithms
+	switch jwk.Alg {
+	case "PS256", "PS384", "PS512":
+		opts := &rsa.PSSOptions{
+			SaltLength: rsa.PSSSaltLengthEqualsHash,
+			Hash:       hash,
+		}
+		err = rsa.VerifyPSS(publicKey, hash, hashed, signature, opts)
+	default:
+		err = rsa.VerifyPKCS1v15(publicKey, hash, hashed, signature)
+	}
 	return err == nil, nil
 }
 

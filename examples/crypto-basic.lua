@@ -26,6 +26,12 @@ print("✅ Generated Ed25519 key")
 print("   Key type:", ed25519_key.kty)
 print("   Algorithm:", ed25519_key.alg)
 
+-- RSA-PSS keys (new in v1.7.2)
+local pss_key = crypto.generate_jwk("PS512")
+print("✅ Generated RSA-PSS-512 key")
+print("   Key type:", pss_key.kty)
+print("   Algorithm:", pss_key.alg)
+
 -- Example 2: Basic signing and verification
 print("\n2️⃣ Basic Signing & Verification")
 print("--------------------------------")
