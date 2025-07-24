@@ -97,7 +97,31 @@ for _, alg in ipairs(algorithms) do
     print("✅", alg, "- 100 signatures in", string.format("%.3f", elapsed), "seconds")
 end
 
-print("\n5️⃣ Hashing Functions")
+print("\n5️⃣ 4096-bit RSA Keys")
+print("--------------------")
+
+-- Generate different RSA key sizes
+local rsa_2048 = crypto.generate_jwk("RS256")        -- Default 2048-bit
+local rsa_3072 = crypto.generate_jwk("RS256", 3072)  -- 3072-bit
+local rsa_4096 = crypto.generate_jwk("RS256", 4096)  -- 4096-bit
+
+print("Generated RSA keys:")
+print("• 2048-bit (default)")
+print("• 3072-bit")
+print("• 4096-bit (maximum)")
+
+-- Test 4096-bit signature
+local message = "High security transaction"
+local sig_4096 = crypto.sign(rsa_4096, message)
+local pub_4096 = crypto.jwk_to_public(rsa_4096)
+local valid = crypto.verify(pub_4096, message, sig_4096)
+
+print("\n4096-bit RSA signature:")
+print("• Message:", message)
+print("• Signature length:", #sig_4096, "characters")
+print("• Verification:", valid and "✅ Success" or "❌ Failed")
+
+print("\n6️⃣ Hashing Functions")
 print("--------------------")
 
 -- Basic hashing

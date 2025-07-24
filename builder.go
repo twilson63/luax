@@ -1987,12 +1987,18 @@ func cryptoGenerateJWK(L *lua.LState) int {
 		algorithm = "RS256" // default
 	}
 	
+	// Optional second parameter for key size (RSA only)
+	keySize := 0
+	if L.GetTop() >= 2 {
+		keySize = L.ToInt(2)
+	}
+	
 	var jwk *JWK
 	var err error
 	
 	switch algorithm {
 	case "RS256", "RS384", "RS512", "PS256", "PS384", "PS512":
-		jwk, err = generateRSAJWK(algorithm)
+		jwk, err = generateRSAJWK(algorithm, keySize)
 	case "ES256", "ES384", "ES512":
 		jwk, err = generateECDSAJWK(algorithm)
 	case "EdDSA":
@@ -2016,10 +2022,21 @@ func cryptoGenerateJWK(L *lua.LState) int {
 }
 
 // generateRSAJWK creates an RSA JWK
-func generateRSAJWK(algorithm string) (*JWK, error) {
-	keySize := 2048
-	if algorithm == "RS384" || algorithm == "RS512" || algorithm == "PS384" || algorithm == "PS512" {
-		keySize = 3072
+func generateRSAJWK(algorithm string, requestedKeySize int) (*JWK, error) {
+	keySize := 2048  // default
+	
+	// If a specific key size was requested, validate and use it
+	if requestedKeySize > 0 {
+		if requestedKeySize == 2048 || requestedKeySize == 3072 || requestedKeySize == 4096 {
+			keySize = requestedKeySize
+		} else {
+			return nil, fmt.Errorf("unsupported RSA key size: %d (supported: 2048, 3072, 4096)", requestedKeySize)
+		}
+	} else {
+		// Use default key sizes based on algorithm
+		if algorithm == "RS384" || algorithm == "RS512" || algorithm == "PS384" || algorithm == "PS512" {
+			keySize = 3072
+		}
 	}
 	
 	privateKey, err := rsa.GenerateKey(rand.Reader, keySize)

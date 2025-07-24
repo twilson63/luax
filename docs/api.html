@@ -773,7 +773,8 @@ end</code></pre>
                 <div class="api-group">
                     <h3>Key Generation</h3>
                     <div class="code-block">
-                        <pre><code>local jwk = crypto.generate_jwk(algorithm)</code></pre>
+                        <pre><code>local jwk = crypto.generate_jwk(algorithm)
+local jwk = crypto.generate_jwk(algorithm, key_size)  -- RSA only</code></pre>
                     </div>
                     
                     <p><strong>Supported Algorithms:</strong></p>
@@ -789,9 +790,17 @@ end</code></pre>
                     <div class="example-card">
                         <h4>Example: Generate Different Key Types</h4>
                         <div class="code-block">
-                            <pre><code>-- Generate RSA key
+                            <pre><code>-- Generate RSA key (default 2048-bit)
 local rsa_key = crypto.generate_jwk("RS256")
 print("RSA Key Type:", rsa_key.kty)  -- "RSA"
+
+-- Generate 4096-bit RSA key
+local rsa_4096 = crypto.generate_jwk("RS256", 4096)
+print("Generated 4096-bit RSA key")
+
+-- Generate 3072-bit RSA-PSS key
+local rsa_pss = crypto.generate_jwk("PS256", 3072)
+print("Generated 3072-bit RSA-PSS key")
 
 -- Generate ECDSA key  
 local ecdsa_key = crypto.generate_jwk("ES256")
@@ -801,6 +810,13 @@ print("ECDSA Key Type:", ecdsa_key.kty)  -- "EC"
 local ed25519_key = crypto.generate_jwk("EdDSA")
 print("Ed25519 Key Type:", ed25519_key.kty)  -- "OKP"</code></pre>
                         </div>
+                        
+                        <p><strong>RSA Key Sizes:</strong></p>
+                        <ul class="api-list">
+                            <li><code>2048</code> - Default for RS256/PS256</li>
+                            <li><code>3072</code> - Default for RS384/RS512/PS384/PS512</li>
+                            <li><code>4096</code> - Maximum supported size for enhanced security</li>
+                        </ul>
                     </div>
                 </div>
 

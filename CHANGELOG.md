@@ -7,6 +7,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.7.4] - 2025-07-24
+
+### Added
+- **🔐 4096-bit RSA Key Support**: Enhanced `crypto.generate_jwk()` to accept optional key size parameter
+  - Supported sizes: 2048, 3072, and 4096 bits
+  - Works with all RSA algorithms (RS256/384/512, PS256/384/512)
+  - Maintains backward compatibility with default key sizes
+
+### Enhanced
+- **📚 Documentation**: Updated API docs and examples to showcase 4096-bit key usage
+- **🧪 Examples**: Added 4096-bit RSA key demonstration to crypto-basic.lua
+
+### Technical
+- Modified both `crypto_functions.go` and `builder.go` for consistent key size support
+- Added validation for supported key sizes with clear error messages
+- Thoroughly tested PS512 with 4096-bit keys for maximum security
+
+## [1.7.3] - 2025-07-24
+
+### Added
+- **🔐 SHA-256/384/512 Hashing**: New cryptographic hash functions in crypto module
+  - `crypto.sha256(data)` - SHA-256 hashing
+  - `crypto.sha384(data)` - SHA-384 hashing
+  - `crypto.sha512(data)` - SHA-512 hashing
+  - `crypto.hash(algorithm, data)` - Generic hash function
+  - `crypto.deep_hash(value, [algorithm])` - Deep hash for complex data structures
+
+### Enhanced
+- **📚 Documentation**: Updated crypto module docs with hashing examples
+- **🧪 Examples**: Enhanced crypto-basic.lua with hashing demonstrations
+
+## [1.7.2] - 2025-07-24
+
+### Added
+- **🔐 RSA-PSS Support**: Added PS256, PS384, PS512 algorithms to crypto module
+  - Full RSA-PSS (Probabilistic Signature Scheme) implementation
+  - Randomized signatures for enhanced security
+  - Compatible with existing JWK infrastructure
+
+### Fixed
+- **🔧 Crypto Module**: Fixed RSA JWK compatibility with hbwallet-generated keys
+
 ## [1.7.1] - 2025-07-18
 
 ### Fixed

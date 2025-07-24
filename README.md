@@ -575,6 +575,9 @@ Generate cryptographic keys and create/verify digital signatures:
 local private_key = crypto.generate_jwk("ES256")
 local public_key = crypto.jwk_to_public(private_key)
 
+-- Generate 4096-bit RSA key for enhanced security
+local rsa_4096 = crypto.generate_jwk("RS256", 4096)
+
 -- Sign and verify data
 local message = "Important message"
 local signature = crypto.sign(private_key, message)
