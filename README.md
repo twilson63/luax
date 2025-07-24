@@ -10,6 +10,7 @@ Hype is a powerful tool that packages Lua scripts into standalone executables wi
 - 🌐 **HTTP client and server** support for web applications
 - 🔌 **WebSocket server and client** for real-time communication
 - 🗄️ **Embedded key-value database** with BoltDB
+- 🔐 **Cryptography module** with JWK support, RSA/RSA-PSS/ECDSA/Ed25519 signatures, and SHA-256/384/512 hashing
 - 🔄 **Transaction support** with ACID properties
 - 🔍 **Database iteration and querying** with cursor support
 - 📁 **Multi-file project support** with dependency bundling
@@ -129,7 +130,7 @@ server:listen(8080)
 **Module Resolution:**
 - Relative paths: `require('./utils')`, `require('../shared/helpers')`
 - Module names: `require('utils')` (looks for `utils.lua` or `utils/init.lua`)
-- Built-in modules: `require('http')`, `require('kv')`, `require('tui')`, `require('websocket')` (always available)
+- Built-in modules: `require('http')`, `require('kv')`, `require('tui')`, `require('websocket')`, `require('crypto')` (always available)
 
 ## Development Mode
 
@@ -556,6 +557,65 @@ end)
 
 db:close()
 ```
+
+### Crypto Module
+
+Professional-grade cryptography with JWK (JSON Web Key) support:
+
+```lua
+local crypto = require('crypto')
+```
+
+#### Key Generation and Signatures
+
+Generate cryptographic keys and create/verify digital signatures:
+
+```lua
+-- Generate keys (supports RS256, PS256, ES256, EdDSA, etc.)
+local private_key = crypto.generate_jwk("ES256")
+local public_key = crypto.jwk_to_public(private_key)
+
+-- Sign and verify data
+local message = "Important message"
+local signature = crypto.sign(private_key, message)
+local is_valid = crypto.verify(public_key, message, signature)
+
+-- Key management
+local key_json = crypto.jwk_to_json(private_key)
+local loaded_key = crypto.jwk_from_json(key_json)
+local thumbprint = crypto.jwk_thumbprint(public_key)
+```
+
+#### Hashing Functions
+
+Compute SHA-256/384/512 hashes with support for complex data structures:
+
+```lua
+-- Basic hashing
+local sha256 = crypto.sha256("data to hash")
+local sha384 = crypto.sha384("data to hash")
+local sha512 = crypto.sha512("data to hash")
+
+-- Generic hash function
+local hash = crypto.hash("sha384", "data to hash")
+
+-- Deep hash for complex data structures
+local complex_data = {
+    user = "alice",
+    permissions = {"read", "write"},
+    metadata = { version = "1.0", created = os.time() }
+}
+
+-- Produces consistent hash regardless of key order
+local deep_hash = crypto.deep_hash(complex_data)
+local deep_sha256 = crypto.deep_hash(complex_data, "sha256")
+```
+
+**Supported Algorithms:**
+- **RSA:** RS256, RS384, RS512 (PKCS#1 v1.5)
+- **RSA-PSS:** PS256, PS384, PS512 (PSS padding)
+- **ECDSA:** ES256, ES384, ES512
+- **EdDSA:** Ed25519
 
 ## Examples
 

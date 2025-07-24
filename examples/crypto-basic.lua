@@ -97,9 +97,43 @@ for _, alg in ipairs(algorithms) do
     print("✅", alg, "- 100 signatures in", string.format("%.3f", elapsed), "seconds")
 end
 
+print("\n5️⃣ Hashing Functions")
+print("--------------------")
+
+-- Basic hashing
+local data = "Important data to hash"
+local hash256 = crypto.sha256(data)
+local hash384 = crypto.sha384(data)
+local hash512 = crypto.sha512(data)
+
+print("SHA-256:", string.sub(hash256, 1, 32) .. "...")
+print("SHA-384:", string.sub(hash384, 1, 32) .. "...")
+print("SHA-512:", string.sub(hash512, 1, 32) .. "...")
+
+-- Deep hashing for complex data
+local complex_data = {
+    user = "alice",
+    permissions = {"read", "write"},
+    metadata = {
+        created = os.time(),
+        version = "1.0"
+    }
+}
+
+local deep_hash = crypto.deep_hash(complex_data)
+print("\nDeep hash of complex object:")
+print("   Hash:", string.sub(deep_hash, 1, 48) .. "...")
+print("   Algorithm: SHA-384 (default)")
+
+-- Deep hash with different algorithm
+local deep_sha256 = crypto.deep_hash(complex_data, "sha256")
+print("\nDeep hash with SHA-256:")
+print("   Hash:", string.sub(deep_sha256, 1, 48) .. "...")
+
 print("\n🎉 Cryptography examples completed!")
 print("\n💡 Use Cases:")
 print("• Digital signatures for API authentication")
 print("• Document integrity verification") 
 print("• Secure token generation")
 print("• Certificate and key management")
+print("• SHA-384 deep hashing for complex data structures")

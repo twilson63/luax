@@ -9,10 +9,15 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/sha256"
+	"crypto/sha512"
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"math/big"
+	"sort"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/yuin/gopher-lua"
@@ -55,6 +60,13 @@ func registerCryptoModule(L *lua.LState) {
 		L.SetField(cryptoModule, "jwk_thumbprint", L.NewFunction(cryptoJWKThumbprint))
 		L.SetField(cryptoModule, "jwk_to_json", L.NewFunction(cryptoJWKToJSON))
 		L.SetField(cryptoModule, "jwk_from_json", L.NewFunction(cryptoJWKFromJSON))
+		
+		// Hashing functions
+		L.SetField(cryptoModule, "sha256", L.NewFunction(cryptoSHA256))
+		L.SetField(cryptoModule, "sha384", L.NewFunction(cryptoSHA384))
+		L.SetField(cryptoModule, "sha512", L.NewFunction(cryptoSHA512))
+		L.SetField(cryptoModule, "hash", L.NewFunction(cryptoHash))
+		L.SetField(cryptoModule, "deep_hash", L.NewFunction(cryptoDeepHash))
 		
 		L.Push(cryptoModule)
 		return 1
@@ -861,4 +873,172 @@ func cryptoJWKFromJSON(L *lua.LState) int {
 	jwkTable := jwkToLuaTable(L, &jwk)
 	L.Push(jwkTable)
 	return 1
+}
+
+// cryptoSHA256 computes SHA-256 hash of input
+func cryptoSHA256(L *lua.LState) int {
+	data := L.ToString(1)
+	hash := sha256.Sum256([]byte(data))
+	L.Push(lua.LString(hex.EncodeToString(hash[:])))
+	return 1
+}
+
+// cryptoSHA384 computes SHA-384 hash of input
+func cryptoSHA384(L *lua.LState) int {
+	data := L.ToString(1)
+	hash := sha512.Sum384([]byte(data))
+	L.Push(lua.LString(hex.EncodeToString(hash[:])))
+	return 1
+}
+
+// cryptoSHA512 computes SHA-512 hash of input
+func cryptoSHA512(L *lua.LState) int {
+	data := L.ToString(1)
+	hash := sha512.Sum512([]byte(data))
+	L.Push(lua.LString(hex.EncodeToString(hash[:])))
+	return 1
+}
+
+// cryptoHash computes hash with specified algorithm
+func cryptoHash(L *lua.LState) int {
+	algorithm := L.ToString(1)
+	data := L.ToString(2)
+	
+	var result string
+	switch strings.ToLower(algorithm) {
+	case "sha256":
+		hash := sha256.Sum256([]byte(data))
+		result = hex.EncodeToString(hash[:])
+	case "sha384":
+		hash := sha512.Sum384([]byte(data))
+		result = hex.EncodeToString(hash[:])
+	case "sha512":
+		hash := sha512.Sum512([]byte(data))
+		result = hex.EncodeToString(hash[:])
+	default:
+		L.Push(lua.LNil)
+		L.Push(lua.LString("unsupported algorithm: " + algorithm))
+		return 2
+	}
+	
+	L.Push(lua.LString(result))
+	return 1
+}
+
+// cryptoDeepHash computes SHA-384 hash of nested data structures
+func cryptoDeepHash(L *lua.LState) int {
+	value := L.Get(1)
+	algorithm := L.OptString(2, "sha384")
+	
+	// Serialize the value to a canonical string representation
+	serialized, err := serializeForHashing(value)
+	if err != nil {
+		L.Push(lua.LNil)
+		L.Push(lua.LString("failed to serialize: " + err.Error()))
+		return 2
+	}
+	
+	var result string
+	switch strings.ToLower(algorithm) {
+	case "sha256":
+		hash := sha256.Sum256([]byte(serialized))
+		result = hex.EncodeToString(hash[:])
+	case "sha384":
+		hash := sha512.Sum384([]byte(serialized))
+		result = hex.EncodeToString(hash[:])
+	case "sha512":
+		hash := sha512.Sum512([]byte(serialized))
+		result = hex.EncodeToString(hash[:])
+	default:
+		L.Push(lua.LNil)
+		L.Push(lua.LString("unsupported algorithm: " + algorithm))
+		return 2
+	}
+	
+	L.Push(lua.LString(result))
+	return 1
+}
+
+// serializeForHashing converts Lua value to canonical string for consistent hashing
+func serializeForHashing(lv lua.LValue) (string, error) {
+	switch v := lv.(type) {
+	case lua.LString:
+		return string(v), nil
+	case lua.LNumber:
+		return fmt.Sprintf("%g", float64(v)), nil
+	case lua.LBool:
+		if bool(v) {
+			return "true", nil
+		}
+		return "false", nil
+	case *lua.LNilType:
+		return "null", nil
+	case *lua.LTable:
+		// Check if it's an array or object
+		isArray := true
+		maxIndex := 0
+		count := 0
+		
+		v.ForEach(func(k, val lua.LValue) {
+			count++
+			if num, ok := k.(lua.LNumber); ok {
+				if int(num) > maxIndex {
+					maxIndex = int(num)
+				}
+			} else {
+				isArray = false
+			}
+		})
+		
+		if isArray && count > 0 && maxIndex == count {
+			// Serialize as array
+			var items []string
+			for i := 1; i <= maxIndex; i++ {
+				val := v.RawGetInt(i)
+				serialized, err := serializeForHashing(val)
+				if err != nil {
+					return "", err
+				}
+				items = append(items, serialized)
+			}
+			return "[" + strings.Join(items, ",") + "]", nil
+		} else {
+			// Serialize as object with sorted keys
+			var pairs []string
+			keys := []string{}
+			
+			// Collect all keys
+			v.ForEach(func(k, val lua.LValue) {
+				if str, ok := k.(lua.LString); ok {
+					keys = append(keys, string(str))
+				} else if num, ok := k.(lua.LNumber); ok {
+					keys = append(keys, fmt.Sprintf("%g", float64(num)))
+				}
+			})
+			
+			// Sort keys for consistent ordering
+			sort.Strings(keys)
+			
+			// Build key-value pairs
+			for _, key := range keys {
+				val := v.RawGetString(key)
+				if val == lua.LNil {
+					// Try as number
+					if num, err := strconv.ParseFloat(key, 64); err == nil {
+						val = v.RawGetInt(int(num))
+					}
+				}
+				
+				serialized, err := serializeForHashing(val)
+				if err != nil {
+					return "", err
+				}
+				pairs = append(pairs, fmt.Sprintf("\"%s\":%s", key, serialized))
+			}
+			
+			return "{" + strings.Join(pairs, ",") + "}", nil
+		}
+	default:
+		return "", fmt.Errorf("unsupported type: %T", lv)
+	}
 }

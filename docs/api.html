@@ -760,7 +760,7 @@ end</code></pre>
         <section id="crypto-api" class="api-section">
             <div class="container">
                 <h2>Crypto Module</h2>
-                <p>Professional-grade cryptography using JSON Web Key (JWK) format with support for RSA, ECDSA, and Ed25519 algorithms.</p>
+                <p>Professional-grade cryptography using JSON Web Key (JWK) format with support for RSA (including PSS), ECDSA, and Ed25519 algorithms, plus SHA-256/384/512 hashing with deep hashing support for complex data structures.</p>
                 
                 <div class="api-group">
                     <h3>Getting Started</h3>
@@ -778,7 +778,8 @@ end</code></pre>
                     
                     <p><strong>Supported Algorithms:</strong></p>
                     <ul class="api-list">
-                        <li><code>"RS256", "RS384", "RS512"</code> - RSA with SHA-256/384/512</li>
+                        <li><code>"RS256", "RS384", "RS512"</code> - RSA PKCS#1 v1.5 with SHA-256/384/512</li>
+                        <li><code>"PS256", "PS384", "PS512"</code> - RSA-PSS with SHA-256/384/512</li>
                         <li><code>"ES256", "ES384", "ES512"</code> - ECDSA with SHA-256/384/512</li>
                         <li><code>"EdDSA"</code> - Ed25519 (EdDSA)</li>
                     </ul>
@@ -916,6 +917,118 @@ print("Loaded key algorithm:", loaded_key.alg)</code></pre>
                 </div>
 
                 <div class="api-group">
+                    <h3>Hashing Functions</h3>
+                    
+                    <h4>Basic Hash Functions</h4>
+                    <div class="code-block">
+                        <pre><code>local hash = crypto.sha256(data)
+local hash = crypto.sha384(data)
+local hash = crypto.sha512(data)</code></pre>
+                    </div>
+                    <p>Compute SHA-256, SHA-384, or SHA-512 hash of input data.</p>
+                    <p><strong>Parameters:</strong></p>
+                    <ul class="api-list">
+                        <li><code>data</code> - String data to hash</li>
+                    </ul>
+                    <p><strong>Returns:</strong> Hexadecimal hash string</p>
+                    
+                    <h4>Generic Hash Function</h4>
+                    <div class="code-block">
+                        <pre><code>local hash = crypto.hash(algorithm, data)</code></pre>
+                    </div>
+                    <p><strong>Parameters:</strong></p>
+                    <ul class="api-list">
+                        <li><code>algorithm</code> - Hash algorithm: "sha256", "sha384", or "sha512"</li>
+                        <li><code>data</code> - String data to hash</li>
+                    </ul>
+                    <p><strong>Returns:</strong> Hexadecimal hash string or nil + error</p>
+                    
+                    <h4>Deep Hash Function</h4>
+                    <div class="code-block">
+                        <pre><code>local hash = crypto.deep_hash(value, algorithm)</code></pre>
+                    </div>
+                    <p>Compute a deterministic hash of complex data structures including nested tables.</p>
+                    <p><strong>Parameters:</strong></p>
+                    <ul class="api-list">
+                        <li><code>value</code> - Any Lua value (string, number, boolean, nil, table)</li>
+                        <li><code>algorithm</code> - Optional: "sha256", "sha384", or "sha512" (defaults to "sha384")</li>
+                    </ul>
+                    <p><strong>Returns:</strong> Hexadecimal hash string or nil + error</p>
+                    
+                    <div class="example-card">
+                        <h4>Example: Hashing Operations</h4>
+                        <div class="code-block">
+                            <pre><code>local crypto = require('crypto')
+
+-- Basic hashing
+local data = "Important data to hash"
+local sha256 = crypto.sha256(data)
+local sha384 = crypto.sha384(data)
+local sha512 = crypto.sha512(data)
+
+print("SHA-256:", sha256)
+print("SHA-384:", sha384)
+print("SHA-512:", sha512)
+
+-- Generic hash function
+local hash = crypto.hash("sha384", data)
+print("Generic SHA-384:", hash)
+
+-- Deep hashing for complex structures
+local complex_data = {
+    user = {
+        id = 123,
+        name = "Alice",
+        roles = {"admin", "user"}
+    },
+    settings = {
+        theme = "dark",
+        notifications = true
+    },
+    timestamp = os.time()
+}
+
+-- Deep hash with SHA-384 (default)
+local deep_hash = crypto.deep_hash(complex_data)
+print("Deep hash:", deep_hash)
+
+-- Deep hash with specific algorithm
+local deep_sha256 = crypto.deep_hash(complex_data, "sha256")
+print("Deep SHA-256:", deep_sha256)
+
+-- Consistent hashing regardless of key order
+local reordered = {
+    timestamp = os.time(),
+    settings = {
+        notifications = true,
+        theme = "dark"
+    },
+    user = {
+        roles = {"admin", "user"},
+        name = "Alice",
+        id = 123
+    }
+}
+
+local hash1 = crypto.deep_hash(complex_data)
+local hash2 = crypto.deep_hash(reordered)
+print("Hashes match:", hash1 == hash2)  -- true</code></pre>
+                        </div>
+                    </div>
+                    
+                    <div class="api-group">
+                        <h3>Use Cases for Hashing</h3>
+                        <ul class="api-list">
+                            <li><strong>Data Integrity:</strong> Verify data hasn't been modified</li>
+                            <li><strong>Cache Keys:</strong> Generate consistent keys for complex data</li>
+                            <li><strong>Deduplication:</strong> Identify duplicate data structures</li>
+                            <li><strong>API ETags:</strong> Generate entity tags for HTTP caching</li>
+                            <li><strong>Audit Logs:</strong> Create tamper-evident records</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="api-group">
                     <h3>Security Best Practices</h3>
                     <ul class="api-list">
                         <li><strong>Key Storage:</strong> Store private keys securely, never in plain text</li>
@@ -930,19 +1043,21 @@ print("Loaded key algorithm:", loaded_key.alg)</code></pre>
                     <h3>Algorithm Comparison</h3>
                     <div class="code-block">
                         <pre><code>Performance Characteristics:
-┌─────────┬─────────────┬─────────────┬──────────────┐
-│ Algorithm│ Key Size    │ Signature   │ Performance  │
-├─────────┼─────────────┼─────────────┼──────────────┤
-│ RS256   │ 2048 bits   │ 256 bytes   │ Slower       │
-│ ES256   │ 256 bits    │ 64 bytes    │ Fast         │
-│ EdDSA   │ 256 bits    │ 64 bytes    │ Fastest      │
-└─────────┴─────────────┴─────────────┴──────────────┘</code></pre>
+┌─────────┬─────────────┬─────────────┬──────────────┬───────────┐
+│ Algorithm│ Key Size    │ Signature   │ Performance  │ Security  │
+├─────────┼─────────────┼─────────────┼──────────────┼───────────┤
+│ RS256   │ 2048 bits   │ 256 bytes   │ Slower       │ Good      │
+│ PS256   │ 2048 bits   │ 256 bytes   │ Slower       │ Better    │
+│ ES256   │ 256 bits    │ 64 bytes    │ Fast         │ Good      │
+│ EdDSA   │ 256 bits    │ 64 bytes    │ Fastest      │ Good      │
+└─────────┴─────────────┴─────────────┴──────────────┴───────────┘</code></pre>
                     </div>
                     <p><strong>Recommendations:</strong></p>
                     <ul class="api-list">
                         <li><strong>ES256:</strong> Best general-purpose choice (NIST P-256)</li>
                         <li><strong>EdDSA:</strong> Fastest performance, modern alternative</li>
-                        <li><strong>RS256:</strong> Use when RSA compatibility is required</li>
+                        <li><strong>PS256/384/512:</strong> Use for RSA with enhanced security (PSS padding)</li>
+                        <li><strong>RS256:</strong> Use when legacy RSA compatibility is required</li>
                     </ul>
                 </div>
             </div>
