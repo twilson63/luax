@@ -17,10 +17,10 @@ echo "=============================="
 # Detect architecture
 ARCH=$(uname -m)
 if [[ "$ARCH" == "arm64" ]]; then
-    ARCHIVE="hype-v1.7.3-darwin-arm64.tar.gz"
+    ARCHIVE="hype-v1.7.4-darwin-arm64.tar.gz"
     echo -e "Detected: ${GREEN}Apple Silicon (M1/M2)${NC}"
 elif [[ "$ARCH" == "x86_64" ]]; then
-    ARCHIVE="hype-v1.7.3-darwin-amd64.tar.gz"
+    ARCHIVE="hype-v1.7.4-darwin-amd64.tar.gz"
     echo -e "Detected: ${GREEN}Intel Mac${NC}"
 else
     echo -e "${RED}Error: Unsupported architecture: $ARCH${NC}"

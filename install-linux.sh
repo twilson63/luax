@@ -17,13 +17,13 @@ echo "=============================="
 # Detect architecture
 ARCH=$(uname -m)
 if [[ "$ARCH" == "x86_64" ]]; then
-    ARCHIVE="hype-v1.7.3-linux-amd64.tar.gz"
+    ARCHIVE="hype-v1.7.4-linux-amd64.tar.gz"
     echo -e "Detected: ${GREEN}Linux x86_64${NC}"
 elif [[ "$ARCH" == "aarch64" || "$ARCH" == "arm64" ]]; then
-    ARCHIVE="hype-v1.7.3-linux-arm64.tar.gz"
+    ARCHIVE="hype-v1.7.4-linux-arm64.tar.gz"
     echo -e "Detected: ${GREEN}Linux ARM64${NC}"
 elif [[ "$ARCH" == "armv7l" || "$ARCH" == "armv6l" || "$ARCH" == "arm" ]]; then
-    ARCHIVE="hype-v1.7.3-linux-arm.tar.gz"
+    ARCHIVE="hype-v1.7.4-linux-arm.tar.gz"
     echo -e "Detected: ${GREEN}Linux ARM (32-bit)${NC}"
 else
     echo -e "${RED}Error: Unsupported architecture: $ARCH${NC}"
