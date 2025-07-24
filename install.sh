@@ -67,7 +67,7 @@ INSTALL_DIR="$HOME/.local/bin"
 mkdir -p "$INSTALL_DIR"
 
 # Download latest version
-VERSION="v1.7.2"
+VERSION="v1.7.3"
 URL="https://github.com/twilson63/hype/releases/download/$VERSION/$ARCHIVE"
 
 echo -e "\n${YELLOW}Downloading Hype $VERSION...${NC}"
