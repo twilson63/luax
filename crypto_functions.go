@@ -67,6 +67,10 @@ func registerCryptoModule(L *lua.LState) {
 		L.SetField(cryptoModule, "sha512", L.NewFunction(cryptoSHA512))
 		L.SetField(cryptoModule, "hash", L.NewFunction(cryptoHash))
 		L.SetField(cryptoModule, "deep_hash", L.NewFunction(cryptoDeepHash))
+		L.SetField(cryptoModule, "digest", L.NewFunction(cryptoDigest))
+		
+		// Base64 functions
+		L.SetField(cryptoModule, "base64urlDecode", L.NewFunction(cryptoBase64URLDecode))
 		
 		L.Push(cryptoModule)
 		return 1
@@ -245,8 +249,21 @@ func generateEd25519JWK() (*JWK, error) {
 
 // cryptoSign signs data with a JWK
 func cryptoSign(L *lua.LState) int {
-	jwkTable := L.ToTable(1)
-	data := L.ToString(2)
+	// Check if first argument is algorithm string (new format) or jwk table (old format)
+	var algorithm string
+	var jwkTable *lua.LTable
+	var data string
+	
+	if L.GetTop() >= 3 && L.Get(1).Type() == lua.LTString {
+		// New format: sign(algorithm, data, jwk)
+		algorithm = L.ToString(1)
+		data = L.ToString(2)
+		jwkTable = L.ToTable(3)
+	} else {
+		// Old format: sign(jwk, data) - for backward compatibility
+		jwkTable = L.ToTable(1)
+		data = L.ToString(2)
+	}
 	
 	if jwkTable == nil || data == "" {
 		L.Push(lua.LNil)
@@ -259,6 +276,20 @@ func cryptoSign(L *lua.LState) int {
 		L.Push(lua.LNil)
 		L.Push(lua.LString("invalid jwk: " + err.Error()))
 		return 2
+	}
+	
+	// Override algorithm if specified
+	if algorithm != "" {
+		// Map common algorithm names to JWK algorithm names
+		switch strings.ToLower(algorithm) {
+		case "rsa-pss":
+			// Default to PS256 if no algorithm specified in JWK
+			if jwk.Alg == "" || !strings.HasPrefix(jwk.Alg, "PS") {
+				jwk.Alg = "PS256"
+			}
+		default:
+			jwk.Alg = algorithm
+		}
 	}
 	
 	signature, err := signWithJWK(jwk, []byte(data))
@@ -1058,4 +1089,58 @@ func serializeForHashing(lv lua.LValue) (string, error) {
 	default:
 		return "", fmt.Errorf("unsupported type: %T", lv)
 	}
+}
+
+// cryptoDigest computes hash digest with specified algorithm
+func cryptoDigest(L *lua.LState) int {
+	algorithm := L.ToString(1)
+	data := L.ToString(2)
+	
+	if algorithm == "" || data == "" {
+		L.Push(lua.LNil)
+		L.Push(lua.LString("missing algorithm or data"))
+		return 2
+	}
+	
+	var result []byte
+	switch strings.ToLower(algorithm) {
+	case "sha256":
+		hash := sha256.Sum256([]byte(data))
+		result = hash[:]
+	case "sha384":
+		hash := sha512.Sum384([]byte(data))
+		result = hash[:]
+	case "sha512":
+		hash := sha512.Sum512([]byte(data))
+		result = hash[:]
+	default:
+		L.Push(lua.LNil)
+		L.Push(lua.LString("unsupported algorithm: " + algorithm))
+		return 2
+	}
+	
+	// Return as hex string (similar to existing hash functions)
+	L.Push(lua.LString(hex.EncodeToString(result)))
+	return 1
+}
+
+// cryptoBase64URLDecode decodes a base64url encoded string
+func cryptoBase64URLDecode(L *lua.LState) int {
+	encoded := L.ToString(1)
+	
+	if encoded == "" {
+		L.Push(lua.LNil)
+		L.Push(lua.LString("missing encoded string"))
+		return 2
+	}
+	
+	decoded, err := base64.RawURLEncoding.DecodeString(encoded)
+	if err != nil {
+		L.Push(lua.LNil)
+		L.Push(lua.LString("failed to decode: " + err.Error()))
+		return 2
+	}
+	
+	L.Push(lua.LString(string(decoded)))
+	return 1
 }
