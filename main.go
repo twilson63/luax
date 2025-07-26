@@ -131,6 +131,8 @@ func init() {
 	rootCmd.AddCommand(runCmd)
 	rootCmd.AddCommand(bundleCmd)
 	rootCmd.AddCommand(versionCmd)
+	rootCmd.AddCommand(replCmd)
+	rootCmd.AddCommand(replSimpleCmd)
 }
 
 // loadPluginSpecs loads plugin specifications from CLI flags and config files
