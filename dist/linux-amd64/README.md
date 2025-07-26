@@ -10,12 +10,14 @@ Hype is a powerful tool that packages Lua scripts into standalone executables wi
 - 🌐 **HTTP client and server** support for web applications
 - 🔌 **WebSocket server and client** for real-time communication
 - 🗄️ **Embedded key-value database** with BoltDB
+- 🔐 **Cryptography module** with JWK support, RSA/RSA-PSS/ECDSA/Ed25519 signatures, and SHA-256/384/512 hashing
 - 🔄 **Transaction support** with ACID properties
 - 🔍 **Database iteration and querying** with cursor support
 - 📁 **Multi-file project support** with dependency bundling
 - 🔌 **Plugin system** with versioned Lua modules
 - ✨ **Zero external dependencies** in final executables
 - 🚀 **Simple deployment** - single binary distribution
+- 🎯 **Interactive REPL** with TUI interface for testing and exploration
 
 ## Installation
 
@@ -85,6 +87,10 @@ app:Run()' > hello.lua
 
 # Pass arguments to Lua scripts
 ./hype run server.lua -- --port 8080 --dir ./public
+
+# Start interactive REPL (v1.9.0+)
+./hype repl                    # TUI-based REPL
+./hype repl --simple          # Simple terminal REPL
 ```
 
 ## Multi-File Projects
@@ -129,7 +135,7 @@ server:listen(8080)
 **Module Resolution:**
 - Relative paths: `require('./utils')`, `require('../shared/helpers')`
 - Module names: `require('utils')` (looks for `utils.lua` or `utils/init.lua`)
-- Built-in modules: `require('http')`, `require('kv')`, `require('tui')`, `require('websocket')` (always available)
+- Built-in modules: `require('http')`, `require('kv')`, `require('tui')`, `require('websocket')`, `require('crypto')` (always available)
 
 ## Development Mode
 
@@ -557,6 +563,130 @@ end)
 db:close()
 ```
 
+### Crypto Module
+
+Professional-grade cryptography with JWK (JSON Web Key) support:
+
+```lua
+local crypto = require('crypto')
+```
+
+#### Key Generation and Signatures
+
+Generate cryptographic keys and create/verify digital signatures:
+
+```lua
+-- Generate keys (supports RS256, PS256, ES256, EdDSA, etc.)
+local private_key = crypto.generate_jwk("ES256")
+local public_key = crypto.jwk_to_public(private_key)
+
+-- Generate 4096-bit RSA key for enhanced security
+local rsa_4096 = crypto.generate_jwk("RS256", 4096)
+
+-- Sign and verify data
+local message = "Important message"
+local signature = crypto.sign(private_key, message)
+local is_valid = crypto.verify(public_key, message, signature)
+
+-- Key management
+local key_json = crypto.jwk_to_json(private_key)
+local loaded_key = crypto.jwk_from_json(key_json)
+local thumbprint = crypto.jwk_thumbprint(public_key)
+```
+
+#### Hashing Functions
+
+Compute SHA-256/384/512 hashes with support for complex data structures:
+
+```lua
+-- Basic hashing
+local sha256 = crypto.sha256("data to hash")
+local sha384 = crypto.sha384("data to hash")
+local sha512 = crypto.sha512("data to hash")
+
+-- Generic hash function
+local hash = crypto.hash("sha384", "data to hash")
+
+-- Deep hash for complex data structures
+local complex_data = {
+    user = "alice",
+    permissions = {"read", "write"},
+    metadata = { version = "1.0", created = os.time() }
+}
+
+-- Produces consistent hash regardless of key order
+local deep_hash = crypto.deep_hash(complex_data)
+local deep_sha256 = crypto.deep_hash(complex_data, "sha256")
+```
+
+**Supported Algorithms:**
+- **RSA:** RS256, RS384, RS512 (PKCS#1 v1.5)
+- **RSA-PSS:** PS256, PS384, PS512 (PSS padding)
+- **ECDSA:** ES256, ES384, ES512
+- **EdDSA:** Ed25519
+
+## Interactive REPL (v1.9.0+)
+
+Hype includes a powerful interactive REPL (Read-Eval-Print Loop) for testing Lua code and exploring the API:
+
+### TUI REPL (Default)
+
+```bash
+./hype repl
+```
+
+The TUI REPL provides:
+- **Two-panel interface**: Output panel (top) and input panel (bottom)
+- **Beautiful table formatting**: Lua tables are displayed with proper formatting
+- **Command history**: Access previous commands with `:history` or `:h`
+- **Special commands**:
+  - `:help` - Show available commands
+  - `:history` or `:h` - Display command history
+  - `:h=N` - Recall command N from history
+  - `:clear` - Clear the output panel
+- **Full module access**: All Hype modules (tui, http, kv, crypto, ws) are available
+
+### Simple REPL
+
+```bash
+./hype repl --simple
+```
+
+For a basic command-line REPL without the TUI interface.
+
+### REPL Examples
+
+```lua
+-- Test expressions
+hype> 2 + 2
+4
+
+-- Explore tables with nice formatting
+hype> {name="John", age=30, hobbies={"coding", "gaming"}}
+{
+  ["age"] = 30,
+  ["hobbies"] = {
+    [1] = "coding",
+    [2] = "gaming"
+  },
+  ["name"] = "John"
+}
+
+-- Access Hype modules
+hype> crypto.sha256("test")
+9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08
+
+-- Use special commands
+hype> :history
+Command History:
+  1: 2 + 2
+  2: {name="John", age=30, hobbies={"coding", "gaming"}}
+  3: crypto.sha256("test")
+
+hype> :h=2  -- Recall command 2
+Recalled: {name="John", age=30, hobbies={"coding", "gaming"}}
+```
+
 ## Examples
 
 ### Simple TUI Application
@@ -927,6 +1057,9 @@ go build -o hype .
 
 ## Cross-Platform Builds
 
+Hype supports cross-compilation for multiple platforms and architectures:
+
+### Basic Cross-Platform Building
 ```bash
 # Build for Linux
 ./hype build myapp.lua -t linux -o myapp-linux
@@ -937,6 +1070,45 @@ go build -o hype .
 # Build for macOS
 ./hype build myapp.lua -t darwin -o myapp-macos
 ```
+
+### Advanced Cross-Compilation (v1.7.1+)
+Use GOOS/GOARCH environment variables for precise platform targeting:
+
+```bash
+# Linux x86_64
+GOOS=linux GOARCH=amd64 ./hype build myapp.lua -o myapp-linux-amd64
+
+# Linux ARM64 (Raspberry Pi, etc.)
+GOOS=linux GOARCH=arm64 ./hype build myapp.lua -o myapp-linux-arm64
+
+# macOS Intel
+GOOS=darwin GOARCH=amd64 ./hype build myapp.lua -o myapp-macos-intel
+
+# macOS Apple Silicon
+GOOS=darwin GOARCH=arm64 ./hype build myapp.lua -o myapp-macos-arm64
+
+# Windows x86_64
+GOOS=windows GOARCH=amd64 ./hype build myapp.lua -o myapp-windows.exe
+```
+
+### GitHub Actions / CI/CD
+Perfect for automated builds:
+
+```yaml
+- name: Build Cross-Platform Binaries
+  run: |
+    GOOS=linux GOARCH=amd64 ./hype build myapp.lua -o myapp-linux-amd64
+    GOOS=linux GOARCH=arm64 ./hype build myapp.lua -o myapp-linux-arm64
+    GOOS=darwin GOARCH=amd64 ./hype build myapp.lua -o myapp-macos-intel
+    GOOS=darwin GOARCH=arm64 ./hype build myapp.lua -o myapp-macos-arm64
+    GOOS=windows GOARCH=amd64 ./hype build myapp.lua -o myapp-windows.exe
+```
+
+**Supported Platforms:**
+- Linux: amd64, arm64, 386, arm
+- macOS: amd64, arm64
+- Windows: amd64, 386
+- FreeBSD: amd64, arm64
 
 ## Use Cases
 

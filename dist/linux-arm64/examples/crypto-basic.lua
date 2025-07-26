@@ -26,6 +26,12 @@ print("✅ Generated Ed25519 key")
 print("   Key type:", ed25519_key.kty)
 print("   Algorithm:", ed25519_key.alg)
 
+-- RSA-PSS keys (new in v1.7.2)
+local pss_key = crypto.generate_jwk("PS512")
+print("✅ Generated RSA-PSS-512 key")
+print("   Key type:", pss_key.kty)
+print("   Algorithm:", pss_key.alg)
+
 -- Example 2: Basic signing and verification
 print("\n2️⃣ Basic Signing & Verification")
 print("--------------------------------")
@@ -91,9 +97,67 @@ for _, alg in ipairs(algorithms) do
     print("✅", alg, "- 100 signatures in", string.format("%.3f", elapsed), "seconds")
 end
 
+print("\n5️⃣ 4096-bit RSA Keys")
+print("--------------------")
+
+-- Generate different RSA key sizes
+local rsa_2048 = crypto.generate_jwk("RS256")        -- Default 2048-bit
+local rsa_3072 = crypto.generate_jwk("RS256", 3072)  -- 3072-bit
+local rsa_4096 = crypto.generate_jwk("RS256", 4096)  -- 4096-bit
+
+print("Generated RSA keys:")
+print("• 2048-bit (default)")
+print("• 3072-bit")
+print("• 4096-bit (maximum)")
+
+-- Test 4096-bit signature
+local message = "High security transaction"
+local sig_4096 = crypto.sign(rsa_4096, message)
+local pub_4096 = crypto.jwk_to_public(rsa_4096)
+local valid = crypto.verify(pub_4096, message, sig_4096)
+
+print("\n4096-bit RSA signature:")
+print("• Message:", message)
+print("• Signature length:", #sig_4096, "characters")
+print("• Verification:", valid and "✅ Success" or "❌ Failed")
+
+print("\n6️⃣ Hashing Functions")
+print("--------------------")
+
+-- Basic hashing
+local data = "Important data to hash"
+local hash256 = crypto.sha256(data)
+local hash384 = crypto.sha384(data)
+local hash512 = crypto.sha512(data)
+
+print("SHA-256:", string.sub(hash256, 1, 32) .. "...")
+print("SHA-384:", string.sub(hash384, 1, 32) .. "...")
+print("SHA-512:", string.sub(hash512, 1, 32) .. "...")
+
+-- Deep hashing for complex data
+local complex_data = {
+    user = "alice",
+    permissions = {"read", "write"},
+    metadata = {
+        created = os.time(),
+        version = "1.0"
+    }
+}
+
+local deep_hash = crypto.deep_hash(complex_data)
+print("\nDeep hash of complex object:")
+print("   Hash:", string.sub(deep_hash, 1, 48) .. "...")
+print("   Algorithm: SHA-384 (default)")
+
+-- Deep hash with different algorithm
+local deep_sha256 = crypto.deep_hash(complex_data, "sha256")
+print("\nDeep hash with SHA-256:")
+print("   Hash:", string.sub(deep_sha256, 1, 48) .. "...")
+
 print("\n🎉 Cryptography examples completed!")
 print("\n💡 Use Cases:")
 print("• Digital signatures for API authentication")
 print("• Document integrity verification") 
 print("• Secure token generation")
 print("• Certificate and key management")
+print("• SHA-384 deep hashing for complex data structures")

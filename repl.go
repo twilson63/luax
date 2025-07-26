@@ -92,7 +92,7 @@ local inputField = tui.newInputField()
 -- Configure main layout
 flex:SetDirection(0) -- Vertical
 flex:SetBorder(true)
-flex:SetTitle("🚀 Hype Lua REPL v1.8.0")
+flex:SetTitle("🚀 Hype Lua REPL v1.9.0")
 
 -- Configure output view (top panel)
 outputView:SetBorder(true)
@@ -121,7 +121,7 @@ local function appendOutput(text)
 end
 
 -- Welcome message
-appendOutput("🚀 Hype Lua REPL v1.8.0")
+appendOutput("🚀 Hype Lua REPL v1.9.0")
 appendOutput("========================")
 appendOutput("")
 appendOutput("Available modules: tui, http, kv, crypto, ws")
@@ -358,7 +358,7 @@ print("\nTUI REPL session ended.")
 
 // Fallback simple REPL without TUI
 func runSimpleREPL(L *lua.LState) error {
-	fmt.Println("Hype Lua REPL v1.8.0 (Simple Mode)")
+	fmt.Println("Hype Lua REPL v1.9.0 (Simple Mode)")
 	fmt.Println("Type expressions and press Enter. Use Ctrl+C to exit.")
 	fmt.Println()
 	fmt.Println("Available modules: tui, http, kv, crypto, ws")

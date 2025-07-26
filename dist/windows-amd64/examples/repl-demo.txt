@@ -1,0 +1,49 @@
+# Hype REPL Demo Commands
+# Try these commands in the REPL to test functionality
+
+# Basic Lua expressions
+2 + 2
+print("Hello from REPL!")
+"This is a " .. "concatenated string"
+
+# Variables persist across commands
+x = 10
+y = 20
+x + y
+
+# Tables and loops
+t = {a=1, b=2, c=3}
+for k,v in pairs(t) do print(k, v) end
+
+# Load modules
+local http = require('http')
+local crypto = require('crypto')
+
+# Use crypto module
+crypto.sha256("test")
+crypto.digest("sha384", "hello repl")
+
+# Generate JWK
+jwk = crypto.generate_jwk("RS256")
+jwk.kty
+
+# Functions work too
+function factorial(n)
+    if n <= 1 then return 1 end
+    return n * factorial(n-1)
+end
+factorial(5)
+
+# Multi-line constructs
+for i = 1, 5 do
+    print("Number: " .. i)
+end
+
+# Error handling
+this_will_error()
+1 / 0
+
+# Access to all Hype features
+local kv = require('kv')
+local ws = require('ws')
+print("All modules loaded!")

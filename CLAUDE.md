@@ -45,11 +45,16 @@ GOOS=darwin GOARCH=amd64 ./hype build script.lua -o myapp-macos-intel
 GOOS=darwin GOARCH=arm64 ./hype build script.lua -o myapp-macos-arm64
 GOOS=windows GOARCH=amd64 ./hype build script.lua -o myapp-windows.exe
 
+# Interactive REPL (v1.9.0+)
+./hype repl              # TUI REPL with visual interface
+./hype repl --simple     # Simple command-line REPL
+
 # Test with provided examples
 ./hype run examples/hello.lua
 ./hype run examples/webserver.lua
 ./hype run examples/kv-test.lua
 ./hype run examples/browser.lua
+./hype run examples/tui_repl_final.lua
 ```
 
 Note: The README incorrectly mentions `eval` command - the actual command is `run`.
@@ -61,6 +66,7 @@ Note: The README incorrectly mentions `eval` command - the actual command is `ru
 **main.go**: CLI entry point using Cobra framework
 - `build` command: Packages Lua scripts into executables
 - `run` command: Executes Lua scripts directly for development
+- `repl` command: Interactive Lua REPL with TUI or simple mode (v1.8.0+)
 - `version` command: Shows version information
 
 **builder.go**: Executable generation system

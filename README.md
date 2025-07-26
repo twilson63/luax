@@ -17,6 +17,7 @@ Hype is a powerful tool that packages Lua scripts into standalone executables wi
 - 🔌 **Plugin system** with versioned Lua modules
 - ✨ **Zero external dependencies** in final executables
 - 🚀 **Simple deployment** - single binary distribution
+- 🎯 **Interactive REPL** with TUI interface for testing and exploration
 
 ## Installation
 
@@ -86,6 +87,10 @@ app:Run()' > hello.lua
 
 # Pass arguments to Lua scripts
 ./hype run server.lua -- --port 8080 --dir ./public
+
+# Start interactive REPL (v1.9.0+)
+./hype repl                    # TUI-based REPL
+./hype repl --simple          # Simple terminal REPL
 ```
 
 ## Multi-File Projects
@@ -619,6 +624,68 @@ local deep_sha256 = crypto.deep_hash(complex_data, "sha256")
 - **RSA-PSS:** PS256, PS384, PS512 (PSS padding)
 - **ECDSA:** ES256, ES384, ES512
 - **EdDSA:** Ed25519
+
+## Interactive REPL (v1.9.0+)
+
+Hype includes a powerful interactive REPL (Read-Eval-Print Loop) for testing Lua code and exploring the API:
+
+### TUI REPL (Default)
+
+```bash
+./hype repl
+```
+
+The TUI REPL provides:
+- **Two-panel interface**: Output panel (top) and input panel (bottom)
+- **Beautiful table formatting**: Lua tables are displayed with proper formatting
+- **Command history**: Access previous commands with `:history` or `:h`
+- **Special commands**:
+  - `:help` - Show available commands
+  - `:history` or `:h` - Display command history
+  - `:h=N` - Recall command N from history
+  - `:clear` - Clear the output panel
+- **Full module access**: All Hype modules (tui, http, kv, crypto, ws) are available
+
+### Simple REPL
+
+```bash
+./hype repl --simple
+```
+
+For a basic command-line REPL without the TUI interface.
+
+### REPL Examples
+
+```lua
+-- Test expressions
+hype> 2 + 2
+4
+
+-- Explore tables with nice formatting
+hype> {name="John", age=30, hobbies={"coding", "gaming"}}
+{
+  ["age"] = 30,
+  ["hobbies"] = {
+    [1] = "coding",
+    [2] = "gaming"
+  },
+  ["name"] = "John"
+}
+
+-- Access Hype modules
+hype> crypto.sha256("test")
+9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08
+
+-- Use special commands
+hype> :history
+Command History:
+  1: 2 + 2
+  2: {name="John", age=30, hobbies={"coding", "gaming"}}
+  3: crypto.sha256("test")
+
+hype> :h=2  -- Recall command 2
+Recalled: {name="John", age=30, hobbies={"coding", "gaming"}}
+```
 
 ## Examples
 
