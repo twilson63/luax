@@ -9,27 +9,27 @@
       "id": "INSTALL_SCRIPT_TX_ID"
     }
     ,
-    "hype-v1.8.0-5-g350605d-darwin-amd64.tar.gz": {
+    "hype-v1.9.0-darwin-amd64.tar.gz": {
       "id": "REPLACE_WITH_TX_ID"
     }
     ,
-    "hype-v1.8.0-5-g350605d-darwin-arm64.tar.gz": {
+    "hype-v1.9.0-darwin-arm64.tar.gz": {
       "id": "REPLACE_WITH_TX_ID"
     }
     ,
-    "hype-v1.8.0-5-g350605d-linux-amd64.tar.gz": {
+    "hype-v1.9.0-linux-amd64.tar.gz": {
       "id": "REPLACE_WITH_TX_ID"
     }
     ,
-    "hype-v1.8.0-5-g350605d-linux-arm.tar.gz": {
+    "hype-v1.9.0-linux-arm.tar.gz": {
       "id": "REPLACE_WITH_TX_ID"
     }
     ,
-    "hype-v1.8.0-5-g350605d-linux-arm64.tar.gz": {
+    "hype-v1.9.0-linux-arm64.tar.gz": {
       "id": "REPLACE_WITH_TX_ID"
     }
     ,
-    "hype-v1.8.0-5-g350605d-windows-amd64.zip": {
+    "hype-v1.9.0-windows-amd64.zip": {
       "id": "REPLACE_WITH_TX_ID"
     }
 

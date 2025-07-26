@@ -95,7 +95,7 @@ flex:SetBorder(true)
 flex:SetTitle("🚀 Hype Lua REPL v1.9.0")
 
 -- Configure output view (top panel)
-outputView:SetBorder(true)
+outputView:SetBorder(false)
 outputView:SetTitle("📤 Output")
 outputView:SetDynamicColors(false)  -- Disable to show brackets properly
 outputView:SetWrap(true)
@@ -107,7 +107,8 @@ inputField:SetBorder(true)
 inputField:SetTitle("📥 Input - Press Enter to Execute | Ctrl+C to Exit")
 inputField:SetLabel("hype> ")
 inputField:SetPlaceholder("Enter Lua expression...")
-inputField:SetFieldBackgroundColor(235)  -- Dark gray for better readability
+inputField:SetFieldBackgroundColor(245)  -- Dark gray for better readability
+inputField:SetFieldTextColor(235)
 
 -- Helper function to append output
 local function appendOutput(text)
@@ -329,8 +330,8 @@ app:SetInputCapture(function(event)
 end)
 
 -- Layout assembly
-flex:AddItem(outputView, 0, 1, false)  -- Output view (flexible, takes most space)
-flex:AddItem(inputField, 3, 0, true)   -- Input field (fixed height of 3 lines)
+flex:AddItem(outputView, 0, 1, true)  -- Output view (flexible, takes most space)
+flex:AddItem(inputField, 3, 0, false)   -- Input field (fixed height of 3 lines)
 
 -- Set initial focus and root
 app:SetRoot(flex, true)
