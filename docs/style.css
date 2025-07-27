@@ -1264,3 +1264,137 @@ a:hover {
 .build-example strong {
     color: var(--cyber-accent);
 }
+
+/* Documentation Highlight Section */
+.documentation-highlight {
+    background: linear-gradient(135deg, #0a0a0f 0%, #121218 100%);
+    padding: 5rem 0;
+    position: relative;
+    overflow: hidden;
+}
+
+.documentation-highlight::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle at 30% 50%, rgba(0, 212, 255, 0.1) 0%, transparent 50%);
+    animation: rotate 20s linear infinite;
+}
+
+@keyframes rotate {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.documentation-highlight .container {
+    position: relative;
+    z-index: 1;
+}
+
+.doc-subtitle {
+    text-align: center;
+    font-size: 1.5rem;
+    color: var(--cyber-text-light);
+    margin-bottom: 3rem;
+    font-weight: 300;
+}
+
+.doc-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.doc-card {
+    background: var(--cyber-bg);
+    border: 2px solid var(--cyber-border);
+    padding: 2.5rem;
+    border-radius: 12px;
+    text-decoration: none;
+    color: var(--cyber-text);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+.doc-card::before {
+    content: '';
+    position: absolute;
+    top: -100%;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(180deg, transparent 0%, rgba(0, 212, 255, 0.1) 100%);
+    transition: top 0.3s ease;
+}
+
+.doc-card:hover {
+    border-color: var(--cyber-accent);
+    transform: translateY(-5px);
+    box-shadow: 0 10px 40px rgba(0, 212, 255, 0.2);
+}
+
+.doc-card:hover::before {
+    top: 0;
+}
+
+.doc-icon {
+    font-size: 3rem;
+    margin-bottom: 1.5rem;
+    position: relative;
+    z-index: 1;
+}
+
+.doc-card h3 {
+    color: var(--cyber-accent);
+    margin-bottom: 1rem;
+    font-size: 1.4rem;
+    position: relative;
+    z-index: 1;
+}
+
+.doc-card p {
+    color: var(--cyber-text-light);
+    line-height: 1.6;
+    position: relative;
+    z-index: 1;
+}
+
+/* Mobile adjustments for documentation cards */
+@media (max-width: 768px) {
+    .documentation-highlight {
+        padding: 3rem 0;
+    }
+
+    .doc-subtitle {
+        font-size: 1.2rem;
+        margin-bottom: 2rem;
+    }
+    
+    .doc-cards {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+    
+    .doc-card {
+        padding: 2rem;
+    }
+    
+    .doc-icon {
+        font-size: 2.5rem;
+        margin-bottom: 1rem;
+    }
+    
+    .doc-card h3 {
+        font-size: 1.2rem;
+    }
+}
