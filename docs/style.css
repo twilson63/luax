@@ -111,6 +111,7 @@ body::before {
     font-size: 1.5rem;
     font-weight: 700;
     text-shadow: var(--cyber-glow);
+    margin-bottom: 0;
 }
 
 .nav-logo h2::before {
