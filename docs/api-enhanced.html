@@ -1,0 +1,3182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, maximum-scale=5.0">
+    <meta name="theme-color" content="#00d4ff">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <title>Enhanced API Reference - Hype - Zero-Dependency App Dev</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* Enhanced API Documentation Styles */
+        .api-nav {
+            position: sticky;
+            top: 70px;
+            background: var(--cyber-bg-secondary);
+            border-bottom: 1px solid var(--cyber-accent);
+            padding: 1rem 0;
+            z-index: 90;
+            backdrop-filter: blur(10px);
+        }
+        
+        .api-nav-list {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            flex-wrap: wrap;
+        }
+        
+        .api-nav-link {
+            padding: 0.5rem 1rem;
+            border: 1px solid var(--cyber-accent-dim);
+            text-decoration: none;
+            color: var(--cyber-text);
+            transition: all 0.3s;
+            border-radius: 4px;
+        }
+        
+        .api-nav-link:hover,
+        .api-nav-link.active {
+            background: var(--cyber-accent);
+            color: var(--cyber-bg);
+            box-shadow: var(--cyber-glow);
+        }
+        
+        .method-card {
+            background: var(--cyber-bg);
+            border: 1px solid var(--cyber-border);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+        
+        .method-card:hover {
+            border-color: var(--cyber-accent);
+            box-shadow: 0 0 10px rgba(0, 212, 255, 0.2);
+        }
+        
+        .method-signature {
+            font-family: 'JetBrains Mono', monospace;
+            background: var(--cyber-bg-tertiary);
+            padding: 1rem;
+            border-left: 4px solid var(--cyber-accent);
+            margin-bottom: 1rem;
+            overflow-x: auto;
+        }
+        
+        .param-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+        }
+        
+        .param-table th,
+        .param-table td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid var(--cyber-border);
+        }
+        
+        .param-table th {
+            background: var(--cyber-bg-tertiary);
+            color: var(--cyber-accent);
+            font-weight: 600;
+        }
+        
+        .param-table code {
+            background: var(--cyber-bg-secondary);
+            padding: 2px 6px;
+            border-radius: 3px;
+            color: var(--cyber-accent);
+        }
+        
+        .returns-section {
+            background: var(--cyber-bg-secondary);
+            padding: 1rem;
+            border-radius: 4px;
+            margin: 1rem 0;
+        }
+        
+        .example-tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            border-bottom: 2px solid var(--cyber-accent-dim);
+        }
+        
+        .example-tab {
+            padding: 0.5rem 1rem;
+            background: transparent;
+            border: none;
+            color: var(--cyber-text);
+            cursor: pointer;
+            transition: all 0.3s;
+            font-family: inherit;
+        }
+        
+        .example-tab.active {
+            color: var(--cyber-accent);
+            border-bottom: 2px solid var(--cyber-accent);
+            margin-bottom: -2px;
+        }
+        
+        .example-content {
+            display: none;
+        }
+        
+        .example-content.active {
+            display: block;
+        }
+        
+        .warning-box {
+            background: rgba(255, 165, 0, 0.1);
+            border: 1px solid var(--cyber-warning);
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 4px;
+        }
+        
+        .warning-box::before {
+            content: '⚠️ ';
+            color: var(--cyber-warning);
+        }
+        
+        .info-box {
+            background: rgba(0, 212, 255, 0.1);
+            border: 1px solid var(--cyber-accent);
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 4px;
+        }
+        
+        .info-box::before {
+            content: 'ℹ️ ';
+            color: var(--cyber-accent);
+        }
+        
+        .best-practice {
+            background: rgba(0, 255, 0, 0.05);
+            border: 1px solid var(--cyber-success);
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 4px;
+        }
+        
+        .best-practice::before {
+            content: '✅ ';
+            color: var(--cyber-success);
+        }
+        
+        @media (max-width: 768px) {
+            .api-nav {
+                position: static;
+            }
+            
+            .api-nav-list {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .api-nav-link {
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <h2>🚀 Hype</h2>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="index.html" class="nav-link">Home</a></li>
+                <li><a href="api.html" class="nav-link active">API Reference</a></li>
+                <li><a href="examples.html" class="nav-link">Examples</a></li>
+                <li><a href="plugins.html" class="nav-link">Plugins</a></li>
+                <li><a href="https://github.com/twilson63/hype" class="nav-link">GitHub</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <nav class="api-nav">
+        <ul class="api-nav-list">
+            <li><a href="#tui" class="api-nav-link">TUI</a></li>
+            <li><a href="#http" class="api-nav-link">HTTP</a></li>
+            <li><a href="#websocket" class="api-nav-link">WebSocket</a></li>
+            <li><a href="#kv" class="api-nav-link">Database</a></li>
+            <li><a href="#crypto" class="api-nav-link">Crypto</a></li>
+            <li><a href="#httpsig" class="api-nav-link">HTTP Signatures</a></li>
+            <li><a href="#plugins" class="api-nav-link">Plugins</a></li>
+            <li><a href="#utilities" class="api-nav-link">Utilities</a></li>
+        </ul>
+    </nav>
+
+    <main class="main-content">
+        <section class="hero">
+            <div class="container">
+                <h1>Enhanced API Reference</h1>
+                <p class="hero-subtitle">Complete Guide to Hype's Built-in Modules</p>
+                <p class="hero-description">
+                    Deep dive into every module, method, and feature. Learn how to build professional applications
+                    with real-world examples, best practices, and performance tips.
+                </p>
+            </div>
+        </section>
+
+        <!-- TUI Module -->
+        <section id="tui" class="api-section">
+            <div class="container">
+                <h2>🖥️ TUI Module - Terminal User Interface</h2>
+                <p>Build beautiful, interactive terminal applications with Hype's TUI module. Based on the powerful tview library, it provides a complete set of UI components for creating professional console applications.</p>
+                
+                <div class="info-box">
+                    <strong>Import:</strong> The TUI module is pre-loaded as <code>tui</code> - no require needed!
+                </div>
+
+                <h3>Quick Start</h3>
+                <div class="code-block">
+                    <pre><code>-- Minimal TUI app
+local app = tui.newApp()
+local text = tui.newTextView("Hello, TUI World! 🚀")
+text:SetBorder(true):SetTitle("My App")
+app:SetRoot(text, true):Run()</code></pre>
+                    <button class="copy-btn">Copy</button>
+                </div>
+
+                <h3>Core Components</h3>
+
+                <!-- Application -->
+                <div class="method-card">
+                    <h4>tui.newApp()</h4>
+                    <div class="method-signature">
+                        <code>local app = tui.newApp() → Application</code>
+                    </div>
+                    <p>Creates the main application instance that manages the UI event loop and component rendering.</p>
+                    
+                    <h5>Methods</h5>
+                    <table class="param-table">
+                        <thead>
+                            <tr>
+                                <th>Method</th>
+                                <th>Description</th>
+                                <th>Returns</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>SetRoot(primitive, fullscreen)</code></td>
+                                <td>Set the root UI component</td>
+                                <td>self</td>
+                            </tr>
+                            <tr>
+                                <td><code>Run()</code></td>
+                                <td>Start the application (blocks)</td>
+                                <td>nil</td>
+                            </tr>
+                            <tr>
+                                <td><code>Stop()</code></td>
+                                <td>Stop the application gracefully</td>
+                                <td>nil</td>
+                            </tr>
+                            <tr>
+                                <td><code>Draw()</code></td>
+                                <td>Force screen redraw</td>
+                                <td>self</td>
+                            </tr>
+                            <tr>
+                                <td><code>QueueUpdateDraw(func)</code></td>
+                                <td>Queue thread-safe UI update</td>
+                                <td>self</td>
+                            </tr>
+                            <tr>
+                                <td><code>SetFocus(primitive)</code></td>
+                                <td>Set keyboard focus</td>
+                                <td>self</td>
+                            </tr>
+                            <tr>
+                                <td><code>GetFocus()</code></td>
+                                <td>Get focused component</td>
+                                <td>Primitive</td>
+                            </tr>
+                            <tr>
+                                <td><code>SetInputCapture(func)</code></td>
+                                <td>Set global key handler</td>
+                                <td>self</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <div class="example-tabs">
+                        <button class="example-tab active" onclick="showExample('app', 'basic')">Basic</button>
+                        <button class="example-tab" onclick="showExample('app', 'advanced')">Advanced</button>
+                        <button class="example-tab" onclick="showExample('app', 'threading')">Threading</button>
+                    </div>
+                    
+                    <div id="app-basic" class="example-content active">
+                        <div class="code-block">
+                            <pre><code>-- Basic application setup
+local app = tui.newApp()
+local root = tui.newTextView("Press ESC to exit")
+
+-- Global key handler
+app:SetInputCapture(function(event)
+    if event:Key() == 27 then  -- ESC
+        app:Stop()
+        return nil  -- Event handled
+    end
+    return event  -- Pass through
+end)
+
+app:SetRoot(root, true):Run()</code></pre>
+                            <button class="copy-btn">Copy</button>
+                        </div>
+                    </div>
+
+                    <div id="app-advanced" class="example-content">
+                        <div class="code-block">
+                            <pre><code>-- Advanced app with multiple components
+local app = tui.newApp()
+
+-- Create layout
+local flex = tui.newFlex():SetDirection(0)  -- Vertical
+local header = tui.newTextView("🚀 Dashboard"):SetTextAlign(1)
+local content = tui.newTextView("Loading...")
+local footer = tui.newTextView("Press 'q' to quit"):SetTextAlign(1)
+
+-- Style components
+header:SetBackgroundColor(39):SetTextColor(255)
+footer:SetBackgroundColor(235)
+
+-- Build layout
+flex:AddItem(header, 3, 0, false)
+flex:AddItem(content, 0, 1, true)  -- Takes remaining space
+flex:AddItem(footer, 1, 0, false)
+
+-- Keyboard shortcuts
+app:SetInputCapture(function(event)
+    local key = event:Rune()
+    if key == 'q' or key == 'Q' then
+        app:Stop()
+        return nil
+    elseif key == 'r' or key == 'R' then
+        content:SetText("Refreshed at " .. os.date())
+        return nil
+    end
+    return event
+end)
+
+app:SetRoot(flex, true):Run()</code></pre>
+                            <button class="copy-btn">Copy</button>
+                        </div>
+                    </div>
+
+                    <div id="app-threading" class="example-content">
+                        <div class="code-block">
+                            <pre><code>-- Thread-safe UI updates from goroutines
+local app = tui.newApp()
+local status = tui.newTextView("Starting...")
+local counter = 0
+
+-- Background task updating UI
+go(function()
+    while true do
+        sleep(1)
+        counter = counter + 1
+        
+        -- Thread-safe UI update
+        app:QueueUpdateDraw(function()
+            status:SetText(string.format(
+                "Counter: %d\nTime: %s", 
+                counter, 
+                os.date()
+            ))
+        end)
+    end
+end)
+
+app:SetRoot(status, true):Run()</code></pre>
+                            <button class="copy-btn">Copy</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TextView -->
+                <div class="method-card">
+                    <h4>tui.newTextView(text)</h4>
+                    <div class="method-signature">
+                        <code>local textView = tui.newTextView(text) → TextView</code>
+                    </div>
+                    <p>Display formatted text with scrolling, colors, and dynamic content. Supports ANSI color codes and clickable regions.</p>
+                    
+                    <h5>Key Methods</h5>
+                    <table class="param-table">
+                        <thead>
+                            <tr>
+                                <th>Method</th>
+                                <th>Description</th>
+                                <th>Returns</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>SetText(text)</code></td>
+                                <td>Set display text (supports color codes)</td>
+                                <td>self</td>
+                            </tr>
+                            <tr>
+                                <td><code>SetDynamicColors(bool)</code></td>
+                                <td>Enable [color] markup parsing</td>
+                                <td>self</td>
+                            </tr>
+                            <tr>
+                                <td><code>SetScrollable(bool)</code></td>
+                                <td>Enable content scrolling</td>
+                                <td>self</td>
+                            </tr>
+                            <tr>
+                                <td><code>SetTextAlign(align)</code></td>
+                                <td>0=left, 1=center, 2=right</td>
+                                <td>self</td>
+                            </tr>
+                            <tr>
+                                <td><code>SetWordWrap(bool)</code></td>
+                                <td>Enable word wrapping</td>
+                                <td>self</td>
+                            </tr>
+                            <tr>
+                                <td><code>Clear()</code></td>
+                                <td>Clear all content</td>
+                                <td>self</td>
+                            </tr>
+                            <tr>
+                                <td><code>Write(p)</code></td>
+                                <td>Append text (io.Writer interface)</td>
+                                <td>n, err</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <div class="info-box">
+                        <strong>Color Markup:</strong> Use <code>[colorCode]text[white]</code> format when dynamic colors are enabled. Color codes are from the 256-color palette.
+                    </div>
+
+                    <div class="example-tabs">
+                        <button class="example-tab active" onclick="showExample('textview', 'basic')">Basic</button>
+                        <button class="example-tab" onclick="showExample('textview', 'colors')">Colors</button>
+                        <button class="example-tab" onclick="showExample('textview', 'log')">Log Viewer</button>
+                    </div>
+                    
+                    <div id="textview-basic" class="example-content active">
+                        <div class="code-block">
+                            <pre><code>-- Basic text display
+local text = tui.newTextView("Welcome to Hype!")
+text:SetBorder(true)
+text:SetTitle("📋 Info")
+text:SetTextAlign(1)  -- Center
+text:SetScrollable(true)
+
+-- Update content
+text:SetText([[
+Welcome to Hype TUI!
+
+Features:
+- Beautiful terminal interfaces
+- Rich text formatting
+- Scrollable content
+- And much more!
+
+Scroll with arrow keys or mouse wheel.
+]])</code></pre>
+                            <button class="copy-btn">Copy</button>
+                        </div>
+                    </div>
+
+                    <div id="textview-colors" class="example-content">
+                        <div class="code-block">
+                            <pre><code>-- Colored text with dynamic colors
+local display = tui.newTextView("")
+display:SetDynamicColors(true)
+display:SetBorder(true)
+display:SetTitle("🎨 Color Demo")
+
+-- Color constants
+local GREEN = 46
+local RED = 196
+local BLUE = 39
+local YELLOW = 226
+local WHITE = 255
+
+display:SetText(string.format([[
+[%d]● Success:[%d] Operation completed
+[%d]● Error:[%d] Connection failed
+[%d]● Warning:[%d] Low memory
+[%d]● Info:[%d] System ready
+
+[%d]Status Bar Background[%d]
+[%d]━━━━━━━━━━━━━━━━━━━[%d]
+]], 
+    GREEN, WHITE,
+    RED, WHITE,
+    YELLOW, WHITE,
+    BLUE, WHITE,
+    39, 255,
+    39, 255
+))</code></pre>
+                            <button class="copy-btn">Copy</button>
+                        </div>
+                    </div>
+
+                    <div id="textview-log" class="example-content">
+                        <div class="code-block">
+                            <pre><code>-- Real-time log viewer
+local app = tui.newApp()
+local logView = tui.newTextView("")
+logView:SetDynamicColors(true)
+logView:SetScrollable(true)
+logView:SetBorder(true)
+logView:SetTitle("📜 System Logs")
+
+-- Log function
+local function log(level, message)
+    local colors = {
+        INFO = 51,    -- Cyan
+        WARN = 226,   -- Yellow  
+        ERROR = 196,  -- Red
+        DEBUG = 245   -- Gray
+    }
+    
+    local timestamp = os.date("%H:%M:%S")
+    local color = colors[level] or 255
+    local line = string.format(
+        "[245]%s[255] [%d][%s][255] %s\n",
+        timestamp, color, level, message
+    )
+    
+    app:QueueUpdateDraw(function()
+        logView:Write(line)
+        
+        -- Auto-scroll to bottom
+        logView:ScrollToEnd()
+    end)
+end
+
+-- Simulate log entries
+go(function()
+    local messages = {
+        {level = "INFO", msg = "System initialized"},
+        {level = "DEBUG", msg = "Loading configuration"},
+        {level = "WARN", msg = "Cache miss for key: user_123"},
+        {level = "INFO", msg = "Connected to database"},
+        {level = "ERROR", msg = "Failed to load plugin: auth"},
+        {level = "INFO", msg = "Server started on :8080"}
+    }
+    
+    for i, entry in ipairs(messages) do
+        sleep(0.5)
+        log(entry.level, entry.msg)
+    end
+end)
+
+app:SetRoot(logView, true):Run()</code></pre>
+                            <button class="copy-btn">Copy</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- InputField -->
+                <div class="method-card">
+                    <h4>tui.newInputField()</h4>
+                    <div class="method-signature">
+                        <code>local input = tui.newInputField() → InputField</code>
+                    </div>
+                    <p>Single-line text input with labels, placeholders, validation, and password masking.</p>
+                    
+                    <h5>Key Methods</h5>
+                    <table class="param-table">
+                        <thead>
+                            <tr>
+                                <th>Method</th>
+                                <th>Description</th>
+                                <th>Returns</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>SetLabel(text)</code></td>
+                                <td>Set field label</td>
+                                <td>self</td>
+                            </tr>
+                            <tr>
+                                <td><code>SetPlaceholder(text)</code></td>
+                                <td>Set placeholder text</td>
+                                <td>self</td>
+                            </tr>
+                            <tr>
+                                <td><code>SetText(text)</code></td>
+                                <td>Set field value</td>
+                                <td>self</td>
+                            </tr>
+                            <tr>
+                                <td><code>GetText()</code></td>
+                                <td>Get current value</td>
+                                <td>string</td>
+                            </tr>
+                            <tr>
+                                <td><code>SetMaskCharacter(rune)</code></td>
+                                <td>Mask input (e.g., '*' for passwords)</td>
+                                <td>self</td>
+                            </tr>
+                            <tr>
+                                <td><code>SetFieldWidth(width)</code></td>
+                                <td>Set field width (0 = full)</td>
+                                <td>self</td>
+                            </tr>
+                            <tr>
+                                <td><code>SetChangedFunc(func)</code></td>
+                                <td>On change callback</td>
+                                <td>self</td>
+                            </tr>
+                            <tr>
+                                <td><code>SetDoneFunc(func)</code></td>
+                                <td>On Enter/Tab callback</td>
+                                <td>self</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <div class="example-tabs">
+                        <button class="example-tab active" onclick="showExample('input', 'basic')">Basic</button>
+                        <button class="example-tab" onclick="showExample('input', 'validation')">Validation</button>
+                        <button class="example-tab" onclick="showExample('input', 'search')">Live Search</button>
+                    </div>
+                    
+                    <div id="input-basic" class="example-content active">
+                        <div class="code-block">
+                            <pre><code>-- Basic input field
+local input = tui.newInputField()
+input:SetLabel("Username: ")
+input:SetPlaceholder("Enter your username")
+input:SetFieldWidth(30)
+
+-- Password field
+local password = tui.newInputField()
+password:SetLabel("Password: ")
+password:SetPlaceholder("Enter password")
+password:SetMaskCharacter('*')
+password:SetFieldWidth(30)
+
+-- Handle submission
+input:SetDoneFunc(function(field)
+    -- Move to password field on Enter
+    app:SetFocus(password)
+end)
+
+password:SetDoneFunc(function(field)
+    local user = input:GetText()
+    local pass = password:GetText()
+    -- Process login...
+end)</code></pre>
+                            <button class="copy-btn">Copy</button>
+                        </div>
+                    </div>
+
+                    <div id="input-validation" class="example-content">
+                        <div class="code-block">
+                            <pre><code>-- Input with real-time validation
+local app = tui.newApp()
+local flex = tui.newFlex():SetDirection(0)
+
+local emailInput = tui.newInputField()
+emailInput:SetLabel("Email: ")
+emailInput:SetPlaceholder("user@example.com")
+
+local status = tui.newTextView("Enter a valid email")
+status:SetDynamicColors(true)
+
+-- Email validation
+local function isValidEmail(email)
+    return email:match("^[%w._%+-]+@[%w.-]+%.[%w]+$") ~= nil
+end
+
+-- Real-time validation
+emailInput:SetChangedFunc(function(field, text)
+    if text == "" then
+        status:SetText("[245]Enter a valid email[255]")
+    elseif isValidEmail(text) then
+        status:SetText("[46]✓ Valid email address[255]")
+    else
+        status:SetText("[196]✗ Invalid email format[255]")
+    end
+end)
+
+-- Submit handler
+emailInput:SetDoneFunc(function(field)
+    local email = field:GetText()
+    if isValidEmail(email) then
+        status:SetText("[46]Email submitted: " .. email .. "[255]")
+        -- Process email...
+    else
+        status:SetText("[196]Please enter a valid email![255]")
+    end
+end)
+
+flex:AddItem(emailInput, 1, 0, true)
+flex:AddItem(status, 1, 0, false)
+
+app:SetRoot(flex, true):Run()</code></pre>
+                            <button class="copy-btn">Copy</button>
+                        </div>
+                    </div>
+
+                    <div id="input-search" class="example-content">
+                        <div class="code-block">
+                            <pre><code>-- Live search implementation
+local app = tui.newApp()
+local flex = tui.newFlex():SetDirection(0)
+
+local searchInput = tui.newInputField()
+searchInput:SetLabel("🔍 Search: ")
+searchInput:SetPlaceholder("Type to search...")
+
+local results = tui.newList()
+results:ShowSecondaryText(true)
+
+-- Sample data
+local data = {
+    {name = "Alice Johnson", role = "Developer"},
+    {name = "Bob Smith", role = "Designer"},
+    {name = "Charlie Brown", role = "Manager"},
+    {name = "Diana Prince", role = "Developer"},
+    {name = "Eve Wilson", role = "Analyst"}
+}
+
+-- Search function
+local function search(query)
+    results:Clear()
+    
+    if query == "" then
+        results:AddItem("Start typing to search...", "", 0, nil)
+        return
+    end
+    
+    local found = 0
+    query = query:lower()
+    
+    for _, item in ipairs(data) do
+        if item.name:lower():find(query) or 
+           item.role:lower():find(query) then
+            results:AddItem(item.name, item.role, 0, function()
+                searchInput:SetText(item.name)
+            end)
+            found = found + 1
+        end
+    end
+    
+    if found == 0 then
+        results:AddItem("No results found", "", 0, nil)
+    end
+end
+
+-- Live search on change
+searchInput:SetChangedFunc(function(field, text)
+    search(text)
+end)
+
+-- Initial state
+search("")
+
+flex:AddItem(searchInput, 1, 0, true)
+flex:AddItem(results, 0, 1, false)
+
+app:SetRoot(flex, true):Run()</code></pre>
+                            <button class="copy-btn">Copy</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Form -->
+                <div class="method-card">
+                    <h4>tui.newForm()</h4>
+                    <div class="method-signature">
+                        <code>local form = tui.newForm() → Form</code>
+                    </div>
+                    <p>Complete form builder with various input types, validation, and submission handling.</p>
+                    
+                    <h5>Key Methods</h5>
+                    <table class="param-table">
+                        <thead>
+                            <tr>
+                                <th>Method</th>
+                                <th>Description</th>
+                                <th>Returns</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>AddInputField(label, initial, width, changed, done)</code></td>
+                                <td>Add text input</td>
+                                <td>self</td>
+                            </tr>
+                            <tr>
+                                <td><code>AddPasswordField(label, initial, width, changed, done)</code></td>
+                                <td>Add password input</td>
+                                <td>self</td>
+                            </tr>
+                            <tr>
+                                <td><code>AddDropDown(label, options, initial, selected)</code></td>
+                                <td>Add dropdown selector</td>
+                                <td>self</td>
+                            </tr>
+                            <tr>
+                                <td><code>AddCheckbox(label, checked, changed)</code></td>
+                                <td>Add checkbox</td>
+                                <td>self</td>
+                            </tr>
+                            <tr>
+                                <td><code>AddButton(label, selected)</code></td>
+                                <td>Add action button</td>
+                                <td>self</td>
+                            </tr>
+                            <tr>
+                                <td><code>Clear(includeButtons)</code></td>
+                                <td>Clear form fields</td>
+                                <td>self</td>
+                            </tr>
+                            <tr>
+                                <td><code>GetFormItem(index)</code></td>
+                                <td>Get item by index</td>
+                                <td>FormItem</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <div class="example-tabs">
+                        <button class="example-tab active" onclick="showExample('form', 'basic')">Basic</button>
+                        <button class="example-tab" onclick="showExample('form', 'complete')">Complete</button>
+                    </div>
+                    
+                    <div id="form-basic" class="example-content active">
+                        <div class="code-block">
+                            <pre><code>-- Basic form example
+local app = tui.newApp()
+local form = tui.newForm()
+
+-- Add form fields
+form:AddInputField("Name", "", 30, nil, nil)
+form:AddInputField("Email", "", 30, nil, nil)
+form:AddPasswordField("Password", "", 30, nil, nil)
+
+-- Add dropdown
+form:AddDropDown("Role", 
+    {"Developer", "Designer", "Manager"}, 
+    0,  -- Initial selection
+    nil
+)
+
+-- Add checkbox
+form:AddCheckbox("Subscribe to newsletter", false, nil)
+
+-- Add buttons
+form:AddButton("Submit", function()
+    -- Get form values
+    local name = form:GetFormItem(0):GetText()
+    local email = form:GetFormItem(1):GetText()
+    -- Process form...
+end)
+
+form:AddButton("Cancel", function()
+    app:Stop()
+end)
+
+app:SetRoot(form, true):Run()</code></pre>
+                            <button class="copy-btn">Copy</button>
+                        </div>
+                    </div>
+
+                    <div id="form-complete" class="example-content">
+                        <div class="code-block">
+                            <pre><code>-- Complete form with validation
+local app = tui.newApp()
+local pages = tui.newPages()
+
+-- Registration form
+local regForm = tui.newForm()
+local statusText = tui.newTextView("")
+statusText:SetDynamicColors(true)
+
+-- Form data
+local formData = {
+    username = "",
+    email = "",
+    password = "",
+    confirmPassword = "",
+    country = 0,
+    terms = false
+}
+
+-- Validation functions
+local function validateUsername(text)
+    if #text < 3 then
+        return false, "Username must be at least 3 characters"
+    end
+    if not text:match("^[%w_]+$") then
+        return false, "Username can only contain letters, numbers, and underscores"
+    end
+    return true
+end
+
+local function validateEmail(text)
+    if not text:match("^[%w._%+-]+@[%w.-]+%.[%w]+$") then
+        return false, "Invalid email format"
+    end
+    return true
+end
+
+-- Add fields with validation
+regForm:AddInputField("Username", "", 30,
+    function(text)
+        formData.username = text
+        local valid, msg = validateUsername(text)
+        if not valid and text ~= "" then
+            statusText:SetText("[196]" .. msg .. "[255]")
+        else
+            statusText:SetText("")
+        end
+    end,
+    nil
+)
+
+regForm:AddInputField("Email", "", 30,
+    function(text)
+        formData.email = text
+        local valid, msg = validateEmail(text)
+        if not valid and text ~= "" then
+            statusText:SetText("[196]" .. msg .. "[255]")
+        else
+            statusText:SetText("")
+        end
+    end,
+    nil
+)
+
+regForm:AddPasswordField("Password", "", 30,
+    function(text)
+        formData.password = text
+        if #text < 8 and text ~= "" then
+            statusText:SetText("[196]Password must be at least 8 characters[255]")
+        else
+            statusText:SetText("")
+        end
+    end,
+    nil
+)
+
+regForm:AddPasswordField("Confirm Password", "", 30,
+    function(text)
+        formData.confirmPassword = text
+        if text ~= formData.password and text ~= "" then
+            statusText:SetText("[196]Passwords do not match[255]")
+        else
+            statusText:SetText("")
+        end
+    end,
+    nil
+)
+
+regForm:AddDropDown("Country", 
+    {"United States", "Canada", "United Kingdom", "Australia", "Other"},
+    0,
+    function(option, index)
+        formData.country = index
+    end
+)
+
+regForm:AddCheckbox("I agree to the terms and conditions", false,
+    function(checked)
+        formData.terms = checked
+    end
+)
+
+-- Form buttons
+regForm:AddButton("Register", function()
+    -- Validate all fields
+    local errors = {}
+    
+    local valid, msg = validateUsername(formData.username)
+    if not valid then table.insert(errors, msg) end
+    
+    valid, msg = validateEmail(formData.email)
+    if not valid then table.insert(errors, msg) end
+    
+    if #formData.password < 8 then
+        table.insert(errors, "Password too short")
+    end
+    
+    if formData.password ~= formData.confirmPassword then
+        table.insert(errors, "Passwords do not match")
+    end
+    
+    if not formData.terms then
+        table.insert(errors, "You must agree to the terms")
+    end
+    
+    if #errors > 0 then
+        statusText:SetText("[196]Errors:\n" .. table.concat(errors, "\n") .. "[255]")
+    else
+        -- Success!
+        pages:SwitchToPage("success")
+    end
+end)
+
+regForm:AddButton("Clear", function()
+    regForm:Clear(false)  -- Don't clear buttons
+    statusText:SetText("")
+    formData = {
+        username = "",
+        email = "",
+        password = "",
+        confirmPassword = "",
+        country = 0,
+        terms = false
+    }
+end)
+
+-- Success page
+local successView = tui.newTextView("")
+successView:SetDynamicColors(true)
+successView:SetTextAlign(1)
+successView:SetText([[
+[46]✅ Registration Successful![255]
+
+Welcome to Hype!
+
+Press ESC to exit.
+]])
+
+-- Build pages
+local regPage = tui.newFlex():SetDirection(0)
+regPage:AddItem(regForm, 0, 1, true)
+regPage:AddItem(statusText, 4, 0, false)
+
+pages:AddPage("register", regPage, true, true)
+pages:AddPage("success", successView, true, false)
+
+-- Global key handler
+app:SetInputCapture(function(event)
+    if event:Key() == 27 then  -- ESC
+        app:Stop()
+        return nil
+    end
+    return event
+end)
+
+app:SetRoot(pages, true):Run()</code></pre>
+                            <button class="copy-btn">Copy</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Advanced Patterns -->
+                <h3>Advanced TUI Patterns</h3>
+                
+                <div class="method-card">
+                    <h4>Dashboard Layout</h4>
+                    <p>Create professional dashboard layouts with multiple panels.</p>
+                    
+                    <div class="code-block">
+                        <pre><code>-- Professional dashboard layout
+local app = tui.newApp()
+
+-- Create components
+local header = tui.newTextView("🚀 System Dashboard")
+header:SetTextAlign(1):SetTextColor(39):SetBackgroundColor(235)
+
+local sidebar = tui.newList()
+sidebar:SetBorder(true):SetTitle("Menu")
+sidebar:AddItem("Overview", "", 0, nil)
+sidebar:AddItem("Analytics", "", 0, nil)
+sidebar:AddItem("Settings", "", 0, nil)
+
+local mainContent = tui.newTextView("Select an option from the menu")
+mainContent:SetBorder(true):SetTitle("Content")
+
+local statusBar = tui.newTextView("Ready")
+statusBar:SetTextAlign(2):SetBackgroundColor(39):SetTextColor(255)
+
+-- Layout structure
+local mainLayout = tui.newFlex():SetDirection(1)  -- Horizontal
+local contentArea = tui.newFlex():SetDirection(0) -- Vertical
+
+mainLayout:AddItem(sidebar, 30, 0, true)
+mainLayout:AddItem(contentArea, 0, 1, false)
+
+contentArea:AddItem(mainContent, 0, 1, false)
+contentArea:AddItem(statusBar, 1, 0, false)
+
+local root = tui.newFlex():SetDirection(0)  -- Vertical
+root:AddItem(header, 3, 0, false)
+root:AddItem(mainLayout, 0, 1, true)
+
+-- Menu interaction
+sidebar:SetSelectedFunc(function(index, main, secondary)
+    mainContent:SetText("Loading " .. main .. "...")
+    -- Load content based on selection
+end)
+
+app:SetRoot(root, true):Run()</code></pre>
+                        <button class="copy-btn">Copy</button>
+                    </div>
+                </div>
+
+                <div class="best-practice">
+                    <strong>TUI Best Practices:</strong>
+                    <ul>
+                        <li>Use <code>QueueUpdateDraw</code> for thread-safe UI updates from goroutines</li>
+                        <li>Enable dynamic colors for rich text formatting</li>
+                        <li>Set proper tab order with focus management</li>
+                        <li>Provide keyboard shortcuts for common actions</li>
+                        <li>Use borders and titles to organize complex layouts</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- HTTP Module -->
+        <section id="http" class="api-section">
+            <div class="container">
+                <h2>🌐 HTTP Module - Web Services & APIs</h2>
+                <p>Build HTTP clients and servers with ease. Perfect for REST APIs, webhooks, microservices, and web applications.</p>
+                
+                <div class="info-box">
+                    <strong>Import:</strong> <code>local http = require('http')</code>
+                </div>
+
+                <h3>HTTP Client</h3>
+
+                <div class="method-card">
+                    <h4>http.get(url, headers?, timeout?)</h4>
+                    <div class="method-signature">
+                        <code>local response, err = http.get(url, headers, timeout) → table, string</code>
+                    </div>
+                    <p>Perform HTTP GET request with optional headers and timeout.</p>
+                    
+                    <h5>Parameters</h5>
+                    <table class="param-table">
+                        <thead>
+                            <tr>
+                                <th>Parameter</th>
+                                <th>Type</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>url</code></td>
+                                <td>string</td>
+                                <td>Target URL (required)</td>
+                            </tr>
+                            <tr>
+                                <td><code>headers</code></td>
+                                <td>table</td>
+                                <td>HTTP headers (optional)</td>
+                            </tr>
+                            <tr>
+                                <td><code>timeout</code></td>
+                                <td>number</td>
+                                <td>Timeout in seconds (optional, default: 30)</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <div class="returns-section">
+                        <strong>Returns:</strong> Response table with <code>status_code</code>, <code>body</code>, <code>headers</code> or nil + error
+                    </div>
+
+                    <div class="example-tabs">
+                        <button class="example-tab active" onclick="showExample('httpget', 'basic')">Basic</button>
+                        <button class="example-tab" onclick="showExample('httpget', 'auth')">Auth</button>
+                        <button class="example-tab" onclick="showExample('httpget', 'retry')">Retry</button>
+                    </div>
+                    
+                    <div id="httpget-basic" class="example-content active">
+                        <div class="code-block">
+                            <pre><code>-- Basic GET request
+local http = require('http')
+
+local resp, err = http.get("https://api.github.com/users/github")
+if not resp then
+    print("Error:", err)
+    return
+end
+
+print("Status:", resp.status_code)
+print("Body:", resp.body)
+print("Content-Type:", resp.headers["Content-Type"])
+
+-- Parse JSON response
+local json = require('json')  -- Requires json plugin
+local data = json.decode(resp.body)
+print("Name:", data.name)
+print("Followers:", data.followers)</code></pre>
+                            <button class="copy-btn">Copy</button>
+                        </div>
+                    </div>
+
+                    <div id="httpget-auth" class="example-content">
+                        <div class="code-block">
+                            <pre><code>-- Authenticated request
+local http = require('http')
+
+-- Bearer token authentication
+local headers = {
+    ["Authorization"] = "Bearer " .. os.getenv("API_TOKEN"),
+    ["Accept"] = "application/json",
+    ["User-Agent"] = "Hype/1.0"
+}
+
+local resp, err = http.get(
+    "https://api.example.com/protected/resource",
+    headers,
+    10  -- 10 second timeout
+)
+
+if not resp then
+    print("Request failed:", err)
+    return
+end
+
+if resp.status_code == 401 then
+    print("Authentication failed")
+elseif resp.status_code == 200 then
+    print("Success:", resp.body)
+else
+    print("Unexpected status:", resp.status_code)
+end</code></pre>
+                            <button class="copy-btn">Copy</button>
+                        </div>
+                    </div>
+
+                    <div id="httpget-retry" class="example-content">
+                        <div class="code-block">
+                            <pre><code>-- GET with retry logic
+local http = require('http')
+
+function httpGetWithRetry(url, maxRetries, backoff)
+    maxRetries = maxRetries or 3
+    backoff = backoff or 1
+    
+    for attempt = 1, maxRetries do
+        local resp, err = http.get(url, nil, 5)
+        
+        if resp and resp.status_code == 200 then
+            return resp  -- Success
+        end
+        
+        -- Log attempt
+        print(string.format(
+            "Attempt %d/%d failed: %s", 
+            attempt, 
+            maxRetries, 
+            err or "Status " .. (resp and resp.status_code or "unknown")
+        ))
+        
+        if attempt < maxRetries then
+            -- Exponential backoff
+            local delay = backoff * (2 ^ (attempt - 1))
+            print(string.format("Retrying in %.1f seconds...", delay))
+            sleep(delay)
+        end
+    end
+    
+    return nil, "Max retries exceeded"
+end
+
+-- Usage
+local resp, err = httpGetWithRetry("https://api.example.com/data", 3, 1)
+if resp then
+    print("Success after retries:", resp.body)
+else
+    print("Failed after all retries:", err)
+end</code></pre>
+                            <button class="copy-btn">Copy</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="method-card">
+                    <h4>http.post(url, body, headers?, timeout?)</h4>
+                    <div class="method-signature">
+                        <code>local response, err = http.post(url, body, headers, timeout) → table, string</code>
+                    </div>
+                    <p>Send HTTP POST request with body data.</p>
+                    
+                    <div class="example-tabs">
+                        <button class="example-tab active" onclick="showExample('httppost', 'json')">JSON</button>
+                        <button class="example-tab" onclick="showExample('httppost', 'form')">Form</button>
+                        <button class="example-tab" onclick="showExample('httppost', 'webhook')">Webhook</button>
+                    </div>
+                    
+                    <div id="httppost-json" class="example-content active">
+                        <div class="code-block">
+                            <pre><code>-- POST JSON data
+local http = require('http')
+local json = require('json')
+
+-- Prepare data
+local data = {
+    name = "John Doe",
+    email = "john@example.com",
+    age = 30,
+    tags = {"customer", "premium"}
+}
+
+-- Convert to JSON
+local body = json.encode(data)
+
+-- Send request
+local resp, err = http.post(
+    "https://api.example.com/users",
+    body,
+    {
+        ["Content-Type"] = "application/json",
+        ["Accept"] = "application/json"
+    }
+)
+
+if resp and resp.status_code == 201 then
+    print("User created successfully")
+    local created = json.decode(resp.body)
+    print("User ID:", created.id)
+else
+    print("Error:", err or resp.body)
+end</code></pre>
+                            <button class="copy-btn">Copy</button>
+                        </div>
+                    </div>
+
+                    <div id="httppost-form" class="example-content">
+                        <div class="code-block">
+                            <pre><code>-- POST form data
+local http = require('http')
+
+-- URL encode function
+function urlencode(str)
+    str = string.gsub(str, "([^%w%-%.%_%~ ])", function(c)
+        return string.format("%%%02X", string.byte(c))
+    end)
+    str = string.gsub(str, " ", "+")
+    return str
+end
+
+-- Build form data
+local formData = {
+    username = "john_doe",
+    password = "secure123",
+    remember = "true"
+}
+
+local body = {}
+for k, v in pairs(formData) do
+    table.insert(body, urlencode(k) .. "=" .. urlencode(v))
+end
+body = table.concat(body, "&")
+
+-- Send as form
+local resp, err = http.post(
+    "https://example.com/login",
+    body,
+    {
+        ["Content-Type"] = "application/x-www-form-urlencoded"
+    }
+)
+
+if resp then
+    -- Check for redirect or success
+    if resp.status_code == 302 then
+        print("Login successful, redirect to:", resp.headers["Location"])
+    elseif resp.status_code == 200 then
+        print("Login response:", resp.body)
+    else
+        print("Login failed:", resp.status_code)
+    end
+end</code></pre>
+                            <button class="copy-btn">Copy</button>
+                        </div>
+                    </div>
+
+                    <div id="httppost-webhook" class="example-content">
+                        <div class="code-block">
+                            <pre><code>-- Webhook implementation
+local http = require('http')
+local crypto = require('crypto')
+local json = require('json')
+
+function sendWebhook(url, event, data, secret)
+    -- Prepare payload
+    local payload = {
+        event = event,
+        timestamp = os.time(),
+        data = data
+    }
+    
+    local body = json.encode(payload)
+    
+    -- Generate signature
+    local signature = crypto.sha256(body .. secret)
+    
+    -- Send webhook
+    local resp, err = http.post(url, body, {
+        ["Content-Type"] = "application/json",
+        ["X-Webhook-Event"] = event,
+        ["X-Webhook-Signature"] = signature,
+        ["X-Webhook-Timestamp"] = tostring(payload.timestamp)
+    }, 5)  -- 5 second timeout
+    
+    return resp, err
+end
+
+-- Usage example
+local webhookUrl = "https://example.com/webhooks/receiver"
+local secret = "webhook_secret_key"
+
+-- Send different events
+local events = {
+    {
+        type = "user.created",
+        data = {id = 123, email = "user@example.com"}
+    },
+    {
+        type = "order.completed", 
+        data = {order_id = 456, amount = 99.99}
+    }
+}
+
+for _, event in ipairs(events) do
+    local resp, err = sendWebhook(
+        webhookUrl, 
+        event.type, 
+        event.data, 
+        secret
+    )
+    
+    if resp and resp.status_code == 200 then
+        print("Webhook delivered:", event.type)
+    else
+        print("Webhook failed:", event.type, err or resp.status_code)
+    end
+end</code></pre>
+                            <button class="copy-btn">Copy</button>
+                        </div>
+                    </div>
+                </div>
+
+                <h3>HTTP Server</h3>
+
+                <div class="method-card">
+                    <h4>http.newServer()</h4>
+                    <div class="method-signature">
+                        <code>local server = http.newServer() → Server</code>
+                    </div>
+                    <p>Create a new HTTP server instance with routing and middleware support.</p>
+                    
+                    <h5>Server Methods</h5>
+                    <table class="param-table">
+                        <thead>
+                            <tr>
+                                <th>Method</th>
+                                <th>Description</th>
+                                <th>Returns</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>handle(pattern, handler)</code></td>
+                                <td>Register route handler</td>
+                                <td>self</td>
+                            </tr>
+                            <tr>
+                                <td><code>listen(port)</code></td>
+                                <td>Start server on port</td>
+                                <td>nil</td>
+                            </tr>
+                            <tr>
+                                <td><code>stop()</code></td>
+                                <td>Stop server gracefully</td>
+                                <td>nil</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <h5>Request Object</h5>
+                    <table class="param-table">
+                        <thead>
+                            <tr>
+                                <th>Field</th>
+                                <th>Type</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>method</code></td>
+                                <td>string</td>
+                                <td>HTTP method (GET, POST, etc.)</td>
+                            </tr>
+                            <tr>
+                                <td><code>url</code></td>
+                                <td>string</td>
+                                <td>Full request URL</td>
+                            </tr>
+                            <tr>
+                                <td><code>path</code></td>
+                                <td>string</td>
+                                <td>URL path</td>
+                            </tr>
+                            <tr>
+                                <td><code>headers</code></td>
+                                <td>table</td>
+                                <td>Request headers</td>
+                            </tr>
+                            <tr>
+                                <td><code>query</code></td>
+                                <td>table</td>
+                                <td>Query parameters</td>
+                            </tr>
+                            <tr>
+                                <td><code>params</code></td>
+                                <td>table</td>
+                                <td>URL parameters (e.g., :id)</td>
+                            </tr>
+                            <tr>
+                                <td><code>body</code></td>
+                                <td>string</td>
+                                <td>Request body</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <h5>Response Methods</h5>
+                    <table class="param-table">
+                        <thead>
+                            <tr>
+                                <th>Method</th>
+                                <th>Description</th>
+                                <th>Returns</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>write(content)</code></td>
+                                <td>Write response body</td>
+                                <td>self</td>
+                            </tr>
+                            <tr>
+                                <td><code>json(table)</code></td>
+                                <td>Send JSON response</td>
+                                <td>self</td>
+                            </tr>
+                            <tr>
+                                <td><code>status(code)</code></td>
+                                <td>Set HTTP status code</td>
+                                <td>self</td>
+                            </tr>
+                            <tr>
+                                <td><code>header(key, value)</code></td>
+                                <td>Set response header</td>
+                                <td>self</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <div class="example-tabs">
+                        <button class="example-tab active" onclick="showExample('httpserver', 'basic')">Basic</button>
+                        <button class="example-tab" onclick="showExample('httpserver', 'rest')">REST API</button>
+                        <button class="example-tab" onclick="showExample('httpserver', 'middleware')">Middleware</button>
+                    </div>
+                    
+                    <div id="httpserver-basic" class="example-content active">
+                        <div class="code-block">
+                            <pre><code>-- Basic HTTP server
+local http = require('http')
+local server = http.newServer()
+
+-- Simple route
+server:handle("/", function(req, res)
+    res:write("Welcome to Hype HTTP Server!")
+end)
+
+-- JSON response
+server:handle("/api/info", function(req, res)
+    res:json({
+        server = "Hype",
+        version = "1.0",
+        timestamp = os.time()
+    })
+end)
+
+-- Handle different methods
+server:handle("GET /users", function(req, res)
+    res:json({users = {"Alice", "Bob", "Charlie"}})
+end)
+
+server:handle("POST /users", function(req, res)
+    -- Parse JSON body
+    local json = require('json')
+    local user = json.decode(req.body)
+    
+    res:status(201):json({
+        id = math.random(1000),
+        name = user.name,
+        created = os.date()
+    })
+end)
+
+-- URL parameters
+server:handle("/users/:id", function(req, res)
+    res:json({
+        user_id = req.params.id,
+        name = "User " .. req.params.id
+    })
+end)
+
+-- Query parameters
+server:handle("/search", function(req, res)
+    local query = req.query.q or ""
+    local limit = tonumber(req.query.limit) or 10
+    
+    res:json({
+        query = query,
+        limit = limit,
+        results = {}
+    })
+end)
+
+print("Server starting on http://localhost:8080")
+server:listen(8080)</code></pre>
+                            <button class="copy-btn">Copy</button>
+                        </div>
+                    </div>
+
+                    <div id="httpserver-rest" class="example-content">
+                        <div class="code-block">
+                            <pre><code>-- Complete REST API
+local http = require('http')
+local json = require('json')
+local kv = require('kv')
+
+-- Initialize database
+local db = kv.open("./api.db")
+db:open_db("items")
+
+local server = http.newServer()
+
+-- Middleware for JSON parsing
+local function parseJSON(handler)
+    return function(req, res)
+        if req.headers["Content-Type"] == "application/json" and req.body ~= "" then
+            local ok, data = pcall(json.decode, req.body)
+            if ok then
+                req.json = data
+            else
+                res:status(400):json({error = "Invalid JSON"})
+                return
+            end
+        end
+        handler(req, res)
+    end
+end
+
+-- CORS middleware
+local function cors(handler)
+    return function(req, res)
+        res:header("Access-Control-Allow-Origin", "*")
+        res:header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+        res:header("Access-Control-Allow-Headers", "Content-Type")
+        
+        if req.method == "OPTIONS" then
+            res:status(204):write("")
+            return
+        end
+        
+        handler(req, res)
+    end
+end
+
+-- Routes
+-- GET all items
+server:handle("GET /api/items", cors(function(req, res)
+    local items = {}
+    local cursor = db:cursor("items")
+    
+    for key, value in cursor:iter() do
+        local item = json.decode(value)
+        item.id = key
+        table.insert(items, item)
+    end
+    
+    res:json({
+        count = #items,
+        items = items
+    })
+end))
+
+-- GET single item
+server:handle("GET /api/items/:id", cors(function(req, res)
+    local id = req.params.id
+    local data = db:get("items", id)
+    
+    if data then
+        local item = json.decode(data)
+        item.id = id
+        res:json(item)
+    else
+        res:status(404):json({error = "Item not found"})
+    end
+end))
+
+-- POST create item
+server:handle("POST /api/items", cors(parseJSON(function(req, res)
+    if not req.json or not req.json.name then
+        res:status(400):json({error = "Name required"})
+        return
+    end
+    
+    local id = tostring(os.time() .. math.random(1000))
+    local item = {
+        name = req.json.name,
+        description = req.json.description or "",
+        created = os.date(),
+        updated = os.date()
+    }
+    
+    db:put("items", id, json.encode(item))
+    item.id = id
+    
+    res:status(201)
+       :header("Location", "/api/items/" .. id)
+       :json(item)
+end)))
+
+-- PUT update item
+server:handle("PUT /api/items/:id", cors(parseJSON(function(req, res)
+    local id = req.params.id
+    local existing = db:get("items", id)
+    
+    if not existing then
+        res:status(404):json({error = "Item not found"})
+        return
+    end
+    
+    local item = json.decode(existing)
+    
+    -- Update fields
+    if req.json.name then item.name = req.json.name end
+    if req.json.description then item.description = req.json.description end
+    item.updated = os.date()
+    
+    db:put("items", id, json.encode(item))
+    item.id = id
+    
+    res:json(item)
+end)))
+
+-- DELETE item
+server:handle("DELETE /api/items/:id", cors(function(req, res)
+    local id = req.params.id
+    local existing = db:get("items", id)
+    
+    if not existing then
+        res:status(404):json({error = "Item not found"})
+        return
+    end
+    
+    db:delete("items", id)
+    res:status(204):write("")
+end))
+
+-- Health check
+server:handle("/health", function(req, res)
+    res:json({
+        status = "healthy",
+        timestamp = os.time(),
+        database = "connected"
+    })
+end)
+
+print("REST API running on http://localhost:8080")
+print("Try: curl http://localhost:8080/api/items")
+server:listen(8080)</code></pre>
+                            <button class="copy-btn">Copy</button>
+                        </div>
+                    </div>
+
+                    <div id="httpserver-middleware" class="example-content">
+                        <div class="code-block">
+                            <pre><code>-- Advanced middleware patterns
+local http = require('http')
+local crypto = require('crypto')
+local json = require('json')
+
+local server = http.newServer()
+
+-- Request logging middleware
+local function logger(handler)
+    return function(req, res)
+        local start = os.clock()
+        
+        -- Wrap response methods to capture status
+        local originalStatus = res.status
+        local statusCode = 200
+        
+        res.status = function(self, code)
+            statusCode = code
+            return originalStatus(self, code)
+        end
+        
+        -- Call handler
+        handler(req, res)
+        
+        -- Log request
+        local duration = (os.clock() - start) * 1000
+        print(string.format(
+            "%s %s %s - %d - %.2fms",
+            os.date("%Y-%m-%d %H:%M:%S"),
+            req.method,
+            req.path,
+            statusCode,
+            duration
+        ))
+    end
+end
+
+-- Authentication middleware
+local function authenticate(handler)
+    return function(req, res)
+        local auth = req.headers["Authorization"]
+        
+        if not auth or not auth:match("^Bearer ") then
+            res:status(401):json({error = "Authentication required"})
+            return
+        end
+        
+        local token = auth:sub(8)  -- Remove "Bearer "
+        
+        -- Verify token (simplified - use proper JWT in production)
+        if token ~= "valid-token-123" then
+            res:status(403):json({error = "Invalid token"})
+            return
+        end
+        
+        -- Add user to request
+        req.user = {id = 1, name = "John Doe"}
+        handler(req, res)
+    end
+end
+
+-- Rate limiting middleware
+local requestCounts = {}
+local function rateLimit(maxRequests, windowSeconds)
+    return function(handler)
+        return function(req, res)
+            local ip = req.headers["X-Forwarded-For"] or "unknown"
+            local now = os.time()
+            local key = ip .. ":" .. math.floor(now / windowSeconds)
+            
+            requestCounts[key] = (requestCounts[key] or 0) + 1
+            
+            if requestCounts[key] > maxRequests then
+                res:status(429):json({
+                    error = "Too many requests",
+                    retry_after = windowSeconds
+                })
+                return
+            end
+            
+            handler(req, res)
+        end
+    end
+end
+
+-- Error handling middleware
+local function errorHandler(handler)
+    return function(req, res)
+        local ok, err = pcall(handler, req, res)
+        
+        if not ok then
+            print("Error:", err)
+            res:status(500):json({
+                error = "Internal server error",
+                message = err
+            })
+        end
+    end
+end
+
+-- Apply middleware to routes
+-- Public route
+server:handle("/", logger(function(req, res)
+    res:json({message = "Welcome to the API"})
+end))
+
+-- Protected route
+server:handle("/api/profile", logger(authenticate(function(req, res)
+    res:json({
+        user = req.user,
+        message = "This is a protected endpoint"
+    })
+end)))
+
+-- Rate limited route
+server:handle("/api/search", logger(rateLimit(10, 60)(function(req, res)
+    res:json({
+        query = req.query.q,
+        results = []
+    })
+end)))
+
+-- Route with error handling
+server:handle("/api/process", logger(errorHandler(function(req, res)
+    -- This might throw an error
+    local data = json.decode(req.body)
+    
+    if not data.required_field then
+        error("Missing required field")
+    end
+    
+    res:json({processed = true})
+end)))
+
+-- Compose multiple middleware
+local function compose(...)
+    local middleware = {...}
+    return function(handler)
+        for i = #middleware, 1, -1 do
+            handler = middleware[i](handler)
+        end
+        return handler
+    end
+end
+
+-- Use composed middleware
+server:handle("/api/admin", 
+    compose(logger, authenticate, rateLimit(5, 60))(function(req, res)
+        res:json({
+            message = "Admin endpoint",
+            user = req.user
+        })
+    end)
+)
+
+print("Server with middleware running on http://localhost:8080")
+server:listen(8080)</code></pre>
+                            <button class="copy-btn">Copy</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="best-practice">
+                    <strong>HTTP Best Practices:</strong>
+                    <ul>
+                        <li>Always set appropriate Content-Type headers</li>
+                        <li>Use proper HTTP status codes (200, 201, 404, etc.)</li>
+                        <li>Implement request timeouts to prevent hanging</li>
+                        <li>Add CORS headers for browser compatibility</li>
+                        <li>Use middleware for cross-cutting concerns</li>
+                        <li>Validate input data before processing</li>
+                        <li>Handle errors gracefully with proper error responses</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- WebSocket Module -->
+        <section id="websocket" class="api-section">
+            <div class="container">
+                <h2>🔌 WebSocket Module - Real-Time Communication</h2>
+                <p>Build real-time applications with bidirectional communication. Perfect for chat apps, live updates, collaborative tools, and IoT.</p>
+                
+                <div class="info-box">
+                    <strong>Import:</strong> <code>local websocket = require('websocket')</code> or <code>local ws = require('ws')</code>
+                </div>
+
+                <h3>WebSocket Client</h3>
+
+                <div class="method-card">
+                    <h4>websocket.dial(url, headers?)</h4>
+                    <div class="method-signature">
+                        <code>local conn, err = websocket.dial(url, headers) → Connection, string</code>
+                    </div>
+                    <p>Connect to a WebSocket server.</p>
+                    
+                    <h5>Connection Methods</h5>
+                    <table class="param-table">
+                        <thead>
+                            <tr>
+                                <th>Method</th>
+                                <th>Description</th>
+                                <th>Returns</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>write_text(message)</code></td>
+                                <td>Send text message</td>
+                                <td>error</td>
+                            </tr>
+                            <tr>
+                                <td><code>write_binary(data)</code></td>
+                                <td>Send binary data</td>
+                                <td>error</td>
+                            </tr>
+                            <tr>
+                                <td><code>read()</code></td>
+                                <td>Read next message</td>
+                                <td>type, data</td>
+                            </tr>
+                            <tr>
+                                <td><code>close(code?, reason?)</code></td>
+                                <td>Close connection</td>
+                                <td>error</td>
+                            </tr>
+                            <tr>
+                                <td><code>ping()</code></td>
+                                <td>Send ping frame</td>
+                                <td>error</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <div class="info-box">
+                        <strong>Message Types:</strong> 1=Text, 2=Binary, 8=Close, 9=Ping, 10=Pong
+                    </div>
+
+                    <div class="example-tabs">
+                        <button class="example-tab active" onclick="showExample('wsclient', 'basic')">Basic</button>
+                        <button class="example-tab" onclick="showExample('wsclient', 'chat')">Chat Client</button>
+                        <button class="example-tab" onclick="showExample('wsclient', 'reconnect')">Auto-Reconnect</button>
+                    </div>
+                    
+                    <div id="wsclient-basic" class="example-content active">
+                        <div class="code-block">
+                            <pre><code>-- Basic WebSocket client
+local ws = require('websocket')
+
+-- Connect to server
+local conn, err = ws.dial("ws://localhost:8080/ws")
+if not conn then
+    print("Connection failed:", err)
+    return
+end
+
+print("Connected to WebSocket server")
+
+-- Send message
+conn:write_text("Hello, Server!")
+
+-- Read messages
+go(function()
+    while true do
+        local msg_type, msg = conn:read()
+        
+        if msg_type == 1 then  -- Text message
+            print("Received:", msg)
+        elseif msg_type == 2 then  -- Binary message
+            print("Binary data:", #msg, "bytes")
+        elseif msg_type == 8 then  -- Close
+            print("Server closed connection")
+            break
+        elseif msg_type == 9 then  -- Ping
+            -- Auto-handled by most implementations
+        end
+    end
+end)
+
+-- Send periodic pings
+go(function()
+    while true do
+        sleep(30)
+        local err = conn:ping()
+        if err then
+            print("Ping failed:", err)
+            break
+        end
+    end
+end)
+
+-- Keep running
+sleep(60)
+conn:close(1000, "Goodbye")</code></pre>
+                            <button class="copy-btn">Copy</button>
+                        </div>
+                    </div>
+
+                    <div id="wsclient-chat" class="example-content">
+                        <div class="code-block">
+                            <pre><code>-- Interactive chat client
+local ws = require('websocket')
+local json = require('json')
+
+-- Chat client implementation
+function createChatClient(url, username)
+    local client = {
+        conn = nil,
+        username = username,
+        connected = false
+    }
+    
+    function client:connect()
+        local conn, err = ws.dial(url)
+        if not conn then
+            return false, err
+        end
+        
+        self.conn = conn
+        self.connected = true
+        
+        -- Send join message
+        self:send({
+            type = "join",
+            username = self.username,
+            timestamp = os.time()
+        })
+        
+        -- Start message reader
+        go(function()
+            self:readLoop()
+        end)
+        
+        return true
+    end
+    
+    function client:send(data)
+        if not self.connected then
+            return false, "Not connected"
+        end
+        
+        local msg = json.encode(data)
+        return self.conn:write_text(msg)
+    end
+    
+    function client:sendMessage(text)
+        return self:send({
+            type = "message",
+            username = self.username,
+            text = text,
+            timestamp = os.time()
+        })
+    end
+    
+    function client:readLoop()
+        while self.connected do
+            local msg_type, data = self.conn:read()
+            
+            if msg_type == 1 then  -- Text message
+                local ok, msg = pcall(json.decode, data)
+                if ok then
+                    self:handleMessage(msg)
+                end
+            elseif msg_type == 8 then  -- Close
+                self.connected = false
+                print("\n[Disconnected from server]")
+                break
+            end
+        end
+    end
+    
+    function client:handleMessage(msg)
+        if msg.type == "message" then
+            print(string.format(
+                "\n[%s] %s: %s",
+                os.date("%H:%M:%S", msg.timestamp),
+                msg.username,
+                msg.text
+            ))
+        elseif msg.type == "join" then
+            print(string.format(
+                "\n[%s joined the chat]",
+                msg.username
+            ))
+        elseif msg.type == "leave" then
+            print(string.format(
+                "\n[%s left the chat]",
+                msg.username
+            ))
+        elseif msg.type == "users" then
+            print("\nOnline users:", table.concat(msg.users, ", "))
+        end
+    end
+    
+    function client:disconnect()
+        if self.connected then
+            self:send({
+                type = "leave",
+                username = self.username
+            })
+            self.conn:close()
+            self.connected = false
+        end
+    end
+    
+    return client
+end
+
+-- Usage
+local username = "User" .. math.random(1000)
+local client = createChatClient("ws://localhost:8080/chat", username)
+
+local ok, err = client:connect()
+if not ok then
+    print("Failed to connect:", err)
+    return
+end
+
+print("Connected as", username)
+print("Type messages (or 'quit' to exit):")
+
+-- Read user input
+while true do
+    io.write("> ")
+    io.flush()
+    local input = io.read()
+    
+    if input == "quit" then
+        break
+    elseif input == "/users" then
+        client:send({type = "list_users"})
+    elseif input ~= "" then
+        client:sendMessage(input)
+    end
+end
+
+client:disconnect()
+print("Goodbye!")</code></pre>
+                            <button class="copy-btn">Copy</button>
+                        </div>
+                    </div>
+
+                    <div id="wsclient-reconnect" class="example-content">
+                        <div class="code-block">
+                            <pre><code>-- WebSocket client with auto-reconnect
+local ws = require('websocket')
+
+function createReconnectingWebSocket(url, options)
+    options = options or {}
+    
+    local client = {
+        url = url,
+        conn = nil,
+        connected = false,
+        reconnectInterval = options.reconnectInterval or 5,
+        maxReconnectInterval = options.maxReconnectInterval or 30,
+        reconnectAttempts = 0,
+        maxReconnectAttempts = options.maxReconnectAttempts or nil,
+        onOpen = options.onOpen or function() end,
+        onMessage = options.onMessage or function() end,
+        onClose = options.onClose or function() end,
+        onError = options.onError or function() end,
+        shouldReconnect = true
+    }
+    
+    function client:connect()
+        print("Connecting to", self.url)
+        
+        local conn, err = ws.dial(self.url)
+        if not conn then
+            self:onError("Connection failed: " .. err)
+            self:scheduleReconnect()
+            return false
+        end
+        
+        self.conn = conn
+        self.connected = true
+        self.reconnectAttempts = 0
+        
+        print("Connected successfully")
+        self:onOpen()
+        
+        -- Start read loop
+        go(function()
+            self:readLoop()
+        end)
+        
+        return true
+    end
+    
+    function client:readLoop()
+        while self.connected do
+            local msg_type, data = self.conn:read()
+            
+            if msg_type == 1 then  -- Text
+                self:onMessage(data)
+            elseif msg_type == 8 then  -- Close
+                self.connected = false
+                self:onClose("Server closed connection")
+                self:scheduleReconnect()
+                break
+            elseif msg_type == nil then  -- Error
+                self.connected = false
+                self:onError("Read error: " .. (data or "unknown"))
+                self:scheduleReconnect()
+                break
+            end
+        end
+    end
+    
+    function client:scheduleReconnect()
+        if not self.shouldReconnect then
+            return
+        end
+        
+        if self.maxReconnectAttempts and 
+           self.reconnectAttempts >= self.maxReconnectAttempts then
+            print("Max reconnection attempts reached")
+            return
+        end
+        
+        self.reconnectAttempts = self.reconnectAttempts + 1
+        
+        -- Exponential backoff
+        local interval = math.min(
+            self.reconnectInterval * (2 ^ (self.reconnectAttempts - 1)),
+            self.maxReconnectInterval
+        )
+        
+        print(string.format(
+            "Reconnecting in %d seconds (attempt %d)",
+            interval,
+            self.reconnectAttempts
+        ))
+        
+        go(function()
+            sleep(interval)
+            if self.shouldReconnect then
+                self:connect()
+            end
+        end)
+    end
+    
+    function client:send(message)
+        if not self.connected then
+            self:onError("Not connected")
+            return false
+        end
+        
+        local err = self.conn:write_text(message)
+        if err then
+            self:onError("Send error: " .. err)
+            return false
+        end
+        
+        return true
+    end
+    
+    function client:close()
+        self.shouldReconnect = false
+        if self.connected and self.conn then
+            self.conn:close()
+            self.connected = false
+        end
+    end
+    
+    return client
+end
+
+-- Usage example
+local client = createReconnectingWebSocket("ws://localhost:8080/ws", {
+    reconnectInterval = 2,
+    maxReconnectInterval = 30,
+    maxReconnectAttempts = 10,
+    
+    onOpen = function()
+        print("WebSocket opened")
+        -- Subscribe to updates
+        client:send(json.encode({
+            action = "subscribe",
+            channels = ["updates", "alerts"]
+        }))
+    end,
+    
+    onMessage = function(data)
+        print("Message:", data)
+        -- Process message
+        local ok, msg = pcall(json.decode, data)
+        if ok then
+            -- Handle different message types
+            if msg.type == "update" then
+                print("Update:", msg.data)
+            elseif msg.type == "alert" then
+                print("Alert:", msg.message)
+            end
+        end
+    end,
+    
+    onClose = function(reason)
+        print("WebSocket closed:", reason)
+    end,
+    
+    onError = function(err)
+        print("WebSocket error:", err)
+    end
+})
+
+-- Connect
+client:connect()
+
+-- Send periodic heartbeat
+go(function()
+    while true do
+        sleep(30)
+        if client.connected then
+            client:send(json.encode({
+                type = "heartbeat",
+                timestamp = os.time()
+            }))
+        end
+    end
+end)
+
+-- Keep running
+print("Press Enter to quit")
+io.read()
+client:close()</code></pre>
+                            <button class="copy-btn">Copy</button>
+                        </div>
+                    </div>
+                </div>
+
+                <h3>WebSocket Server</h3>
+
+                <div class="method-card">
+                    <h4>websocket.newServer()</h4>
+                    <div class="method-signature">
+                        <code>local server = websocket.newServer() → Server</code>
+                    </div>
+                    <p>Create a WebSocket server that can handle multiple concurrent connections.</p>
+                    
+                    <div class="example-tabs">
+                        <button class="example-tab active" onclick="showExample('wsserver', 'echo')">Echo Server</button>
+                        <button class="example-tab" onclick="showExample('wsserver', 'broadcast')">Broadcast</button>
+                        <button class="example-tab" onclick="showExample('wsserver', 'rooms')">Chat Rooms</button>
+                    </div>
+                    
+                    <div id="wsserver-echo" class="example-content active">
+                        <div class="code-block">
+                            <pre><code>-- Simple echo server
+local ws = require('websocket')
+local server = ws.newServer()
+
+server:handle("/echo", function(conn, req)
+    print("New connection from", req.headers["X-Forwarded-For"] or "unknown")
+    
+    -- Send welcome message
+    conn:write_text("Welcome to Echo Server!")
+    
+    -- Echo loop
+    while true do
+        local msg_type, data = conn:read()
+        
+        if msg_type == 1 then  -- Text
+            print("Received:", data)
+            -- Echo back
+            conn:write_text("Echo: " .. data)
+        elseif msg_type == 2 then  -- Binary
+            print("Binary:", #data, "bytes")
+            -- Echo binary
+            conn:write_binary(data)
+        elseif msg_type == 8 then  -- Close
+            print("Client disconnected")
+            break
+        elseif msg_type == nil then  -- Error
+            print("Read error:", data)
+            break
+        end
+    end
+end)
+
+print("Echo server running on ws://localhost:8080/echo")
+server:listen(8080)</code></pre>
+                            <button class="copy-btn">Copy</button>
+                        </div>
+                    </div>
+
+                    <div id="wsserver-broadcast" class="example-content">
+                        <div class="code-block">
+                            <pre><code>-- Broadcast server
+local ws = require('websocket')
+local json = require('json')
+
+local server = ws.newServer()
+local clients = {}
+local clientId = 0
+
+-- Broadcast to all clients
+function broadcast(message, excludeConn)
+    local data = json.encode(message)
+    
+    for id, client in pairs(clients) do
+        if client.conn ~= excludeConn then
+            local err = client.conn:write_text(data)
+            if err then
+                print("Failed to send to client", id, err)
+                clients[id] = nil
+            end
+        end
+    end
+end
+
+-- Send to specific client
+function sendTo(clientId, message)
+    local client = clients[clientId]
+    if client then
+        local data = json.encode(message)
+        client.conn:write_text(data)
+    end
+end
+
+server:handle("/broadcast", function(conn, req)
+    -- Assign client ID
+    clientId = clientId + 1
+    local id = clientId
+    
+    -- Store client
+    clients[id] = {
+        conn = conn,
+        id = id,
+        joined = os.time()
+    }
+    
+    print("Client", id, "connected")
+    
+    -- Notify others
+    broadcast({
+        type = "user_joined",
+        userId = id,
+        timestamp = os.time()
+    }, conn)
+    
+    -- Send welcome message
+    conn:write_text(json.encode({
+        type = "welcome",
+        yourId = id,
+        onlineUsers = #clients
+    }))
+    
+    -- Handle messages
+    while true do
+        local msg_type, data = conn:read()
+        
+        if msg_type == 1 then
+            local ok, msg = pcall(json.decode, data)
+            if ok then
+                print("Client", id, "says:", msg.text)
+                
+                -- Broadcast message
+                broadcast({
+                    type = "message",
+                    userId = id,
+                    text = msg.text,
+                    timestamp = os.time()
+                }, nil)  -- Send to everyone including sender
+            end
+        elseif msg_type == 8 or msg_type == nil then
+            break
+        end
+    end
+    
+    -- Clean up
+    clients[id] = nil
+    print("Client", id, "disconnected")
+    
+    -- Notify others
+    broadcast({
+        type = "user_left",
+        userId = id,
+        timestamp = os.time()
+    }, nil)
+end)
+
+-- Status endpoint
+server:handle("/status", function(conn, req)
+    conn:write_text(json.encode({
+        type = "status",
+        onlineUsers = #clients,
+        uptime = os.time()
+    }))
+    conn:close()
+end)
+
+print("Broadcast server running on ws://localhost:8080/broadcast")
+server:listen(8080)</code></pre>
+                            <button class="copy-btn">Copy</button>
+                        </div>
+                    </div>
+
+                    <div id="wsserver-rooms" class="example-content">
+                        <div class="code-block">
+                            <pre><code>-- Chat room server
+local ws = require('websocket')
+local json = require('json')
+
+local server = ws.newServer()
+
+-- Room management
+local rooms = {}
+local clients = {}
+local nextClientId = 1
+
+-- Create or get room
+function getRoom(name)
+    if not rooms[name] then
+        rooms[name] = {
+            name = name,
+            clients = {},
+            created = os.time()
+        }
+    end
+    return rooms[name]
+end
+
+-- Join room
+function joinRoom(client, roomName)
+    -- Leave current room
+    if client.room then
+        leaveRoom(client)
+    end
+    
+    -- Join new room
+    local room = getRoom(roomName)
+    room.clients[client.id] = client
+    client.room = roomName
+    
+    -- Notify room members
+    broadcastToRoom(roomName, {
+        type = "user_joined",
+        userId = client.id,
+        username = client.username,
+        room = roomName
+    }, client.id)
+    
+    -- Send room info to client
+    sendToClient(client.id, {
+        type = "room_joined",
+        room = roomName,
+        users = getRoomUsers(roomName)
+    })
+end
+
+-- Leave room
+function leaveRoom(client)
+    if not client.room then return end
+    
+    local room = rooms[client.room]
+    if room then
+        room.clients[client.id] = nil
+        
+        -- Notify others
+        broadcastToRoom(client.room, {
+            type = "user_left",
+            userId = client.id,
+            username = client.username
+        }, client.id)
+        
+        -- Delete empty rooms
+        if next(room.clients) == nil then
+            rooms[client.room] = nil
+        end
+    end
+    
+    client.room = nil
+end
+
+-- Get users in room
+function getRoomUsers(roomName)
+    local room = rooms[roomName]
+    if not room then return {} end
+    
+    local users = {}
+    for id, client in pairs(room.clients) do
+        table.insert(users, {
+            id = id,
+            username = client.username
+        })
+    end
+    return users
+end
+
+-- Broadcast to room
+function broadcastToRoom(roomName, message, excludeId)
+    local room = rooms[roomName]
+    if not room then return end
+    
+    local data = json.encode(message)
+    
+    for id, client in pairs(room.clients) do
+        if id ~= excludeId then
+            local err = client.conn:write_text(data)
+            if err then
+                print("Failed to send to client", id)
+                removeClient(id)
+            end
+        end
+    end
+end
+
+-- Send to specific client
+function sendToClient(clientId, message)
+    local client = clients[clientId]
+    if client then
+        client.conn:write_text(json.encode(message))
+    end
+end
+
+-- Remove client
+function removeClient(clientId)
+    local client = clients[clientId]
+    if client then
+        leaveRoom(client)
+        clients[clientId] = nil
+    end
+end
+
+-- WebSocket handler
+server:handle("/chat", function(conn, req)
+    -- Create client
+    local clientId = nextClientId
+    nextClientId = nextClientId + 1
+    
+    local client = {
+        id = clientId,
+        conn = conn,
+        username = "User" .. clientId,
+        room = nil
+    }
+    
+    clients[clientId] = client
+    
+    print("Client", clientId, "connected")
+    
+    -- Send welcome
+    sendToClient(clientId, {
+        type = "welcome",
+        clientId = clientId,
+        rooms = getRoomList()
+    })
+    
+    -- Handle messages
+    while true do
+        local msg_type, data = conn:read()
+        
+        if msg_type == 1 then
+            local ok, msg = pcall(json.decode, data)
+            if ok then
+                handleMessage(client, msg)
+            end
+        elseif msg_type == 8 or msg_type == nil then
+            break
+        end
+    end
+    
+    -- Clean up
+    print("Client", clientId, "disconnected")
+    removeClient(clientId)
+end)
+
+-- Handle client messages
+function handleMessage(client, msg)
+    if msg.type == "set_username" then
+        client.username = msg.username
+        sendToClient(client.id, {
+            type = "username_set",
+            username = client.username
+        })
+        
+    elseif msg.type == "join_room" then
+        joinRoom(client, msg.room)
+        
+    elseif msg.type == "leave_room" then
+        leaveRoom(client)
+        
+    elseif msg.type == "message" then
+        if client.room then
+            broadcastToRoom(client.room, {
+                type = "message",
+                userId = client.id,
+                username = client.username,
+                text = msg.text,
+                timestamp = os.time()
+            }, nil)  -- Include sender
+        end
+        
+    elseif msg.type == "list_rooms" then
+        sendToClient(client.id, {
+            type = "room_list",
+            rooms = getRoomList()
+        })
+        
+    elseif msg.type == "private_message" then
+        local target = clients[msg.targetId]
+        if target then
+            sendToClient(msg.targetId, {
+                type = "private_message",
+                fromId = client.id,
+                fromUsername = client.username,
+                text = msg.text
+            })
+        end
+    end
+end
+
+-- Get list of rooms
+function getRoomList()
+    local list = {}
+    for name, room in pairs(rooms) do
+        table.insert(list, {
+            name = name,
+            users = #room.clients
+        })
+    end
+    return list
+end
+
+print("Chat room server running on ws://localhost:8080/chat")
+server:listen(8080)</code></pre>
+                            <button class="copy-btn">Copy</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="best-practice">
+                    <strong>WebSocket Best Practices:</strong>
+                    <ul>
+                        <li>Implement heartbeat/ping to detect disconnections</li>
+                        <li>Add reconnection logic for resilient clients</li>
+                        <li>Use JSON for structured message passing</li>
+                        <li>Handle all message types (text, binary, close)</li>
+                        <li>Implement proper connection cleanup</li>
+                        <li>Consider message size limits</li>
+                        <li>Add authentication before accepting connections</li>
+                        <li>Use connection pooling for scalability</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- Additional sections would continue here... -->
+
+        <!-- Utilities Section -->
+        <section id="utilities" class="api-section">
+            <div class="container">
+                <h2>🛠️ Utility Functions</h2>
+                <p>Helper functions and patterns for common tasks in Hype applications.</p>
+                
+                <div class="method-card">
+                    <h4>Goroutines</h4>
+                    <div class="method-signature">
+                        <code>go(function) → nil</code>
+                    </div>
+                    <p>Run functions concurrently in lightweight threads (goroutines).</p>
+                    
+                    <div class="code-block">
+                        <pre><code>-- Run concurrent tasks
+go(function()
+    print("Task 1 starting")
+    sleep(2)
+    print("Task 1 done")
+end)
+
+go(function()
+    print("Task 2 starting")
+    sleep(1)
+    print("Task 2 done")
+end)
+
+-- Output:
+-- Task 1 starting
+-- Task 2 starting
+-- Task 2 done
+-- Task 1 done</code></pre>
+                        <button class="copy-btn">Copy</button>
+                    </div>
+                </div>
+
+                <div class="method-card">
+                    <h4>Sleep Function</h4>
+                    <div class="method-signature">
+                        <code>sleep(seconds) → nil</code>
+                    </div>
+                    <p>Pause execution for specified number of seconds (supports decimals).</p>
+                    
+                    <div class="code-block">
+                        <pre><code>-- Sleep examples
+sleep(1)      -- Sleep for 1 second
+sleep(0.5)    -- Sleep for 500ms
+sleep(0.001)  -- Sleep for 1ms
+
+-- Animation loop
+go(function()
+    local frames = {"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"}
+    local i = 1
+    while true do
+        io.write("\r" .. frames[i] .. " Loading...")
+        io.flush()
+        i = (i % #frames) + 1
+        sleep(0.1)
+    end
+end)</code></pre>
+                        <button class="copy-btn">Copy</button>
+                    </div>
+                </div>
+
+                <div class="method-card">
+                    <h4>Command Line Arguments</h4>
+                    <div class="method-signature">
+                        <code>arg[0], arg[1], ... → string</code>
+                    </div>
+                    <p>Access command line arguments passed to your script or executable.</p>
+                    
+                    <div class="code-block">
+                        <pre><code>-- Argument handling
+print("Script:", arg[0])
+print("Args:", #arg)
+
+-- Parse command line flags
+local options = {
+    port = 8080,
+    host = "localhost",
+    debug = false
+}
+
+local i = 1
+while i <= #arg do
+    local a = arg[i]
+    
+    if a == "--port" or a == "-p" then
+        i = i + 1
+        options.port = tonumber(arg[i]) or 8080
+    elseif a == "--host" or a == "-h" then
+        i = i + 1
+        options.host = arg[i]
+    elseif a == "--debug" or a == "-d" then
+        options.debug = true
+    elseif a == "--help" then
+        print([[
+Usage: myapp [options]
+
+Options:
+  -p, --port PORT    Server port (default: 8080)
+  -h, --host HOST    Server host (default: localhost)
+  -d, --debug        Enable debug mode
+  --help             Show this help
+]])
+        os.exit(0)
+    end
+    
+    i = i + 1
+end
+
+print("Starting server on " .. options.host .. ":" .. options.port)</code></pre>
+                        <button class="copy-btn">Copy</button>
+                    </div>
+                </div>
+
+                <div class="method-card">
+                    <h4>Environment Variables</h4>
+                    <div class="method-signature">
+                        <code>os.getenv(name) → string|nil</code>
+                    </div>
+                    <p>Access environment variables for configuration.</p>
+                    
+                    <div class="code-block">
+                        <pre><code>-- Environment configuration
+local config = {
+    port = tonumber(os.getenv("PORT")) or 8080,
+    dbPath = os.getenv("DB_PATH") or "./data.db",
+    apiKey = os.getenv("API_KEY"),
+    debug = os.getenv("DEBUG") == "true"
+}
+
+-- Require certain variables
+if not config.apiKey then
+    error("API_KEY environment variable required")
+end
+
+-- Development vs Production
+local env = os.getenv("HYPE_ENV") or "development"
+if env == "production" then
+    config.logLevel = "error"
+else
+    config.logLevel = "debug"
+end</code></pre>
+                        <button class="copy-btn">Copy</button>
+                    </div>
+                </div>
+
+                <div class="method-card">
+                    <h4>Error Handling Patterns</h4>
+                    <p>Robust error handling for production applications.</p>
+                    
+                    <div class="code-block">
+                        <pre><code>-- Safe function wrapper
+function safe(fn)
+    return function(...)
+        local results = {pcall(fn, ...)}
+        local ok = table.remove(results, 1)
+        
+        if ok then
+            return table.unpack(results)
+        else
+            local err = results[1]
+            print("Error:", err)
+            return nil, err
+        end
+    end
+end
+
+-- Try-catch pattern
+function try(fn, catch)
+    local ok, result = pcall(fn)
+    if ok then
+        return result
+    else
+        if catch then
+            return catch(result)
+        else
+            error(result)
+        end
+    end
+end
+
+-- Usage
+local result = try(function()
+    -- Risky operation
+    return json.decode(data)
+end, function(err)
+    print("JSON decode failed:", err)
+    return {}  -- Default value
+end)</code></pre>
+                        <button class="copy-btn">Copy</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h4>Hype</h4>
+                    <p>Lua Script to Executable Packager</p>
+                    <p>Built with ❤️ for developers</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Links</h4>
+                    <ul>
+                        <li><a href="https://github.com/twilson63/hype">GitHub Repository</a></li>
+                        <li><a href="https://github.com/twilson63/hype/releases">Releases</a></li>
+                        <li><a href="https://github.com/twilson63/hype/issues">Issues</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Documentation</h4>
+                    <ul>
+                        <li><a href="api.html">API Reference</a></li>
+                        <li><a href="examples.html">Examples</a></li>
+                        <li><a href="REPL.md">REPL Guide</a></li>
+                        <li><a href="plugins.html">Plugin System</a></li>
+                        <li><a href="plugin-development.html">Plugin Development</a></li>
+                        <li><a href="#installation">Installation</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 Hype. Open source project.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Tab switching for examples
+        function showExample(component, example) {
+            // Hide all examples for this component
+            const contents = document.querySelectorAll(`#${component}-basic, #${component}-advanced, #${component}-threading, #${component}-colors, #${component}-log, #${component}-validation, #${component}-search, #${component}-complete, #${component}-json, #${component}-form, #${component}-webhook, #${component}-rest, #${component}-middleware, #${component}-auth, #${component}-retry, #${component}-chat, #${component}-reconnect, #${component}-echo, #${component}-broadcast, #${component}-rooms`);
+            contents.forEach(el => {
+                if (el) el.classList.remove('active');
+            });
+            
+            // Remove active from all tabs
+            const tabs = document.querySelectorAll('.example-tab');
+            tabs.forEach(tab => {
+                if (tab.parentElement.id === `${component}-tabs` || 
+                    tab.parentElement.querySelector(`#${component}-${example}`)) {
+                    tab.classList.remove('active');
+                }
+            });
+            
+            // Show selected example
+            const selectedContent = document.getElementById(`${component}-${example}`);
+            if (selectedContent) {
+                selectedContent.classList.add('active');
+            }
+            
+            // Activate selected tab
+            event.target.classList.add('active');
+        }
+
+        // Copy code functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const copyButtons = document.querySelectorAll('.copy-btn');
+            
+            copyButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const codeBlock = this.parentElement.querySelector('pre code');
+                    const text = codeBlock.textContent;
+                    
+                    navigator.clipboard.writeText(text).then(() => {
+                        const originalText = this.textContent;
+                        this.textContent = 'Copied!';
+                        this.style.background = 'var(--cyber-success)';
+                        
+                        setTimeout(() => {
+                            this.textContent = originalText;
+                            this.style.background = '';
+                        }, 2000);
+                    }).catch(err => {
+                        console.error('Failed to copy:', err);
+                    });
+                });
+            });
+        });
+
+        // API navigation highlighting
+        const sections = document.querySelectorAll('.api-section');
+        const navLinks = document.querySelectorAll('.api-nav-link');
+
+        window.addEventListener('scroll', () => {
+            let current = '';
+            
+            sections.forEach(section => {
+                const sectionTop = section.offsetTop;
+                const sectionHeight = section.clientHeight;
+                if (scrollY >= (sectionTop - 200)) {
+                    current = section.getAttribute('id');
+                }
+            });
+
+            navLinks.forEach(link => {
+                link.classList.remove('active');
+                if (link.getAttribute('href') === `#${current}`) {
+                    link.classList.add('active');
+                }
+            });
+        });
+    </script>
+</body>
+</html>

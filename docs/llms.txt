@@ -1,0 +1,375 @@
+# Hype LLMs Guide
+
+> This document helps Large Language Models understand and provide assistance with Hype, a Go-based tool that packages Lua scripts into standalone executables with zero dependencies.
+
+## Core Concept
+
+Hype transforms Lua scripts into single-file executables for Linux, macOS, and Windows. Each executable contains:
+- Complete Lua runtime
+- Built-in modules (TUI, HTTP, WebSocket, Database, Crypto)
+- Your application code
+- Any plugins you specify
+- Zero external dependencies
+
+## Key Commands
+
+### Build executable from Lua script
+```bash
+hype build script.lua -o myapp
+hype build script.lua --target windows -o myapp.exe
+GOOS=linux GOARCH=arm64 hype build script.lua -o myapp-linux-arm64
+```
+
+### Run scripts in development
+```bash
+hype run script.lua
+hype run script.lua -- arg1 arg2
+hype run script.lua --plugins fs@1.0.0,json
+```
+
+### Interactive REPL
+```bash
+hype repl              # TUI REPL with visual interface
+hype repl --simple     # Simple command-line REPL
+```
+
+## Built-in Modules
+
+### TUI Module
+Create terminal user interfaces with components:
+```lua
+local app = tui.newApp()
+local text = tui.newTextView("Hello World")
+local input = tui.newInputField()
+local button = tui.newButton("Click Me")
+local flex = tui.newFlex()
+
+-- Method chaining
+flex:SetDirection(0):AddItem(text, 0, 1, false)
+app:SetRoot(flex, true):Run()
+```
+
+Components: App, TextView, InputField, Button, Flex, List, Form, Modal, Table, Pages, Grid
+Events: SetChangedFunc, SetSelectedFunc, SetDoneFunc
+
+### HTTP Module
+```lua
+-- Client
+local resp = http.get("https://api.example.com/data")
+local resp = http.post("https://api.example.com", '{"key":"value"}', {["Content-Type"]="application/json"})
+
+-- Server
+local server = http.newServer()
+server:handle("/", function(req, res)
+    res:json({message = "Hello World"})
+end)
+server:handle("/users/:id", function(req, res)
+    res:json({id = req.params.id})
+end)
+server:listen(8080)
+```
+
+### WebSocket Module
+```lua
+-- Client
+local ws = websocket.dial("wss://echo.websocket.org/")
+ws:write_text("Hello Server")
+local msg_type, msg = ws:read()
+ws:close()
+
+-- Server
+local server = websocket.newServer()
+server:handle("/ws", function(conn, req)
+    local msg_type, msg = conn:read()
+    conn:write_text("Echo: " .. msg)
+end)
+server:listen(8080)
+```
+
+### Key-Value Database (BoltDB)
+```lua
+local kv = require('kv')
+local db = kv.open("./data.db")
+
+-- Buckets
+db:open_db("users")
+
+-- CRUD operations
+db:put("users", "john", "John Doe")
+local name = db:get("users", "john")
+db:delete("users", "john")
+
+-- Transactions
+db:begin_tx()
+db:put("users", "jane", "Jane Doe")
+db:commit_tx()  -- or db:rollback_tx()
+
+-- Iteration
+local cursor = db:cursor("users")
+for k, v in cursor:iter() do
+    print(k, v)
+end
+
+db:close()
+```
+
+### Crypto Module
+```lua
+-- Hashing
+local hash = crypto.sha256("data")
+local hash = crypto.sha512("data")
+
+-- JWK Key Generation
+local key = crypto.generate_jwk("RS256")  -- RSA
+local key = crypto.generate_jwk("ES256")  -- ECDSA
+local key = crypto.generate_jwk("Ed25519") -- Ed25519
+
+-- Signing and Verification
+local signature = crypto.sign(key, "message")
+local valid = crypto.verify(key, "message", signature)
+
+-- JWT
+local token = crypto.sign_jwt(key, {sub = "user123", exp = os.time() + 3600})
+local claims = crypto.verify_jwt(key, token)
+
+-- HTTP Signatures (RFC compliant)
+local httpsig = require('httpsig')
+local sig = httpsig.sign(key, "POST", "/api/data", headers, body)
+local valid = httpsig.verify(key, method, path, headers, body, signature)
+```
+
+## Plugin System
+
+### Using Plugins
+```bash
+# Specific version
+hype run app.lua --plugins fs@1.0.0
+
+# Multiple plugins
+hype run app.lua --plugins fs@1.0.0,json@2.1.0,redis
+
+# Build with embedded plugins
+hype build app.lua --plugins fs@1.0.0,json -o myapp
+```
+
+### Available Plugins
+- **fs**: File system operations (readFile, writeFile, readDir, exists, mkdir, remove, glob)
+- **json**: JSON encoding/decoding
+- **redis**: Redis client with pub/sub support
+- **bcrypt**: Password hashing
+- **sqlite**: SQLite database
+- **ulid**: Sortable unique IDs
+- **ulidx**: Extended ULID with custom entropy
+
+### Creating Plugins
+Plugins are Lua modules following this structure:
+```lua
+-- plugins/myplugin/init.lua
+local M = {}
+
+function M.hello(name)
+    return "Hello, " .. name
+end
+
+return M
+```
+
+Directory structure:
+```
+plugins/
+  myplugin/
+    init.lua      -- Main entry point
+    lib.lua       -- Additional files (optional)
+```
+
+Reference with: `--plugins myplugin=/path/to/plugins/myplugin`
+
+## REPL Features
+
+The TUI REPL (v1.9.0+) provides:
+- Dual-panel interface (output + input)
+- Automatic table formatting
+- Command history with recall
+- Special commands (:help, :history, :clear)
+- All modules pre-loaded
+
+Example session:
+```lua
+hype> crypto.sha256("test")
+9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08
+
+hype> key = crypto.generate_jwk("ES256")
+hype> key
+{
+  ["alg"] = "ES256",
+  ["crv"] = "P-256",
+  ["kty"] = "EC",
+  ...
+}
+
+hype> :history
+Command History:
+  1: crypto.sha256("test")
+  2: key = crypto.generate_jwk("ES256")
+
+hype> :h=1
+Recalled: crypto.sha256("test")
+```
+
+## Common Patterns
+
+### CLI Application
+```lua
+-- Parse command line arguments
+local cmd = arg[1] or "help"
+if cmd == "serve" then
+    -- Start server
+elseif cmd == "process" then
+    -- Process data
+else
+    print("Usage: myapp [serve|process]")
+end
+```
+
+### TUI + HTTP Server
+```lua
+local app = tui.newApp()
+local text = tui.newTextView("Server Status: Starting...")
+
+-- Run server in background
+go(function()
+    local server = http.newServer()
+    server:handle("/", function(req, res)
+        res:json({status = "ok"})
+    end)
+    text:SetText("Server Status: Running on :8080")
+    app:Draw()
+    server:listen(8080)
+end)
+
+app:SetRoot(text, true):Run()
+```
+
+### Database-Backed API
+```lua
+local kv = require('kv')
+local db = kv.open("./api.db")
+db:open_db("items")
+
+local server = http.newServer()
+
+server:handle("GET /items", function(req, res)
+    local items = {}
+    local cursor = db:cursor("items")
+    for k, v in cursor:iter() do
+        table.insert(items, {id = k, data = v})
+    end
+    res:json(items)
+end)
+
+server:handle("POST /items", function(req, res)
+    local id = tostring(os.time())
+    db:put("items", id, req.body)
+    res:json({id = id})
+end)
+
+server:listen(8080)
+```
+
+## Performance Characteristics
+- Executable size: ~16MB (includes full runtime)
+- HTTP server: 15,000+ requests/sec (100 concurrent)
+- Database: BoltDB provides ACID transactions
+- Zero runtime dependencies after build
+
+## Cross-Compilation Matrix
+```bash
+# From any OS, build for:
+GOOS=linux GOARCH=amd64    # Linux x64
+GOOS=linux GOARCH=arm64    # Linux ARM64
+GOOS=darwin GOARCH=amd64   # macOS Intel
+GOOS=darwin GOARCH=arm64   # macOS Apple Silicon
+GOOS=windows GOARCH=amd64  # Windows x64
+```
+
+## Troubleshooting
+
+### macOS Gatekeeper
+```bash
+xattr -d com.apple.quarantine /path/to/hype
+```
+
+### Missing hype command
+```bash
+# Add to PATH in ~/.bashrc or ~/.zshrc
+export PATH="$HOME/.hype/bin:$PATH"
+```
+
+### Plugin not found
+- Check plugin exists: `ls plugins/`
+- Use absolute paths: `--plugins myplugin=/abs/path/to/plugin`
+- Verify init.lua exists in plugin directory
+
+## Advanced Features
+
+### Multi-file Projects
+Hype automatically bundles dependencies:
+```lua
+-- main.lua
+local utils = require('./utils')
+local config = require('./config')
+```
+
+### Custom Goroutines
+```lua
+-- Run concurrent operations
+go(function()
+    -- This runs in a goroutine
+    while true do
+        sleep(1)
+        print("Background task")
+    end
+end)
+```
+
+### Environment Variables
+```lua
+local port = os.getenv("PORT") or "8080"
+local debug = os.getenv("DEBUG") == "true"
+```
+
+## Installation
+
+### Quick Install
+```bash
+curl -sSL https://raw.githubusercontent.com/twilson63/hype/main/install.sh | bash
+```
+
+### Platform-Specific
+```bash
+# Linux
+curl -sSL https://raw.githubusercontent.com/twilson63/hype/main/install-linux.sh | bash
+
+# macOS
+curl -sSL https://raw.githubusercontent.com/twilson63/hype/main/install-mac.sh | bash
+```
+
+### From Source
+```bash
+git clone https://github.com/twilson63/hype
+cd hype
+make build
+```
+
+## Links
+- GitHub: https://github.com/twilson63/hype
+- Documentation: https://twilson63.github.io/hype/
+- Examples: https://github.com/twilson63/hype/tree/main/examples
+- Releases: https://github.com/twilson63/hype/releases
+
+## Why Hype?
+- Ship executables, not installers
+- No "install Lua first" instructions
+- No "missing library" errors
+- Build once, run anywhere
+- Perfect for CLI tools, servers, and automation

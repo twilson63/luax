@@ -1,0 +1,1137 @@
+# Hype - Complete LLM Reference Guide
+
+> Comprehensive documentation for Large Language Models to understand and assist with Hype development
+
+## Table of Contents
+1. [Overview](#overview)
+2. [Architecture](#architecture)
+3. [Complete API Reference](#complete-api-reference)
+4. [Plugin Development Guide](#plugin-development-guide)
+5. [Advanced Patterns](#advanced-patterns)
+6. [Performance Optimization](#performance-optimization)
+7. [Troubleshooting Guide](#troubleshooting-guide)
+8. [Migration Guides](#migration-guides)
+
+## Overview
+
+Hype is a revolutionary tool that packages Lua scripts into standalone executables with zero dependencies. Built in Go, it embeds:
+- Complete Lua 5.1 runtime (via gopher-lua)
+- TUI framework (tview/tcell)
+- HTTP server/client capabilities
+- WebSocket support
+- Embedded database (BoltDB)
+- Cryptographic operations (JWK, JWT, HTTP Signatures)
+- Plugin system for extensibility
+
+### Philosophy
+- **Zero Dependencies**: Ship executables, not installers
+- **Cross-Platform**: Build for any OS from any OS
+- **Batteries Included**: Everything needed for real applications
+- **Developer Friendly**: Fast iteration with `hype run`, production-ready with `hype build`
+
+## Architecture
+
+### Build Process
+1. **Script Analysis**: Parses Lua script and detects dependencies
+2. **Bundling**: Combines multiple Lua files into single module
+3. **Go Generation**: Creates temporary Go project with embedded Lua
+4. **Compilation**: Cross-compiles to target platform
+5. **Optimization**: Strips debug symbols for smaller binaries
+
+### Runtime Architecture
+```
+┌─────────────────────────────────────┐
+│         Your Lua Application        │
+├─────────────────────────────────────┤
+│          Lua Runtime (gopher-lua)   │
+├─────────────────────────────────────┤
+│  Built-in Modules                   │
+│  ┌─────┬──────┬────┬────┬────────┐ │
+│  │ TUI │ HTTP │ WS │ KV │ Crypto │ │
+│  └─────┴──────┴────┴────┴────────┘ │
+├─────────────────────────────────────┤
+│         Go Runtime                  │
+└─────────────────────────────────────┘
+```
+
+## Complete API Reference
+
+### TUI Module - Terminal User Interface
+
+#### Core Components
+
+**tui.newApp()**
+```lua
+local app = tui.newApp()
+-- Methods:
+app:SetRoot(primitive, fullscreen)  -- Set root component
+app:Run()                          -- Start event loop
+app:Stop()                         -- Stop application
+app:Draw()                         -- Force redraw
+app:QueueUpdateDraw(func)          -- Queue function for next draw
+app:SetFocus(primitive)            -- Set keyboard focus
+app:GetFocus()                     -- Get focused component
+```
+
+**tui.newTextView(text)**
+```lua
+local text = tui.newTextView("Content")
+-- Methods:
+text:SetText(string)               -- Set content
+text:SetTextColor(color)           -- Set text color
+text:SetTitle(string)              -- Set border title
+text:SetBorder(bool)               -- Enable/disable border
+text:SetScrollable(bool)           -- Enable scrolling
+text:SetWordWrap(bool)             -- Enable word wrap
+text:SetTextAlign(align)           -- 0=left, 1=center, 2=right
+text:Clear()                       -- Clear content
+text:GetText()                     -- Get current text
+```
+
+**tui.newInputField()**
+```lua
+local input = tui.newInputField()
+-- Methods:
+input:SetLabel(string)             -- Set label text
+input:SetText(string)              -- Set field value
+input:SetPlaceholder(string)       -- Set placeholder
+input:SetFieldWidth(int)           -- Set width (0=full)
+input:SetMaskCharacter(rune)       -- Mask input (passwords)
+input:SetChangedFunc(func)         -- On change callback
+input:SetDoneFunc(func)            -- On enter/tab callback
+input:GetText()                    -- Get current value
+input:SetFieldTextColor(color)     -- Set text color
+input:SetFieldBackgroundColor(color) -- Set background
+```
+
+**tui.newButton(label)**
+```lua
+local button = tui.newButton("Click Me")
+-- Methods:
+button:SetLabel(string)            -- Change label
+button:SetSelectedFunc(func)       -- On click callback
+button:SetBackgroundColor(color)   -- Set background
+button:SetLabelColor(color)        -- Set text color
+```
+
+**tui.newFlex()**
+```lua
+local flex = tui.newFlex()
+-- Methods:
+flex:SetDirection(dir)             -- 0=horizontal, 1=vertical
+flex:AddItem(item, fixed, prop, focus) -- Add child
+  -- fixed: fixed size (0=proportional)
+  -- prop: proportion for proportional items
+  -- focus: can receive focus
+flex:Clear()                       -- Remove all items
+flex:RemoveItem(item)              -- Remove specific item
+```
+
+**tui.newList()**
+```lua
+local list = tui.newList()
+-- Methods:
+list:AddItem(text, secondary, shortcut, func)
+list:Clear()                       -- Remove all items
+list:SetSelectedFunc(func)         -- On selection callback
+list:SetCurrentItem(index)         -- Set selected index
+list:GetCurrentItem()              -- Get selected index
+list:SetMainTextColor(color)       -- Set primary text color
+list:SetSecondaryTextColor(color)  -- Set secondary text color
+list:ShowSecondaryText(bool)       -- Show/hide secondary
+```
+
+**tui.newForm()**
+```lua
+local form = tui.newForm()
+-- Methods:
+form:AddInputField(label, initial, width, changed, done)
+form:AddPasswordField(label, initial, width, changed, done)
+form:AddButton(label, func)
+form:AddDropDown(label, options, initial, selected)
+form:AddCheckbox(label, checked, changed)
+form:Clear(includeButtons)         -- Clear form
+form:SetButtonsAlign(align)        -- 0=left, 1=center, 2=right
+form:GetFormItem(index)            -- Get item by index
+```
+
+**tui.newModal()**
+```lua
+local modal = tui.newModal()
+-- Methods:
+modal:SetText(string)              -- Set message
+modal:AddButtons(labels)           -- Add button array
+modal:SetDoneFunc(func)            -- Callback(index, label)
+modal:SetBackgroundColor(color)    -- Set background
+```
+
+**tui.newTable()**
+```lua
+local table = tui.newTable()
+-- Methods:
+table:SetCell(row, col, cell)      -- Set cell content
+table:SetCellSimple(row, col, text) -- Set text only
+table:Clear()                      -- Clear table
+table:SetBorders(bool)             -- Show/hide borders
+table:SetSelectable(rows, cols)    -- Make selectable
+table:SetSelectedFunc(func)        -- On select callback
+table:SetFixed(rows, cols)         -- Fixed headers
+table:Select(row, col)             -- Select cell
+table:GetSelection()               -- Get selected cell
+```
+
+**tui.newPages()**
+```lua
+local pages = tui.newPages()
+-- Methods:
+pages:AddPage(name, item, resize, visible)
+pages:RemovePage(name)             -- Remove page
+pages:SwitchToPage(name)           -- Show page
+pages:GetFrontPage()               -- Get current page name
+```
+
+**tui.newGrid()**
+```lua
+local grid = tui.newGrid()
+-- Methods:
+grid:SetRows(sizes...)             -- Set row sizes
+grid:SetColumns(sizes...)          -- Set column sizes
+grid:AddItem(item, row, col, rowSpan, colSpan, 
+             minH, minW, focus)
+-- Sizes: positive=fixed, 0=proportional, negative=relative
+```
+
+#### Events and Callbacks
+
+All callbacks receive the component as first argument:
+```lua
+input:SetChangedFunc(function(input, text)
+    print("Input changed to:", text)
+end)
+
+button:SetSelectedFunc(function(button)
+    print("Button clicked!")
+end)
+
+list:SetSelectedFunc(function(list, index, mainText, secondaryText)
+    print("Selected:", mainText)
+end)
+```
+
+### HTTP Module
+
+#### Client Functions
+
+**http.get(url, headers?, timeout?)**
+```lua
+local resp = http.get("https://api.example.com/data")
+local resp = http.get("https://api.example.com/data", {
+    ["Authorization"] = "Bearer token"
+}, 30) -- 30 second timeout
+
+-- Response object:
+resp.status_code  -- HTTP status code
+resp.body        -- Response body as string
+resp.headers     -- Response headers table
+```
+
+**http.post(url, body, headers?, timeout?)**
+```lua
+local resp = http.post("https://api.example.com/users", 
+    '{"name":"John"}',
+    {["Content-Type"] = "application/json"},
+    30
+)
+```
+
+**http.put(url, body, headers?, timeout?)**
+**http.delete(url, headers?, timeout?)**
+**http.patch(url, body, headers?, timeout?)**
+
+#### Server Functions
+
+**http.newServer()**
+```lua
+local server = http.newServer()
+
+-- Route handling
+server:handle(pattern, handler)
+server:listen(port)
+
+-- Handler function signature:
+function handler(req, res)
+    -- req object:
+    req.method      -- GET, POST, etc.
+    req.url         -- Full URL
+    req.body        -- Request body
+    req.headers     -- Headers table
+    req.params      -- URL parameters
+    req.query       -- Query parameters
+    
+    -- res object methods:
+    res:write(data)           -- Write response
+    res:status(code)          -- Set status code
+    res:header(key, value)    -- Set header
+    res:json(table)           -- Send JSON response
+end
+```
+
+**Route Patterns**
+```lua
+-- Static routes
+server:handle("/", handler)
+server:handle("/about", handler)
+
+-- Method-specific routes
+server:handle("GET /users", handler)
+server:handle("POST /users", handler)
+
+-- URL parameters
+server:handle("/users/:id", function(req, res)
+    local userId = req.params.id
+    res:json({id = userId})
+end)
+
+-- Wildcards
+server:handle("/files/*", handler)
+```
+
+### WebSocket Module
+
+#### Client
+
+**websocket.dial(url, headers?)**
+```lua
+local ws = websocket.dial("wss://echo.websocket.org/")
+local ws = websocket.dial("wss://example.com/ws", {
+    ["Authorization"] = "Bearer token"
+})
+
+-- Methods:
+ws:write_text(message)      -- Send text message
+ws:write_binary(data)       -- Send binary data
+ws:read()                   -- Returns: type, message
+ws:close(code?, reason?)    -- Close connection
+ws:ping()                   -- Send ping
+
+-- Message types:
+-- 1 = text, 2 = binary, 8 = close, 9 = ping, 10 = pong
+```
+
+**Reading messages**
+```lua
+while true do
+    local msg_type, msg = ws:read()
+    if msg_type == 1 then  -- text
+        print("Received:", msg)
+    elseif msg_type == 8 then  -- close
+        print("Connection closed")
+        break
+    end
+end
+```
+
+#### Server
+
+**websocket.newServer()**
+```lua
+local server = websocket.newServer()
+
+server:handle("/ws", function(conn, req)
+    -- conn: WebSocket connection (same methods as client)
+    -- req: HTTP request that initiated the upgrade
+    
+    while true do
+        local msg_type, msg = conn:read()
+        if msg_type == 1 then
+            conn:write_text("Echo: " .. msg)
+        elseif msg_type == 8 then
+            break
+        end
+    end
+end)
+
+server:listen(8080)
+```
+
+### Key-Value Database Module
+
+**kv.open(path)**
+```lua
+local db = kv.open("./myapp.db")
+-- Opens or creates database file
+```
+
+**Bucket Operations**
+```lua
+db:open_db(bucket)         -- Create/open bucket
+db:list_dbs()              -- List all buckets
+```
+
+**CRUD Operations**
+```lua
+-- Put (create/update)
+db:put(bucket, key, value)
+
+-- Get (read)
+local value = db:get(bucket, key)
+-- Returns nil if not found
+
+-- Delete
+db:delete(bucket, key)
+
+-- Batch operations
+db:batch_put(bucket, {
+    ["key1"] = "value1",
+    ["key2"] = "value2"
+})
+```
+
+**Transactions**
+```lua
+-- Manual transactions
+db:begin_tx()
+db:put("users", "john", "John Doe")
+db:put("users", "jane", "Jane Doe")
+db:commit_tx()  -- or db:rollback_tx()
+
+-- Atomic operations
+local success = db:transaction(function()
+    db:put("accounts", "john", "1000")
+    db:put("accounts", "jane", "2000")
+    -- Automatically commits if no error
+    -- Automatically rolls back on error
+end)
+```
+
+**Iteration**
+```lua
+-- Cursor-based iteration
+local cursor = db:cursor(bucket)
+
+-- Iterate all
+for key, value in cursor:iter() do
+    print(key, value)
+end
+
+-- Iterate with prefix
+for key, value in cursor:iter_prefix("user:") do
+    print(key, value)
+end
+
+-- Manual cursor control
+cursor:first()
+cursor:last()
+cursor:next()
+cursor:prev()
+cursor:seek(key)
+local k, v = cursor:get()
+```
+
+**Database Management**
+```lua
+db:close()              -- Close database
+db:backup(path)         -- Create backup
+db:stats()              -- Get statistics
+```
+
+### Crypto Module
+
+#### Hashing
+```lua
+crypto.sha256(data)     -- Returns hex string
+crypto.sha512(data)     -- Returns hex string
+crypto.md5(data)        -- Returns hex string
+```
+
+#### JWK (JSON Web Key) Operations
+
+**Key Generation**
+```lua
+-- RSA keys
+local key = crypto.generate_jwk("RS256")   -- 2048-bit
+local key = crypto.generate_jwk("RS384")   -- 3072-bit
+local key = crypto.generate_jwk("RS512")   -- 4096-bit
+
+-- ECDSA keys
+local key = crypto.generate_jwk("ES256")   -- P-256 curve
+local key = crypto.generate_jwk("ES384")   -- P-384 curve
+local key = crypto.generate_jwk("ES512")   -- P-521 curve
+
+-- EdDSA keys
+local key = crypto.generate_jwk("Ed25519") -- Ed25519 curve
+
+-- Key structure:
+{
+    kty = "RSA|EC|OKP",      -- Key type
+    alg = "RS256|ES256|...", -- Algorithm
+    use = "sig",             -- Usage (signature)
+    -- Additional fields depend on key type
+}
+```
+
+**Signing and Verification**
+```lua
+-- Sign data
+local signature = crypto.sign(key, message)
+-- Returns base64url encoded signature
+
+-- Verify signature
+local valid = crypto.verify(key, message, signature)
+-- Returns boolean
+```
+
+**JWT Operations**
+```lua
+-- Create JWT
+local token = crypto.sign_jwt(key, {
+    sub = "user123",
+    iss = "myapp",
+    exp = os.time() + 3600,  -- Expires in 1 hour
+    custom = "data"
+})
+
+-- Verify JWT
+local claims, err = crypto.verify_jwt(key, token)
+if claims then
+    print(claims.sub)  -- "user123"
+end
+```
+
+### HTTP Signatures Module
+
+Implements RFC-compliant HTTP message signing:
+
+```lua
+local httpsig = require('httpsig')
+
+-- Sign HTTP request
+local signature = httpsig.sign(
+    key,           -- JWK key
+    method,        -- HTTP method
+    path,          -- Request path
+    headers,       -- Headers table
+    body          -- Request body (optional)
+)
+
+-- Verify HTTP signature
+local valid = httpsig.verify(
+    key,           -- JWK key
+    method,        -- HTTP method
+    path,          -- Request path
+    headers,       -- Headers table
+    body,         -- Request body
+    signature     -- Signature to verify
+)
+
+-- Common headers to sign:
+headers = {
+    ["(request-target)"] = "post /api/data",
+    ["date"] = os.date("!%a, %d %b %Y %H:%M:%S GMT"),
+    ["digest"] = "SHA-256=" .. crypto.sha256_base64(body),
+    ["content-type"] = "application/json"
+}
+```
+
+## Plugin Development Guide
+
+### Plugin Structure
+```
+plugins/
+  myplugin/
+    init.lua       # Required: Entry point
+    lib/           # Optional: Additional modules
+      helper.lua
+    assets/        # Optional: Embedded files
+      config.json
+```
+
+### Basic Plugin (init.lua)
+```lua
+-- plugins/myplugin/init.lua
+local M = {}
+
+-- Simple function
+function M.greet(name)
+    return "Hello, " .. (name or "World")
+end
+
+-- Using sub-modules
+local helper = require('./lib/helper')
+
+function M.process(data)
+    return helper.transform(data)
+end
+
+-- Initialization
+function M.init(config)
+    M.config = config or {}
+    return M
+end
+
+return M
+```
+
+### Advanced Plugin Patterns
+
+**Stateful Plugin**
+```lua
+local M = {}
+local state = {}
+
+function M.new(id)
+    local instance = {
+        id = id,
+        data = {}
+    }
+    
+    function instance:set(key, value)
+        self.data[key] = value
+    end
+    
+    function instance:get(key)
+        return self.data[key]
+    end
+    
+    state[id] = instance
+    return instance
+end
+
+function M.get(id)
+    return state[id]
+end
+
+return M
+```
+
+**Plugin with Go Extensions**
+For plugins that need Go functionality:
+```lua
+-- Expose Go functions to Lua
+local M = {}
+
+-- These would be injected by the Go side
+M.heavy_computation = _G.myplugin_heavy_computation
+M.system_call = _G.myplugin_system_call
+
+return M
+```
+
+### Plugin Best Practices
+
+1. **Namespace Everything**: Keep global namespace clean
+2. **Error Handling**: Return nil, error instead of throwing
+3. **Documentation**: Include usage examples in comments
+4. **Versioning**: Follow semver (1.0.0)
+5. **Dependencies**: Minimize external dependencies
+
+### Publishing Plugins
+
+1. Create GitHub repository
+2. Tag releases with version numbers
+3. Users can reference: `--plugins myplugin=github.com/user/plugin@1.0.0`
+
+## Advanced Patterns
+
+### Concurrent Operations
+```lua
+-- Run function in goroutine
+go(function()
+    while true do
+        sleep(1)  -- Sleep 1 second
+        print("Background task")
+    end
+end)
+
+-- Channel-like communication
+local tasks = {}
+local results = {}
+
+for i = 1, 10 do
+    go(function()
+        -- Simulate work
+        sleep(math.random())
+        table.insert(results, i * i)
+    end)
+end
+
+-- Wait for results
+while #results < 10 do
+    sleep(0.1)
+end
+```
+
+### TUI + HTTP Server Pattern
+```lua
+local app = tui.newApp()
+local status = tui.newTextView("Starting...")
+local logs = tui.newTextView("")
+logs:SetScrollable(true)
+
+local flex = tui.newFlex():SetDirection(1)
+flex:AddItem(status, 3, 0, false)
+flex:AddItem(logs, 0, 1, false)
+
+-- Background server
+go(function()
+    local server = http.newServer()
+    local requestCount = 0
+    
+    server:handle("/", function(req, res)
+        requestCount = requestCount + 1
+        app:QueueUpdateDraw(function()
+            status:SetText(string.format("Requests: %d", requestCount))
+            logs:SetText(logs:GetText() .. "\n" .. os.date() .. " - Request from " .. req.headers["User-Agent"])
+        end)
+        res:json({count = requestCount})
+    end)
+    
+    app:QueueUpdateDraw(function()
+        status:SetText("Server running on :8080")
+    end)
+    
+    server:listen(8080)
+end)
+
+app:SetRoot(flex, true):Run()
+```
+
+### Database Migration Pattern
+```lua
+local SCHEMA_VERSION = 3
+
+function migrate(db)
+    local version = tonumber(db:get("_meta", "version") or "0")
+    
+    if version < 1 then
+        -- Version 1: Create initial buckets
+        db:open_db("users")
+        db:open_db("sessions")
+        db:put("_meta", "version", "1")
+        version = 1
+    end
+    
+    if version < 2 then
+        -- Version 2: Add indexes bucket
+        db:open_db("indexes")
+        -- Migrate existing data
+        local cursor = db:cursor("users")
+        for id, user in cursor:iter() do
+            local data = json.decode(user)
+            db:put("indexes", "email:" .. data.email, id)
+        end
+        db:put("_meta", "version", "2")
+        version = 2
+    end
+    
+    if version < 3 then
+        -- Version 3: Add audit log
+        db:open_db("audit")
+        db:put("_meta", "version", "3")
+        version = 3
+    end
+end
+```
+
+### Plugin Auto-Loading Pattern
+```lua
+-- Auto-load all plugins from directory
+local function load_plugins(dir)
+    local plugins = {}
+    local files = fs.readdir(dir)
+    
+    for _, file in ipairs(files) do
+        if file:match("%.lua$") then
+            local name = file:gsub("%.lua$", "")
+            local ok, plugin = pcall(require, dir .. "/" .. name)
+            if ok then
+                plugins[name] = plugin
+                print("Loaded plugin:", name)
+            else
+                print("Failed to load plugin:", name, plugin)
+            end
+        end
+    end
+    
+    return plugins
+end
+```
+
+### Graceful Shutdown Pattern
+```lua
+local running = true
+local cleanup = {}
+
+-- Register cleanup functions
+function on_shutdown(fn)
+    table.insert(cleanup, fn)
+end
+
+-- Signal handler
+go(function()
+    -- In real app, catch SIGINT/SIGTERM
+    while running do
+        sleep(1)
+    end
+    
+    -- Run cleanup
+    for _, fn in ipairs(cleanup) do
+        pcall(fn)
+    end
+end)
+
+-- Usage
+on_shutdown(function()
+    print("Closing database...")
+    db:close()
+end)
+
+on_shutdown(function()
+    print("Stopping server...")
+    server:stop()
+end)
+```
+
+## Performance Optimization
+
+### Database Performance
+
+**Batch Operations**
+```lua
+-- Slow: Individual puts
+for i = 1, 1000 do
+    db:put("data", "key" .. i, "value" .. i)
+end
+
+-- Fast: Batch put
+local batch = {}
+for i = 1, 1000 do
+    batch["key" .. i] = "value" .. i
+end
+db:batch_put("data", batch)
+
+-- Fastest: Transaction
+db:transaction(function()
+    for i = 1, 1000 do
+        db:put("data", "key" .. i, "value" .. i)
+    end
+end)
+```
+
+**Efficient Queries**
+```lua
+-- Use prefix iteration for range queries
+-- Slow: Iterate all and filter
+for k, v in cursor:iter() do
+    if k:match("^user:") then
+        -- process
+    end
+end
+
+-- Fast: Use prefix iteration
+for k, v in cursor:iter_prefix("user:") do
+    -- process
+end
+```
+
+### HTTP Server Performance
+
+**Connection Pooling**
+```lua
+-- Reuse HTTP client connections
+local client = http.client({
+    timeout = 30,
+    max_conns = 100
+})
+
+-- Use pooled client
+local resp = client:get(url)
+```
+
+**Async Request Handling**
+```lua
+server:handle("/async", function(req, res)
+    go(function()
+        -- Long operation
+        sleep(5)
+        res:json({result = "done"})
+    end)
+end)
+```
+
+### Memory Management
+
+**Large Data Processing**
+```lua
+-- Process in chunks
+local function process_large_file(path)
+    local file = io.open(path, "r")
+    local chunk_size = 1024 * 1024  -- 1MB chunks
+    
+    while true do
+        local chunk = file:read(chunk_size)
+        if not chunk then break end
+        
+        -- Process chunk
+        process_chunk(chunk)
+        
+        -- Let GC run
+        collectgarbage("step")
+    end
+    
+    file:close()
+end
+```
+
+## Troubleshooting Guide
+
+### Common Issues
+
+**1. macOS Gatekeeper**
+```bash
+# Error: "hype" cannot be opened because it is from an unidentified developer
+xattr -d com.apple.quarantine /path/to/hype
+```
+
+**2. Permission Denied**
+```bash
+# Make executable
+chmod +x hype
+chmod +x myapp
+```
+
+**3. Port Already in Use**
+```lua
+-- Check if port is available
+local function is_port_available(port)
+    local ok, err = pcall(function()
+        local server = http.newServer()
+        server:listen(port)
+        server:stop()
+    end)
+    return ok
+end
+
+-- Find available port
+local function find_available_port(start)
+    for port = start, start + 100 do
+        if is_port_available(port) then
+            return port
+        end
+    end
+    error("No available ports")
+end
+```
+
+**4. Database Locked**
+```lua
+-- Ensure single database connection
+local db_instance
+
+function get_db()
+    if not db_instance then
+        db_instance = kv.open("./data.db")
+    end
+    return db_instance
+end
+
+-- Or use with timeout
+local function open_db_with_retry(path, retries)
+    for i = 1, retries do
+        local ok, db = pcall(kv.open, path)
+        if ok then return db end
+        sleep(0.1 * i)  -- Exponential backoff
+    end
+    error("Could not open database")
+end
+```
+
+**5. Memory Issues**
+```lua
+-- Monitor memory usage
+function print_memory()
+    local mem = collectgarbage("count")
+    print(string.format("Memory: %.2f MB", mem / 1024))
+end
+
+-- Force garbage collection
+collectgarbage("collect")
+```
+
+### Debugging Techniques
+
+**1. Debug Output**
+```lua
+local DEBUG = os.getenv("DEBUG") == "true"
+
+function debug_print(...)
+    if DEBUG then
+        print("[DEBUG]", ...)
+    end
+end
+```
+
+**2. Error Handling**
+```lua
+-- Wrap operations
+function safe_call(fn, ...)
+    local ok, result = pcall(fn, ...)
+    if not ok then
+        print("Error:", result)
+        -- Log to file
+        local f = io.open("error.log", "a")
+        f:write(os.date() .. " - " .. result .. "\n")
+        f:close()
+        return nil, result
+    end
+    return result
+end
+```
+
+**3. Performance Profiling**
+```lua
+function profile(name, fn)
+    local start = os.clock()
+    local result = fn()
+    local elapsed = os.clock() - start
+    print(string.format("%s took %.3f seconds", name, elapsed))
+    return result
+end
+
+-- Usage
+profile("Database query", function()
+    return db:get("users", "john")
+end)
+```
+
+## Migration Guides
+
+### From Python Scripts
+```python
+# Python
+import requests
+import json
+
+def fetch_data():
+    resp = requests.get("https://api.example.com/data")
+    return resp.json()
+
+if __name__ == "__main__":
+    data = fetch_data()
+    print(json.dumps(data, indent=2))
+```
+
+```lua
+-- Hype equivalent
+local json = require('json')  -- Use json plugin
+
+function fetch_data()
+    local resp = http.get("https://api.example.com/data")
+    return json.decode(resp.body)
+end
+
+-- Main
+local data = fetch_data()
+print(json.encode(data))
+```
+
+### From Node.js
+```javascript
+// Node.js
+const express = require('express');
+const app = express();
+
+app.get('/', (req, res) => {
+    res.json({ message: 'Hello World' });
+});
+
+app.listen(3000);
+```
+
+```lua
+-- Hype equivalent
+local server = http.newServer()
+
+server:handle("/", function(req, res)
+    res:json({ message = "Hello World" })
+end)
+
+server:listen(3000)
+```
+
+### From Shell Scripts
+```bash
+#!/bin/bash
+# Bash script
+for file in *.txt; do
+    if [ -f "$file" ]; then
+        echo "Processing $file"
+        # process file
+    fi
+done
+```
+
+```lua
+-- Hype equivalent
+local fs = require('fs')  -- Use fs plugin
+
+for _, file in ipairs(fs.glob("*.txt")) do
+    if fs.exists(file) then
+        print("Processing " .. file)
+        -- process file
+    end
+end
+```
+
+## Platform-Specific Notes
+
+### Linux
+- Executable permissions set automatically
+- Works on all major distributions
+- No glibc version requirements
+
+### macOS
+- Universal binaries possible with lipo
+- Code signing optional but recommended
+- Notarization for distribution
+
+### Windows
+- .exe extension added automatically
+- No Visual C++ runtime required
+- Works on Windows 7+
+
+## Version History
+
+- **v1.9.0**: Added TUI REPL
+- **v1.8.0**: Concurrent compilation support
+- **v1.7.1**: GOOS/GOARCH environment variable support
+- **v1.7.0**: WebSocket support
+- **v1.6.0**: HTTP Signatures, Crypto module
+- **v1.5.0**: Plugin system
+- **v1.0.0**: Initial release
+
+## Community Resources
+
+- GitHub: https://github.com/twilson63/hype
+- Documentation: https://twilson63.github.io/hype/
+- Examples: https://github.com/twilson63/hype/examples
+- Discussions: https://github.com/twilson63/hype/discussions
+- Issues: https://github.com/twilson63/hype/issues
+
+## Contributing
+
+Hype is open source and welcomes contributions:
+1. Fork the repository
+2. Create feature branch
+3. Write tests
+4. Submit pull request
+
+Focus areas:
+- New plugins
+- Documentation improvements
+- Platform support
+- Performance optimizations
+
+## License
+
+MIT License - See LICENSE file in repository
