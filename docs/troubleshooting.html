@@ -1,0 +1,898 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hype Troubleshooting & Patterns</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* Troubleshooting specific styles */
+        .problem-solution {
+            background: var(--cyber-bg);
+            border: 1px solid var(--cyber-border);
+            border-radius: 8px;
+            margin: 2rem 0;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .problem-solution:hover {
+            border-color: var(--cyber-accent);
+            box-shadow: 0 0 20px rgba(0, 212, 255, 0.1);
+        }
+
+        .problem-header {
+            background: var(--cyber-bg-secondary);
+            padding: 1.5rem;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            user-select: none;
+        }
+
+        .problem-header:hover {
+            background: rgba(0, 212, 255, 0.05);
+        }
+
+        .problem-title {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .problem-icon {
+            font-size: 1.5rem;
+        }
+
+        .problem-name {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--cyber-accent);
+        }
+
+        .expand-icon {
+            color: var(--cyber-accent);
+            transition: transform 0.3s ease;
+        }
+
+        .problem-solution.expanded .expand-icon {
+            transform: rotate(180deg);
+        }
+
+        .problem-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+
+        .problem-solution.expanded .problem-content {
+            max-height: 2000px;
+        }
+
+        .problem-body {
+            padding: 1.5rem;
+        }
+
+        .symptom {
+            background: rgba(255, 85, 85, 0.1);
+            border-left: 3px solid #ff5555;
+            padding: 0.75rem 1rem;
+            margin: 1rem 0;
+            border-radius: 4px;
+        }
+
+        .solution {
+            background: rgba(80, 250, 123, 0.1);
+            border-left: 3px solid #50fa7b;
+            padding: 0.75rem 1rem;
+            margin: 1rem 0;
+            border-radius: 4px;
+        }
+
+        /* Pattern cards */
+        .pattern-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 2rem;
+            margin: 2rem 0;
+        }
+
+        .pattern-card {
+            background: var(--cyber-bg);
+            border: 1px solid var(--cyber-border);
+            border-radius: 8px;
+            padding: 2rem;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .pattern-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--cyber-accent), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .pattern-card:hover::before {
+            left: 100%;
+        }
+
+        .pattern-card:hover {
+            border-color: var(--cyber-accent);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(0, 212, 255, 0.2);
+        }
+
+        .pattern-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .pattern-title {
+            color: var(--cyber-accent);
+            font-size: 1.3rem;
+            margin-bottom: 1rem;
+        }
+
+        .pattern-description {
+            color: var(--cyber-text-light);
+            margin-bottom: 1.5rem;
+            line-height: 1.6;
+        }
+
+        /* Category navigation */
+        .category-nav {
+            background: var(--cyber-bg);
+            border: 1px solid var(--cyber-border);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 2rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .category-btn {
+            background: var(--cyber-bg-secondary);
+            border: 1px solid var(--cyber-border);
+            color: var(--cyber-text);
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .category-btn:hover,
+        .category-btn.active {
+            background: var(--cyber-accent);
+            color: var(--cyber-bg);
+            border-color: var(--cyber-accent);
+        }
+
+        /* Quick fix section */
+        .quick-fix {
+            background: linear-gradient(135deg, rgba(0, 212, 255, 0.1) 0%, transparent 100%);
+            border: 1px solid var(--cyber-accent);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin: 2rem 0;
+        }
+
+        .quick-fix-title {
+            color: var(--cyber-accent);
+            font-size: 1.2rem;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .quick-fix-content {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+        }
+
+        .quick-fix-item {
+            background: var(--cyber-bg);
+            border: 1px solid var(--cyber-border);
+            padding: 1rem;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+        }
+
+        .quick-fix-item:hover {
+            border-color: var(--cyber-accent);
+            transform: translateX(5px);
+        }
+
+        /* Search functionality */
+        .search-container {
+            position: relative;
+            margin-bottom: 2rem;
+        }
+
+        .search-input {
+            width: 100%;
+            background: var(--cyber-bg);
+            border: 2px solid var(--cyber-border);
+            color: var(--cyber-text);
+            padding: 1rem 3rem 1rem 1rem;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--cyber-accent);
+            box-shadow: 0 0 20px rgba(0, 212, 255, 0.2);
+        }
+
+        .search-icon {
+            position: absolute;
+            right: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--cyber-accent);
+        }
+
+        /* Mobile responsive */
+        @media (max-width: 768px) {
+            .pattern-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .category-nav {
+                justify-content: center;
+            }
+
+            .problem-header {
+                padding: 1rem;
+            }
+
+            .problem-name {
+                font-size: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <h2>🚀 Hype</h2>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="index.html" class="nav-link">Home</a></li>
+                <li><a href="api-enhanced.html" class="nav-link">API Docs</a></li>
+                <li><a href="examples.html" class="nav-link">Examples</a></li>
+                <li><a href="plugin-development-enhanced.html" class="nav-link">Plugin Guide</a></li>
+                <li><a href="https://github.com/twilson63/hype" class="nav-link">GitHub</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <section class="hero">
+            <div class="container">
+                <h1>Troubleshooting & Patterns</h1>
+                <p class="hero-subtitle">Solutions to Common Issues & Battle-Tested Patterns</p>
+                <p class="hero-description">
+                    Find quick fixes for common problems and learn proven patterns for building 
+                    robust Hype applications.
+                </p>
+            </div>
+        </section>
+
+        <section>
+            <div class="container">
+                <div class="search-container">
+                    <input type="text" class="search-input" id="searchInput" placeholder="Search for issues, errors, or patterns...">
+                    <span class="search-icon">🔍</span>
+                </div>
+
+                <div class="category-nav">
+                    <button class="category-btn active" onclick="filterCategory('all')">All</button>
+                    <button class="category-btn" onclick="filterCategory('installation')">Installation</button>
+                    <button class="category-btn" onclick="filterCategory('build')">Build</button>
+                    <button class="category-btn" onclick="filterCategory('runtime')">Runtime</button>
+                    <button class="category-btn" onclick="filterCategory('platform')">Platform</button>
+                    <button class="category-btn" onclick="filterCategory('modules')">Modules</button>
+                    <button class="category-btn" onclick="filterCategory('patterns')">Patterns</button>
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <div class="container">
+                <h2>🚨 Quick Fixes</h2>
+                
+                <div class="quick-fix">
+                    <div class="quick-fix-title">
+                        <span>⚡</span>
+                        <span>Most Common Issues</span>
+                    </div>
+                    <div class="quick-fix-content">
+                        <div class="quick-fix-item">
+                            <strong>macOS Gatekeeper</strong>
+                            <div class="code-block">
+                                <code>xattr -d com.apple.quarantine ./hype</code>
+                            </div>
+                        </div>
+                        <div class="quick-fix-item">
+                            <strong>Module not found</strong>
+                            <div class="code-block">
+                                <code>local http = require('http')</code>
+                            </div>
+                        </div>
+                        <div class="quick-fix-item">
+                            <strong>Database locked</strong>
+                            <div class="code-block">
+                                <code>db:close() -- Close when done</code>
+                            </div>
+                        </div>
+                        <div class="quick-fix-item">
+                            <strong>Port in use</strong>
+                            <div class="code-block">
+                                <code>server:listen(8081) -- Try different port</code>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="troubleshooting">
+            <div class="container">
+                <h2>🔧 Troubleshooting</h2>
+
+                <!-- Installation Issues -->
+                <div class="problem-solution" data-category="installation">
+                    <div class="problem-header" onclick="toggleProblem(this)">
+                        <div class="problem-title">
+                            <span class="problem-icon">📦</span>
+                            <span class="problem-name">hype: command not found</span>
+                        </div>
+                        <span class="expand-icon">▼</span>
+                    </div>
+                    <div class="problem-content">
+                        <div class="problem-body">
+                            <div class="symptom">
+                                <strong>Symptom:</strong> After installation, `hype` command is not recognized
+                            </div>
+                            <div class="solution">
+                                <strong>Solutions:</strong>
+                                <div class="code-block">
+                                    <pre><code># 1. Check if hype is in PATH
+which hype
+
+# 2. Add to PATH manually
+echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
+source ~/.bashrc
+
+# 3. Use full path
+~/.local/bin/hype version
+
+# 4. Reinstall
+curl -sSL https://raw.githubusercontent.com/twilson63/hype/main/install.sh | bash</code></pre>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Build Issues -->
+                <div class="problem-solution" data-category="build">
+                    <div class="problem-header" onclick="toggleProblem(this)">
+                        <div class="problem-title">
+                            <span class="problem-icon">🔨</span>
+                            <span class="problem-name">Module not found in multi-file project</span>
+                        </div>
+                        <span class="expand-icon">▼</span>
+                    </div>
+                    <div class="problem-content">
+                        <div class="problem-body">
+                            <div class="symptom">
+                                <strong>Symptom:</strong> Build fails with "module not found" error
+                            </div>
+                            <div class="solution">
+                                <strong>Solution:</strong>
+                                <div class="code-block">
+                                    <pre><code>-- Use relative paths with ./
+local utils = require('./utils')      -- ✓ Correct
+local helpers = require('./lib/helpers') -- ✓ Correct
+
+-- NOT:
+local utils = require('utils')        -- ✗ Wrong
+local utils = require('/abs/path')    -- ✗ Avoid absolute paths</code></pre>
+                                </div>
+                                <p>Project structure example:</p>
+                                <div class="code-block">
+                                    <pre><code>project/
+├── main.lua
+├── utils.lua
+└── lib/
+    └── helpers.lua</code></pre>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Runtime Errors -->
+                <div class="problem-solution" data-category="runtime">
+                    <div class="problem-header" onclick="toggleProblem(this)">
+                        <div class="problem-title">
+                            <span class="problem-icon">❌</span>
+                            <span class="problem-name">attempt to index a nil value</span>
+                        </div>
+                        <span class="expand-icon">▼</span>
+                    </div>
+                    <div class="problem-content">
+                        <div class="problem-body">
+                            <div class="symptom">
+                                <strong>Symptom:</strong> Error: attempt to index global 'http' (a nil value)
+                            </div>
+                            <div class="solution">
+                                <strong>Common causes and fixes:</strong>
+                                <div class="code-block">
+                                    <pre><code>-- 1. Module not loaded
+local http = require('http')  -- Add this!
+
+-- 2. Missing error checking
+local resp, err = http.get(url)
+if err then
+    print("Error:", err)
+    return
+end
+print(resp.body)  -- Safe now
+
+-- 3. Chain method on nil
+app:SetRoot(text, true):Run():Stop()  -- Wrong: Run() returns nil
+
+-- Fix:
+app:SetRoot(text, true)
+app:Run()</code></pre>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Platform Issues -->
+                <div class="problem-solution" data-category="platform">
+                    <div class="problem-header" onclick="toggleProblem(this)">
+                        <div class="problem-title">
+                            <span class="problem-icon">🍎</span>
+                            <span class="problem-name">macOS Gatekeeper blocks executable</span>
+                        </div>
+                        <span class="expand-icon">▼</span>
+                    </div>
+                    <div class="problem-content">
+                        <div class="problem-body">
+                            <div class="symptom">
+                                <strong>Symptom:</strong> "cannot be opened because it is from an unidentified developer"
+                            </div>
+                            <div class="solution">
+                                <strong>Solutions:</strong>
+                                <div class="code-block">
+                                    <pre><code># Remove quarantine attribute
+xattr -d com.apple.quarantine ./hype
+
+# For built apps
+xattr -c ./myapp
+
+# Alternative: Sign the binary
+codesign -s - ./myapp</code></pre>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Module Issues -->
+                <div class="problem-solution" data-category="modules">
+                    <div class="problem-header" onclick="toggleProblem(this)">
+                        <div class="problem-title">
+                            <span class="problem-icon">🌐</span>
+                            <span class="problem-name">HTTP connection refused</span>
+                        </div>
+                        <span class="expand-icon">▼</span>
+                    </div>
+                    <div class="problem-content">
+                        <div class="problem-body">
+                            <div class="symptom">
+                                <strong>Symptom:</strong> HTTP requests fail with "connection refused"
+                            </div>
+                            <div class="solution">
+                                <strong>Solutions:</strong>
+                                <div class="code-block">
+                                    <pre><code>-- 1. Ensure server is running
+local server = http.newServer()
+go(function() server:listen(8080) end)
+sleep(0.1)  -- Give server time to start
+
+-- 2. Check port availability (in terminal)
+lsof -i :8080     # macOS/Linux
+netstat -an | findstr 8080  # Windows
+
+-- 3. Use different port
+server:listen(8081)  -- Try alternative port</code></pre>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="problem-solution" data-category="modules">
+                    <div class="problem-header" onclick="toggleProblem(this)">
+                        <div class="problem-title">
+                            <span class="problem-icon">🗄️</span>
+                            <span class="problem-name">Database is locked</span>
+                        </div>
+                        <span class="expand-icon">▼</span>
+                    </div>
+                    <div class="problem-content">
+                        <div class="problem-body">
+                            <div class="symptom">
+                                <strong>Symptom:</strong> BoltDB returns "database is locked" error
+                            </div>
+                            <div class="solution">
+                                <strong>Solution:</strong>
+                                <div class="code-block">
+                                    <pre><code>-- Use single database connection
+local db_instance = nil
+
+function get_db()
+    if not db_instance then
+        db_instance = kv.open("./data.db")
+    end
+    return db_instance
+end
+
+-- Always close when done
+function cleanup()
+    if db_instance then
+        db_instance:close()
+        db_instance = nil
+    end
+end
+
+-- Use transactions for consistency
+db:transaction(function()
+    db:put("users", "id1", "data1")
+    db:put("users", "id2", "data2")
+end)</code></pre>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="patterns">
+            <div class="container">
+                <h2>🎯 Common Patterns</h2>
+
+                <div class="pattern-grid">
+                    <div class="pattern-card" data-category="patterns">
+                        <div class="pattern-icon">🖥️</div>
+                        <h3 class="pattern-title">CLI Application</h3>
+                        <p class="pattern-description">
+                            Build command-line tools with subcommands and options
+                        </p>
+                        <div class="code-block">
+                            <pre><code>local commands = {}
+
+function commands.serve(args)
+    local port = args[1] or "8080"
+    -- Start server
+end
+
+-- Main
+local cmd = arg[1] or "help"
+local handler = commands[cmd] or commands.help
+handler(arg)</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="pattern-card" data-category="patterns">
+                        <div class="pattern-icon">🔄</div>
+                        <h3 class="pattern-title">Retry Pattern</h3>
+                        <p class="pattern-description">
+                            Automatically retry failed operations with backoff
+                        </p>
+                        <div class="code-block">
+                            <pre><code>function retry(fn, options)
+    local attempts = options.attempts or 3
+    local delay = options.delay or 1
+    
+    for i = 1, attempts do
+        local ok, result = pcall(fn)
+        if ok then return result end
+        
+        if i < attempts then
+            sleep(delay)
+            delay = delay * 2
+        end
+    end
+end</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="pattern-card" data-category="patterns">
+                        <div class="pattern-icon">👷</div>
+                        <h3 class="pattern-title">Worker Pool</h3>
+                        <p class="pattern-description">
+                            Process tasks concurrently with controlled parallelism
+                        </p>
+                        <div class="code-block">
+                            <pre><code>function WorkerPool(size)
+    local self = {workers = {}, tasks = {}}
+    
+    function self:addTask(fn, args)
+        table.insert(self.tasks, {fn = fn, args = args})
+    end
+    
+    function self:start()
+        for i = 1, size do
+            go(function() self:worker() end)
+        end
+    end
+    
+    return self
+end</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="pattern-card" data-category="patterns">
+                        <div class="pattern-icon">⚡</div>
+                        <h3 class="pattern-title">Circuit Breaker</h3>
+                        <p class="pattern-description">
+                            Prevent cascading failures in distributed systems
+                        </p>
+                        <div class="code-block">
+                            <pre><code>function CircuitBreaker(threshold)
+    local self = {
+        failures = 0,
+        state = "closed"
+    }
+    
+    function self:call(fn)
+        if self.state == "open" then
+            return nil, "Circuit open"
+        end
+        
+        local ok, result = pcall(fn)
+        if not ok then
+            self.failures = self.failures + 1
+            if self.failures >= threshold then
+                self.state = "open"
+            end
+        end
+        return result
+    end
+    
+    return self
+end</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="pattern-card" data-category="patterns">
+                        <div class="pattern-icon">📊</div>
+                        <h3 class="pattern-title">Rate Limiter</h3>
+                        <p class="pattern-description">
+                            Control request rates with token bucket algorithm
+                        </p>
+                        <div class="code-block">
+                            <pre><code>function RateLimiter(rate, burst)
+    local self = {
+        tokens = burst,
+        lastUpdate = os.clock()
+    }
+    
+    function self:allow()
+        local now = os.clock()
+        local elapsed = now - self.lastUpdate
+        self.tokens = math.min(burst, 
+            self.tokens + elapsed * rate)
+        
+        if self.tokens >= 1 then
+            self.tokens = self.tokens - 1
+            return true
+        end
+        return false
+    end
+    
+    return self
+end</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="pattern-card" data-category="patterns">
+                        <div class="pattern-icon">🧪</div>
+                        <h3 class="pattern-title">Testing Framework</h3>
+                        <p class="pattern-description">
+                            Simple but effective unit testing for Lua code
+                        </p>
+                        <div class="code-block">
+                            <pre><code>function test(name, fn)
+    io.write(name .. " ... ")
+    local ok, err = pcall(fn)
+    if ok then
+        print("✓")
+    else
+        print("✗")
+        print("  Error:", err)
+    end
+end
+
+function assertEquals(actual, expected)
+    if actual ~= expected then
+        error(string.format("Expected %s, got %s", 
+            expected, actual))
+    end
+end</code></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <div class="container">
+                <h2>📚 Additional Resources</h2>
+                
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <div class="feature-icon">📖</div>
+                        <h3>Full Guide</h3>
+                        <p>Complete troubleshooting guide with all patterns and solutions</p>
+                        <a href="troubleshooting-guide.md" class="btn btn-secondary">View Markdown</a>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="feature-icon">🎮</div>
+                        <h3>REPL Guide</h3>
+                        <p>Debug interactively with the TUI REPL</p>
+                        <a href="repl-interactive.html" class="btn btn-secondary">REPL Docs</a>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="feature-icon">🔌</div>
+                        <h3>API Reference</h3>
+                        <p>Complete module documentation</p>
+                        <a href="api-enhanced.html" class="btn btn-secondary">API Docs</a>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="feature-icon">💬</div>
+                        <h3>Community</h3>
+                        <p>Get help from the Hype community</p>
+                        <a href="https://github.com/twilson63/hype/discussions" class="btn btn-secondary">Discussions</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h4>Troubleshooting</h4>
+                    <p>Quick fixes and solutions</p>
+                    <p>Battle-tested patterns</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Categories</h4>
+                    <ul>
+                        <li><a href="#" onclick="filterCategory('installation')">Installation</a></li>
+                        <li><a href="#" onclick="filterCategory('build')">Build Issues</a></li>
+                        <li><a href="#" onclick="filterCategory('runtime')">Runtime Errors</a></li>
+                        <li><a href="#" onclick="filterCategory('patterns')">Patterns</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Resources</h4>
+                    <ul>
+                        <li><a href="troubleshooting-guide.md">Full Guide</a></li>
+                        <li><a href="api-enhanced.html">API Reference</a></li>
+                        <li><a href="repl-interactive.html">REPL Guide</a></li>
+                        <li><a href="https://github.com/twilson63/hype/issues">Report Issue</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 Hype. Debug faster, ship sooner.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Toggle problem solutions
+        function toggleProblem(header) {
+            const solution = header.parentElement;
+            solution.classList.toggle('expanded');
+        }
+
+        // Filter by category
+        function filterCategory(category) {
+            const problems = document.querySelectorAll('.problem-solution');
+            const patterns = document.querySelectorAll('.pattern-card');
+            const buttons = document.querySelectorAll('.category-btn');
+            
+            // Update active button
+            buttons.forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.textContent.toLowerCase().includes(category) || 
+                    (category === 'all' && btn.textContent === 'All')) {
+                    btn.classList.add('active');
+                }
+            });
+            
+            // Filter items
+            if (category === 'all') {
+                problems.forEach(p => p.style.display = 'block');
+                patterns.forEach(p => p.style.display = 'block');
+            } else {
+                problems.forEach(p => {
+                    p.style.display = p.dataset.category === category ? 'block' : 'none';
+                });
+                patterns.forEach(p => {
+                    p.style.display = p.dataset.category === category ? 'block' : 'none';
+                });
+            }
+        }
+
+        // Search functionality
+        const searchInput = document.getElementById('searchInput');
+        searchInput.addEventListener('input', function(e) {
+            const query = e.target.value.toLowerCase();
+            const problems = document.querySelectorAll('.problem-solution');
+            const patterns = document.querySelectorAll('.pattern-card');
+            
+            problems.forEach(problem => {
+                const text = problem.textContent.toLowerCase();
+                problem.style.display = text.includes(query) ? 'block' : 'none';
+            });
+            
+            patterns.forEach(pattern => {
+                const text = pattern.textContent.toLowerCase();
+                pattern.style.display = text.includes(query) ? 'block' : 'none';
+            });
+        });
+
+        // Copy code functionality
+        function copyCode(button) {
+            const codeBlock = button.parentElement;
+            const code = codeBlock.querySelector('code, pre code');
+            const text = code ? code.textContent : codeBlock.textContent;
+            
+            navigator.clipboard.writeText(text).then(() => {
+                button.textContent = 'Copied!';
+                setTimeout(() => {
+                    button.textContent = 'Copy';
+                }, 2000);
+            });
+        }
+
+        // Auto-expand if coming from anchor
+        if (window.location.hash) {
+            const target = document.querySelector(window.location.hash);
+            if (target && target.classList.contains('problem-solution')) {
+                target.classList.add('expanded');
+                target.scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+    </script>
+</body>
+</html>
