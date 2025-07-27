@@ -186,35 +186,72 @@ Reference with: `--plugins myplugin=/path/to/plugins/myplugin`
 
 ## REPL Features
 
-The TUI REPL (v1.9.0+) provides:
-- Dual-panel interface (output + input)
-- Automatic table formatting
-- Command history with recall
-- Special commands (:help, :history, :clear)
-- All modules pre-loaded
+The TUI REPL (v1.9.0+) provides an interactive development environment:
 
-Example session:
+### Starting REPL
+```bash
+./hype repl              # TUI REPL (default)
+./hype repl --simple     # Simple command-line REPL
+./hype repl --plugins fs@1.0.0,json  # With plugins
+```
+
+### Features
+- **Dual-panel TUI**: Output panel (top) + Input panel (bottom)
+- **Automatic formatting**: Tables displayed beautifully
+- **Command history**: Navigate with up/down arrows
+- **Special commands**: :help, :history/:h, :clear/:c, :exit/:q, :h=N
+- **All modules loaded**: tui, http, kv, crypto, websocket
+- **Multi-line input**: Complex code support
+- **Tab completion**: Auto-complete names (terminal dependent)
+
+### Keyboard Shortcuts
+- `↑/↓` - Navigate command history
+- `Ctrl+A/E` - Start/end of line
+- `Ctrl+U` - Clear current line
+- `Ctrl+L` - Clear output panel
+- `Ctrl+D` - Exit REPL
+- `PageUp/Down` - Scroll output
+
+### Example Session
 ```lua
+hype> 2 + 2
+4
+
+hype> user = {name = "Alice", role = "Developer", active = true}
+{
+  ["active"] = true,
+  ["name"] = "Alice", 
+  ["role"] = "Developer"
+}
+
 hype> crypto.sha256("test")
 9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08
 
-hype> key = crypto.generate_jwk("ES256")
-hype> key
-{
-  ["alg"] = "ES256",
-  ["crv"] = "P-256",
-  ["kty"] = "EC",
-  ...
-}
+hype> server = http.newServer()
+hype> server:handle("/", function(req, res) res:json({msg = "Hello"}) end)
+hype> go(function() server:listen(8080) end)
 
 hype> :history
 Command History:
-  1: crypto.sha256("test")
-  2: key = crypto.generate_jwk("ES256")
+  1: 2 + 2
+  2: user = {name = "Alice", role = "Developer", active = true}
+  3: crypto.sha256("test")
+  4: server = http.newServer()
+  5: server:handle("/", function(req, res) res:json({msg = "Hello"}) end)
+  6: go(function() server:listen(8080) end)
 
-hype> :h=1
-Recalled: crypto.sha256("test")
+hype> :h=2  -- Recall command 2
+Recalled: user = {name = "Alice", role = "Developer", active = true}
+
+hype> :clear  -- Clear output panel
 ```
+
+### Use Cases
+- **API Exploration**: Test modules interactively
+- **Rapid Prototyping**: Develop functions quickly
+- **Debugging**: Inspect values and test fixes
+- **Learning**: Experiment with Hype features
+- **Plugin Development**: Test plugin code before saving
 
 ## Common Patterns
 

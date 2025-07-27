@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hype REPL - Interactive Guide</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* REPL-specific styles */
+        .repl-demo {
+            background: #0a0a0f;
+            border: 2px solid var(--cyber-border);
+            border-radius: 8px;
+            padding: 0;
+            margin: 2rem 0;
+            overflow: hidden;
+        }
+
+        .repl-header {
+            background: #1a1a1f;
+            padding: 0.5rem 1rem;
+            border-bottom: 1px solid var(--cyber-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .repl-title {
+            color: var(--cyber-accent);
+            font-weight: bold;
+        }
+
+        .repl-controls {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .repl-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #333;
+        }
+
+        .repl-dot.red { background: #ff5555; }
+        .repl-dot.yellow { background: #f1fa8c; }
+        .repl-dot.green { background: #50fa7b; }
+
+        .repl-body {
+            padding: 1rem;
+            min-height: 300px;
+            max-height: 500px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+        }
+
+        .repl-output {
+            color: #f8f8f2;
+            margin-bottom: 1rem;
+        }
+
+        .repl-input {
+            display: flex;
+            align-items: center;
+            margin-top: 0.5rem;
+        }
+
+        .repl-prompt {
+            color: var(--cyber-accent);
+            margin-right: 0.5rem;
+            user-select: none;
+        }
+
+        .repl-command {
+            color: #f8f8f2;
+            background: transparent;
+            border: none;
+            outline: none;
+            flex: 1;
+            font-family: inherit;
+            font-size: inherit;
+        }
+
+        .repl-result {
+            color: #8be9fd;
+            margin-left: 2rem;
+            margin-top: 0.5rem;
+        }
+
+        .repl-error {
+            color: #ff5555;
+            margin-left: 2rem;
+            margin-top: 0.5rem;
+        }
+
+        .repl-table {
+            color: #bd93f9;
+            margin-left: 2rem;
+            margin-top: 0.5rem;
+            white-space: pre;
+        }
+
+        /* Keyboard shortcuts table */
+        .shortcuts-table {
+            background: var(--cyber-bg);
+            border: 1px solid var(--cyber-border);
+            border-radius: 8px;
+            overflow: hidden;
+            margin: 2rem 0;
+        }
+
+        .shortcuts-table table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .shortcuts-table th {
+            background: var(--cyber-bg-secondary);
+            color: var(--cyber-accent);
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 2px solid var(--cyber-border);
+        }
+
+        .shortcuts-table td {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid rgba(0, 212, 255, 0.1);
+        }
+
+        .shortcuts-table tr:hover {
+            background: rgba(0, 212, 255, 0.05);
+        }
+
+        .key {
+            background: var(--cyber-bg-secondary);
+            border: 1px solid var(--cyber-border);
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 0.9em;
+            color: var(--cyber-accent);
+            display: inline-block;
+        }
+
+        /* Interactive examples */
+        .example-tabs {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            border-bottom: 2px solid var(--cyber-border);
+        }
+
+        .example-tab {
+            padding: 0.75rem 1.5rem;
+            background: transparent;
+            border: none;
+            color: var(--cyber-text-light);
+            cursor: pointer;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .example-tab.active {
+            color: var(--cyber-accent);
+        }
+
+        .example-tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: var(--cyber-accent);
+        }
+
+        .example-content {
+            display: none;
+        }
+
+        .example-content.active {
+            display: block;
+        }
+
+        /* Workflow cards */
+        .workflow-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin: 2rem 0;
+        }
+
+        .workflow-card {
+            background: var(--cyber-bg);
+            border: 1px solid var(--cyber-border);
+            border-radius: 8px;
+            padding: 2rem;
+            transition: all 0.3s ease;
+        }
+
+        .workflow-card:hover {
+            border-color: var(--cyber-accent);
+            box-shadow: var(--cyber-glow);
+        }
+
+        .workflow-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .workflow-card h3 {
+            color: var(--cyber-accent);
+            margin-bottom: 1rem;
+        }
+
+        .workflow-steps {
+            list-style: none;
+            padding: 0;
+        }
+
+        .workflow-steps li {
+            padding: 0.5rem 0;
+            padding-left: 1.5rem;
+            position: relative;
+        }
+
+        .workflow-steps li::before {
+            content: '▸';
+            position: absolute;
+            left: 0;
+            color: var(--cyber-accent);
+        }
+
+        /* Interactive REPL simulator */
+        #repl-simulator {
+            position: relative;
+        }
+
+        .simulator-hint {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 212, 255, 0.1);
+            border: 1px solid var(--cyber-accent);
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            color: var(--cyber-accent);
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <h2>🚀 Hype</h2>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="index.html" class="nav-link">Home</a></li>
+                <li><a href="api-enhanced.html" class="nav-link">API Docs</a></li>
+                <li><a href="examples.html" class="nav-link">Examples</a></li>
+                <li><a href="plugin-development-enhanced.html" class="nav-link">Plugin Guide</a></li>
+                <li><a href="https://github.com/twilson63/hype" class="nav-link">GitHub</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <section class="hero">
+            <div class="container">
+                <h1>Interactive REPL Guide</h1>
+                <p class="hero-subtitle">Master Hype's Interactive Development Environment</p>
+                <p class="hero-description">
+                    The REPL (Read-Eval-Print Loop) is your playground for rapid Lua development, 
+                    API exploration, and interactive debugging. Available in both TUI and simple modes.
+                </p>
+            </div>
+        </section>
+
+        <section>
+            <div class="container">
+                <h2>🚀 Quick Start</h2>
+                
+                <div class="repl-demo">
+                    <div class="repl-header">
+                        <span class="repl-title">Hype REPL v1.9.0</span>
+                        <div class="repl-controls">
+                            <span class="repl-dot red"></span>
+                            <span class="repl-dot yellow"></span>
+                            <span class="repl-dot green"></span>
+                        </div>
+                    </div>
+                    <div class="repl-body">
+                        <div class="repl-output">
+                            <div>Type :help for commands</div>
+                        </div>
+                        
+                        <div class="repl-input">
+                            <span class="repl-prompt">hype></span>
+                            <span class="repl-command">2 + 2</span>
+                        </div>
+                        <div class="repl-result">4</div>
+                        
+                        <div class="repl-input">
+                            <span class="repl-prompt">hype></span>
+                            <span class="repl-command">user = {name = "Alice", role = "Developer"}</span>
+                        </div>
+                        <div class="repl-table">{
+  ["name"] = "Alice",
+  ["role"] = "Developer"
+}</div>
+                        
+                        <div class="repl-input">
+                            <span class="repl-prompt">hype></span>
+                            <span class="repl-command">crypto.sha256("hello")</span>
+                        </div>
+                        <div class="repl-result">2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824</div>
+                        
+                        <div class="repl-input">
+                            <span class="repl-prompt">hype></span>
+                            <span class="repl-command" contenteditable="true" id="repl-input">_</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="code-block">
+                    <code># Launch TUI REPL (default)
+./hype repl
+
+# Launch simple REPL
+./hype repl --simple
+
+# With plugins
+./hype repl --plugins fs@1.0.0,json</code>
+                    <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <div class="container">
+                <h2>⌨️ Keyboard Shortcuts</h2>
+                
+                <div class="shortcuts-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Key</th>
+                                <th>Action</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><span class="key">↑</span> / <span class="key">↓</span></td>
+                                <td>Navigate history</td>
+                                <td>Browse through previous commands</td>
+                            </tr>
+                            <tr>
+                                <td><span class="key">Ctrl</span> + <span class="key">A</span></td>
+                                <td>Start of line</td>
+                                <td>Move cursor to beginning</td>
+                            </tr>
+                            <tr>
+                                <td><span class="key">Ctrl</span> + <span class="key">E</span></td>
+                                <td>End of line</td>
+                                <td>Move cursor to end</td>
+                            </tr>
+                            <tr>
+                                <td><span class="key">Ctrl</span> + <span class="key">U</span></td>
+                                <td>Clear line</td>
+                                <td>Delete current input</td>
+                            </tr>
+                            <tr>
+                                <td><span class="key">Ctrl</span> + <span class="key">L</span></td>
+                                <td>Clear screen</td>
+                                <td>Clear output panel</td>
+                            </tr>
+                            <tr>
+                                <td><span class="key">Tab</span></td>
+                                <td>Auto-complete</td>
+                                <td>Complete function/variable names</td>
+                            </tr>
+                            <tr>
+                                <td><span class="key">PageUp</span> / <span class="key">PageDown</span></td>
+                                <td>Scroll output</td>
+                                <td>Navigate through output history</td>
+                            </tr>
+                            <tr>
+                                <td><span class="key">Ctrl</span> + <span class="key">D</span></td>
+                                <td>Exit REPL</td>
+                                <td>Quit the session</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <div class="container">
+                <h2>🎯 Special Commands</h2>
+                
+                <div class="example-tabs">
+                    <button class="example-tab active" onclick="showExample('basic')">Basic Commands</button>
+                    <button class="example-tab" onclick="showExample('history')">History Management</button>
+                    <button class="example-tab" onclick="showExample('files')">File Operations</button>
+                </div>
+
+                <div id="basic" class="example-content active">
+                    <div class="code-block">
+                        <pre><code>-- Show help
+hype> :help
+Available commands:
+  :help, :h     - Show this help
+  :clear, :c    - Clear output
+  :exit, :q     - Exit REPL
+  :history      - Show command history
+  :h=N          - Recall command N
+
+-- Clear the output panel
+hype> :clear
+
+-- Exit the REPL
+hype> :exit</code></pre>
+                    </div>
+                </div>
+
+                <div id="history" class="example-content">
+                    <div class="code-block">
+                        <pre><code>-- View command history
+hype> :history
+Command History:
+  1: 2 + 2
+  2: user = {name = "Alice"}
+  3: crypto.sha256("test")
+  4: http.get("https://api.example.com")
+
+-- Recall command 2
+hype> :h=2
+Recalled: user = {name = "Alice"}
+
+-- Modify and execute
+hype> user = {name = "Alice", updated = os.time()}</code></pre>
+                    </div>
+                </div>
+
+                <div id="files" class="example-content">
+                    <div class="code-block">
+                        <pre><code>-- Load and execute a file
+hype> :load utils.lua
+Loaded: utils.lua
+
+-- Alternative method
+hype> dofile("config.lua")
+
+-- Load with error handling
+hype> ok, err = pcall(dofile, "script.lua")
+hype> if not ok then print("Error:", err) end</code></pre>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <div class="container">
+                <h2>🔧 Working with Modules</h2>
+
+                <div class="workflow-cards">
+                    <div class="workflow-card">
+                        <div class="workflow-icon">🖥️</div>
+                        <h3>TUI Module</h3>
+                        <div class="code-block">
+                            <pre><code>-- Create app
+app = tui.newApp()
+
+-- Build interface
+text = tui.newTextView("Hello")
+text:SetBorder(true)
+
+-- Run in background
+go(function() 
+    app:SetRoot(text, true)
+    app:Run() 
+end)</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="workflow-card">
+                        <div class="workflow-icon">🌐</div>
+                        <h3>HTTP Module</h3>
+                        <div class="code-block">
+                            <pre><code>-- Make request
+resp = http.get("https://api.github.com")
+print(resp.status_code)
+
+-- Start server
+server = http.newServer()
+server:handle("/", function(req, res)
+    res:json({msg = "Hello"})
+end)
+go(function() server:listen(8080) end)</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="workflow-card">
+                        <div class="workflow-icon">🗄️</div>
+                        <h3>Database Module</h3>
+                        <div class="code-block">
+                            <pre><code>-- Open database
+db = kv.open(":memory:")
+db:open_db("test")
+
+-- Store and retrieve
+db:put("test", "key", "value")
+result = db:get("test", "key")
+print(result)</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="workflow-card">
+                        <div class="workflow-icon">🔐</div>
+                        <h3>Crypto Module</h3>
+                        <div class="code-block">
+                            <pre><code>-- Generate hash
+hash = crypto.sha256("secret")
+
+-- Generate keys
+key = crypto.generate_jwk("ES256")
+pub = crypto.jwk_to_public(key)
+
+-- Sign and verify
+sig = crypto.sign(key, "data")
+valid = crypto.verify(pub, "data", sig)</code></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <div class="container">
+                <h2>💡 Advanced Techniques</h2>
+
+                <h3>Multi-line Input</h3>
+                <div class="code-block">
+                    <pre><code>-- Define complex functions
+hype> function process_data(items)
+    local results = {}
+    for i, item in ipairs(items) do
+        if item.active then
+            table.insert(results, {
+                id = item.id,
+                processed = true,
+                timestamp = os.time()
+            })
+        end
+    end
+    return results
+end
+
+-- Test the function
+hype> data = {{id=1, active=true}, {id=2, active=false}}
+hype> process_data(data)</code></pre>
+                </div>
+
+                <h3>Performance Testing</h3>
+                <div class="code-block">
+                    <pre><code>-- Benchmark function
+function benchmark(fn, iterations)
+    iterations = iterations or 1000
+    local start = os.clock()
+    for i = 1, iterations do
+        fn()
+    end
+    local elapsed = os.clock() - start
+    return string.format("%d ops in %.3fs (%.0f ops/sec)", 
+        iterations, elapsed, iterations/elapsed)
+end
+
+-- Test performance
+hype> benchmark(function() crypto.sha256("test") end, 10000)
+"10000 ops in 0.125s (80000 ops/sec)"</code></pre>
+                </div>
+
+                <h3>Interactive Debugging</h3>
+                <div class="code-block">
+                    <pre><code>-- Create debug helper
+function inspect(obj, depth)
+    depth = depth or 0
+    if depth > 3 then return "..." end
+    
+    if type(obj) ~= "table" then
+        return tostring(obj)
+    end
+    
+    local parts = {}
+    for k, v in pairs(obj) do
+        local key = tostring(k)
+        local value = inspect(v, depth + 1)
+        table.insert(parts, key .. " = " .. value)
+    end
+    
+    return "{" .. table.concat(parts, ", ") .. "}"
+end
+
+-- Use it
+hype> complex = {a = {b = {c = "deep"}}, x = 42}
+hype> print(inspect(complex))</code></pre>
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <div class="container">
+                <h2>🚀 Common Workflows</h2>
+
+                <div class="workflow-cards">
+                    <div class="workflow-card">
+                        <div class="workflow-icon">🔍</div>
+                        <h3>API Exploration</h3>
+                        <ul class="workflow-steps">
+                            <li>Load module: <code>server = http.newServer()</code></li>
+                            <li>Explore methods: <code>for k,v in pairs(getmetatable(server).__index) do print(k) end</code></li>
+                            <li>Test functionality: <code>server:handle("/", handler)</code></li>
+                            <li>Run in background: <code>go(function() server:listen(8080) end)</code></li>
+                            <li>Verify: <code>http.get("http://localhost:8080")</code></li>
+                        </ul>
+                    </div>
+
+                    <div class="workflow-card">
+                        <div class="workflow-icon">🧪</div>
+                        <h3>Testing Code</h3>
+                        <ul class="workflow-steps">
+                            <li>Define test data</li>
+                            <li>Write test function</li>
+                            <li>Run multiple iterations</li>
+                            <li>Check edge cases</li>
+                            <li>Save working code</li>
+                        </ul>
+                    </div>
+
+                    <div class="workflow-card">
+                        <div class="workflow-icon">🔧</div>
+                        <h3>Plugin Development</h3>
+                        <ul class="workflow-steps">
+                            <li>Create plugin table: <code>plugin = {}</code></li>
+                            <li>Add functions: <code>function plugin.method() ... end</code></li>
+                            <li>Test thoroughly in REPL</li>
+                            <li>Save to file: <code>save_plugin("myplugin.lua", plugin)</code></li>
+                            <li>Load and verify: <code>dofile("myplugin.lua")</code></li>
+                        </ul>
+                    </div>
+
+                    <div class="workflow-card">
+                        <div class="workflow-icon">🐛</div>
+                        <h3>Debugging Scripts</h3>
+                        <ul class="workflow-steps">
+                            <li>Load problematic script</li>
+                            <li>Add print statements</li>
+                            <li>Inspect variables</li>
+                            <li>Test functions individually</li>
+                            <li>Fix and re-test</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <div class="container">
+                <h2>🔧 Troubleshooting</h2>
+
+                <div class="example-grid">
+                    <div class="example-card">
+                        <h3>REPL Won't Start</h3>
+                        <div class="code-block">
+                            <pre><code># Check version (needs v1.9.0+)
+./hype version
+
+# Try simple mode
+./hype repl --simple
+
+# Check for errors
+./hype repl 2>&1 | less</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="example-card">
+                        <h3>Memory Issues</h3>
+                        <div class="code-block">
+                            <pre><code>-- Clear large variables
+hype> bigdata = nil
+hype> collectgarbage()
+
+-- Check memory usage
+hype> collectgarbage("count")
+1234.56  -- KB used
+
+-- Force full collection
+hype> collectgarbage("collect")</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="example-card">
+                        <h3>Hanging Operations</h3>
+                        <div class="code-block">
+                            <pre><code>-- Use Ctrl+C to interrupt
+
+-- Or use timeout wrapper
+function timeout(fn, seconds)
+    local co = coroutine.create(fn)
+    local start = os.time()
+    while coroutine.status(co) ~= "dead" do
+        if os.time() - start > seconds then
+            error("Timeout after " .. seconds .. "s")
+        end
+        coroutine.resume(co)
+    end
+end</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="example-card">
+                        <h3>Output Not Visible</h3>
+                        <div class="code-block">
+                            <pre><code>-- Clear output panel
+hype> :clear
+
+-- Check if output is being captured
+hype> print("Test output")
+hype> io.flush()
+
+-- Try direct write
+hype> io.write("Direct output\n")</code></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <div class="container">
+                <h2>📚 Additional Resources</h2>
+                
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <div class="feature-icon">📖</div>
+                        <h3>Full Guide</h3>
+                        <p>Read the complete REPL documentation with all details and examples</p>
+                        <a href="repl-guide.md" class="btn btn-secondary">View Markdown Guide</a>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="feature-icon">🎯</div>
+                        <h3>API Reference</h3>
+                        <p>Explore all Hype modules and their methods in detail</p>
+                        <a href="api-enhanced.html" class="btn btn-secondary">Browse API Docs</a>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="feature-icon">💻</div>
+                        <h3>Examples</h3>
+                        <p>See real-world examples of Hype applications</p>
+                        <a href="examples.html" class="btn btn-secondary">View Examples</a>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="feature-icon">🔌</div>
+                        <h3>Plugins</h3>
+                        <p>Learn how to create and use plugins in the REPL</p>
+                        <a href="plugin-development-enhanced.html" class="btn btn-secondary">Plugin Guide</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h4>Hype REPL</h4>
+                    <p>Interactive Development Environment</p>
+                    <p>Available since v1.9.0</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Quick Links</h4>
+                    <ul>
+                        <li><a href="index.html">Home</a></li>
+                        <li><a href="api-enhanced.html">API Reference</a></li>
+                        <li><a href="plugin-development-enhanced.html">Plugin Guide</a></li>
+                        <li><a href="https://github.com/twilson63/hype">GitHub</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Documentation</h4>
+                    <ul>
+                        <li><a href="repl-guide.md">REPL Guide (Markdown)</a></li>
+                        <li><a href="llms.txt">AI-Friendly Docs</a></li>
+                        <li><a href="llms-full.txt">Full Reference</a></li>
+                        <li><a href="#troubleshooting">Troubleshooting</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 Hype. Master the REPL, master Hype.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Tab switching
+        function showExample(tab) {
+            document.querySelectorAll('.example-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.example-content').forEach(c => c.classList.remove('active'));
+            
+            document.querySelector(`.example-tab[onclick="showExample('${tab}')"]`).classList.add('active');
+            document.getElementById(tab).classList.add('active');
+        }
+
+        // Copy code functionality
+        function copyCode(button) {
+            const codeBlock = button.parentElement;
+            const code = codeBlock.querySelector('code, pre code');
+            const text = code ? code.textContent : codeBlock.textContent;
+            
+            navigator.clipboard.writeText(text).then(() => {
+                button.textContent = 'Copied!';
+                setTimeout(() => {
+                    button.textContent = 'Copy';
+                }, 2000);
+            });
+        }
+
+        // Interactive REPL input
+        const replInput = document.getElementById('repl-input');
+        if (replInput) {
+            replInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const command = this.textContent;
+                    if (command.trim()) {
+                        // Simulate command execution
+                        alert(`Would execute: ${command}`);
+                        this.textContent = '';
+                    }
+                }
+            });
+
+            // Focus on click
+            replInput.addEventListener('click', function() {
+                this.focus();
+            });
+        }
+
+        // Add smooth scrolling
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth' });
+                }
+            });
+        });
+    </script>
+</body>
+</html>
