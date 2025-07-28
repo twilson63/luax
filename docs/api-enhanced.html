@@ -214,6 +214,7 @@
             <li><a href="#crypto" class="api-nav-link">Crypto</a></li>
             <li><a href="#httpsig" class="api-nav-link">HTTP Signatures</a></li>
             <li><a href="#plugins" class="api-nav-link">Plugins</a></li>
+            <li><a href="#bubbletea" class="api-nav-link">🫖 Bubble Tea</a></li>
             <li><a href="#utilities" class="api-nav-link">Utilities</a></li>
         </ul>
     </nav>
@@ -3063,6 +3064,437 @@ end, function(err)
 end)</code></pre>
                         <button class="copy-btn">Copy</button>
                     </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="bubbletea">
+            <div class="container">
+                <h2>🫖 Bubble Tea Plugin (NEW!)</h2>
+                <p>Modern TUI framework based on The Elm Architecture for building reactive terminal interfaces.</p>
+
+                <div class="api-section">
+                    <h3>Overview</h3>
+                    <p>The Bubble Tea plugin brings the power of functional reactive programming to Hype TUIs. Based on The Elm Architecture, it provides a clean separation of state, updates, and views.</p>
+                    
+                    <div class="feature-list">
+                        <div class="feature-item">
+                            <span class="feature-icon">🎯</span>
+                            <span>Clean Model-View-Update architecture</span>
+                        </div>
+                        <div class="feature-item">
+                            <span class="feature-icon">🧩</span>
+                            <span>Rich component library</span>
+                        </div>
+                        <div class="feature-item">
+                            <span class="feature-icon">🎨</span>
+                            <span>Powerful styling system</span>
+                        </div>
+                        <div class="feature-item">
+                            <span class="feature-icon">⌨️</span>
+                            <span>Complete keyboard and mouse support</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="api-section">
+                    <h3>Core Concepts</h3>
+                    
+                    <div class="example-tabs">
+                        <button class="example-tab active" onclick="showExample('bubbletea', 'basic')">Basic App</button>
+                        <button class="example-tab" onclick="showExample('bubbletea', 'components')">Components</button>
+                        <button class="example-tab" onclick="showExample('bubbletea', 'styling')">Styling</button>
+                    </div>
+                    
+                    <div id="bubbletea-basic" class="example-content active">
+                        <div class="code-block">
+                            <pre><code>-- A simple counter app with Bubble Tea
+local tea = require('bubbletea')
+
+-- Model: Your application state
+local function initialModel()
+    return {
+        counter = 0
+    }
+end
+
+-- Update: Handle messages and update the model
+local function update(model, msg)
+    if msg.type == tea.MSG_KEY then
+        if msg.key == tea.KEY_CTRL_C or msg.key == "q" then
+            return model, tea.quit()
+        elseif msg.key == "+" or msg.key == tea.KEY_UP then
+            model.counter = model.counter + 1
+        elseif msg.key == "-" or msg.key == tea.KEY_DOWN then
+            model.counter = model.counter - 1
+        end
+    end
+    return model, nil
+end
+
+-- View: Render the UI
+local function view(model)
+    return string.format([[
+🫖 Bubble Tea Counter
+
+    Count: %d
+
+    Press +/↑ to increment
+    Press -/↓ to decrement
+    Press q to quit
+]], model.counter)
+end
+
+-- Run the program
+local program = tea.newProgram(initialModel(), update, view)
+    :withAltScreen()
+program:run()</code></pre>
+                            <button class="copy-btn">Copy</button>
+                        </div>
+                    </div>
+
+                    <div id="bubbletea-components" class="example-content">
+                        <div class="code-block">
+                            <pre><code>-- Using Bubble Tea components
+local tea = require('bubbletea')
+
+local function initialModel()
+    return {
+        -- Text input component
+        nameInput = tea.textinput.new()
+            :setPlaceholder("Enter your name...")
+            :setWidth(30)
+            :focus(),
+        
+        -- List component
+        todoList = tea.list.new({"Buy milk", "Walk dog", "Write code"})
+            :setHeight(10),
+        
+        -- Progress bar
+        progress = tea.progress.new(100)
+            :setWidth(40),
+        
+        -- Spinner
+        spinner = tea.spinner.new("dots")
+            :setText("Loading..."),
+        
+        -- Viewport for scrolling
+        viewport = tea.viewport.new(80, 20)
+            :setContent(longText)
+    }
+end
+
+-- Form with multiple inputs
+local function createForm()
+    return {
+        username = tea.textinput.new()
+            :setPlaceholder("Username")
+            :setCharLimit(20),
+        
+        password = tea.textinput.new()
+            :setPlaceholder("Password")
+            :setEchoMode("password"),
+        
+        email = tea.textinput.new()
+            :setPlaceholder("Email")
+            :setValidate(function(s)
+                return s:match("^[%w.]+@[%w.]+$") ~= nil
+            end),
+        
+        bio = tea.textarea.new()
+            :setSize(40, 5)
+            :setPlaceholder("Tell us about yourself...")
+    }
+end
+
+-- List with custom rendering
+local items = {
+    {name = "Apple", emoji = "🍎", price = 0.5},
+    {name = "Banana", emoji = "🍌", price = 0.3},
+    {name = "Cherry", emoji = "🍒", price = 0.8}
+}
+
+local fruitList = tea.list.new(items)
+    :setItemRenderer(function(item, index, selected)
+        local prefix = selected and "▸ " or "  "
+        return string.format("%s%s %s - $%.2f", 
+            prefix, item.emoji, item.name, item.price)
+    end)
+    :setHeight(10)</code></pre>
+                            <button class="copy-btn">Copy</button>
+                        </div>
+                    </div>
+
+                    <div id="bubbletea-styling" class="example-content">
+                        <div class="code-block">
+                            <pre><code>-- Bubble Tea styling system (Lip Gloss inspired)
+local tea = require('bubbletea')
+local style = tea.style
+
+-- Create styles
+local titleStyle = style.new()
+    :foreground("cyan")
+    :background("blue")
+    :setBold(true)
+    :setAlign("center")
+    :padding(1, 2)
+    :border("rounded")
+
+local errorStyle = style.new()
+    :foreground("red")
+    :setBold(true)
+    :setUnderline(true)
+
+local successStyle = style.new()
+    :foreground("green")
+    :background("black")
+    :padding(1)
+
+-- Apply styles
+local title = titleStyle:render("🫖 Welcome to Bubble Tea!")
+local error = errorStyle:render("Error: Invalid input")
+local success = successStyle:render("✓ Operation completed")
+
+-- Preset styles
+local muted = style.presets.muted():render("Subtle text")
+local highlight = style.presets.highlight():render("Important!")
+local code = style.presets.code():render("const x = 42")
+
+-- Complex layouts with styles
+local function renderCard(title, content)
+    local cardStyle = style.new()
+        :border("normal")
+        :padding(1)
+        :margin(1)
+        :setWidth(40)
+    
+    local titleStyle = style.new()
+        :foreground("yellow")
+        :setBold(true)
+        :marginBottom(1)
+    
+    local card = titleStyle:render(title) .. "\n" .. content
+    return cardStyle:render(card)
+end
+
+-- Color utilities
+local rainbow = {
+    style.new():foreground("red"):render("R"),
+    style.new():foreground("yellow"):render("A"),
+    style.new():foreground("green"):render("I"),
+    style.new():foreground("cyan"):render("N"),
+    style.new():foreground("blue"):render("B"),
+    style.new():foreground("magenta"):render("O"),
+    style.new():foreground("red"):render("W")
+}
+
+-- Join styled elements
+local output = table.concat(rainbow) .. "\n" ..
+    style.new():setFaint(true):render("faded text") .. "\n" ..
+    style.new():setBlink(true):render("blinking!")</code></pre>
+                            <button class="copy-btn">Copy</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="api-section">
+                    <h3>Architecture Pattern</h3>
+                    <p>The Elm Architecture provides a clean, predictable way to build interactive applications:</p>
+                    
+                    <div class="code-block">
+                        <pre><code>-- The Elm Architecture in action
+local tea = require('bubbletea')
+
+-- 1. MODEL: Define your application state
+local function initialModel()
+    return {
+        todos = {},
+        input = tea.textinput.new():focus(),
+        filter = "all" -- all, active, completed
+    }
+end
+
+-- 2. MESSAGES: Define what can happen
+local MSG_ADD_TODO = "add_todo"
+local MSG_TOGGLE_TODO = "toggle_todo"
+local MSG_DELETE_TODO = "delete_todo"
+local MSG_FILTER_CHANGE = "filter_change"
+
+-- 3. UPDATE: Handle messages and return new model + commands
+local function update(model, msg)
+    -- Handle keyboard input
+    if msg.type == tea.MSG_KEY then
+        if msg.key == tea.KEY_ENTER then
+            -- Add new todo
+            local text = model.input:getValue()
+            if text ~= "" then
+                table.insert(model.todos, {
+                    id = os.time(),
+                    text = text,
+                    done = false
+                })
+                model.input:setValue("")
+            end
+        elseif msg.key == tea.KEY_TAB then
+            -- Cycle through filters
+            local filters = {"all", "active", "completed"}
+            for i, f in ipairs(filters) do
+                if f == model.filter then
+                    model.filter = filters[(i % #filters) + 1]
+                    break
+                end
+            end
+        else
+            -- Update input component
+            model.input:update(msg)
+        end
+    end
+    
+    -- Custom messages
+    if msg.type == MSG_TOGGLE_TODO then
+        for _, todo in ipairs(model.todos) do
+            if todo.id == msg.id then
+                todo.done = not todo.done
+                break
+            end
+        end
+    end
+    
+    return model, nil
+end
+
+-- 4. VIEW: Render UI based on model
+local function view(model)
+    local s = tea.style.new()
+    
+    -- Title
+    local title = s:copy()
+        :foreground("cyan")
+        :setBold(true)
+        :render("📝 TODO MVC with Bubble Tea")
+    
+    -- Input
+    local inputView = "New todo: " .. model.input:view()
+    
+    -- Filter tabs
+    local filterView = ""
+    for _, f in ipairs({"all", "active", "completed"}) do
+        local style = s:copy()
+        if f == model.filter then
+            style:foreground("yellow"):setUnderline(true)
+        end
+        filterView = filterView .. style:render(f) .. "  "
+    end
+    
+    -- Todos
+    local todosView = {}
+    for _, todo in ipairs(model.todos) do
+        local show = model.filter == "all" or
+                    (model.filter == "active" and not todo.done) or
+                    (model.filter == "completed" and todo.done)
+        
+        if show then
+            local checkbox = todo.done and "[✓]" or "[ ]"
+            local textStyle = s:copy()
+            if todo.done then
+                textStyle:setStrikethrough(true):foreground("gray")
+            end
+            table.insert(todosView, checkbox .. " " .. textStyle:render(todo.text))
+        end
+    end
+    
+    -- Compose final view
+    return table.concat({
+        title,
+        "",
+        inputView,
+        "",
+        filterView,
+        "",
+        table.concat(todosView, "\n"),
+        "",
+        s:copy():foreground("gray"):render("Enter: add • Tab: filter • Ctrl+C: quit")
+    }, "\n")
+end
+
+-- 5. RUN: Start the application
+local program = tea.newProgram(initialModel(), update, view)
+    :withAltScreen()
+    :withMouseCellMotion()
+
+program:run()</code></pre>
+                        <button class="copy-btn">Copy</button>
+                    </div>
+                </div>
+
+                <div class="api-section">
+                    <h3>Commands & Subscriptions</h3>
+                    <div class="code-block">
+                        <pre><code>-- Commands trigger side effects
+local tea = require('bubbletea')
+
+-- Quit command
+return model, tea.quit()
+
+-- Timer commands
+return model, tea.tick(1000, function()
+    return {type = "timer_tick"}
+end)
+
+-- Recurring timer
+return model, tea.every(1000, function()
+    return {type = "clock_update", time = os.date()}
+end)
+
+-- Batch multiple commands
+return model, tea.batch(
+    tea.tick(100, loadData),
+    tea.tick(200, updateUI),
+    tea.cmd(fetchFromAPI)
+)
+
+-- Sequence commands
+return model, tea.sequence(
+    tea.cmd(validateInput),
+    tea.cmd(saveData),
+    tea.cmd(showSuccess)
+)
+
+-- Custom command example
+local function httpCommand(url)
+    return function()
+        -- This runs asynchronously
+        local http = require('http')
+        local resp = http.get(url)
+        
+        -- Return a message for update
+        return {
+            type = "http_response",
+            data = resp.body,
+            status = resp.status_code
+        }
+    end
+end
+
+-- Use in update
+return model, tea.cmd(httpCommand("https://api.example.com/data"))</code></pre>
+                        <button class="copy-btn">Copy</button>
+                    </div>
+                </div>
+
+                <div class="best-practices">
+                    <h3>Best Practices</h3>
+                    <ul>
+                        <li><strong>Pure Functions:</strong> Keep update and view functions pure - no side effects</li>
+                        <li><strong>Single State:</strong> All application state lives in the model</li>
+                        <li><strong>Commands for I/O:</strong> Use commands for async operations, API calls, etc.</li>
+                        <li><strong>Component Reuse:</strong> Create reusable components with their own update/view</li>
+                        <li><strong>Message Design:</strong> Design clear, descriptive message types</li>
+                    </ul>
+                </div>
+
+                <div class="migration-note">
+                    <p><strong>Note:</strong> Bubble Tea uses a different architecture than the built-in TUI module. While TUI uses callbacks and imperative updates, Bubble Tea uses functional updates and immutable state. Choose based on your preference and project needs.</p>
                 </div>
             </div>
         </section>

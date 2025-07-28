@@ -264,6 +264,18 @@ func removeHypePluginInterface(content string) string {
 }
 
 func generateRuntimeCode(tempDir string, config *BuildConfig) error {
+	// First, copy the http_module.go file to the temp directory
+	httpModulePath := filepath.Join(tempDir, "http_module.go")
+	httpModuleContent, err := os.ReadFile("http_module.go")
+	if err != nil {
+		return fmt.Errorf("failed to read http_module.go: %w", err)
+	}
+	
+	// Replace package main with package main (already correct)
+	if err := os.WriteFile(httpModulePath, httpModuleContent, 0644); err != nil {
+		return fmt.Errorf("failed to write http_module.go: %w", err)
+	}
+	
 	runtimeTemplate := `package main
 
 import (
@@ -293,7 +305,6 @@ import (
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 	"go.etcd.io/bbolt"
-	"io"
 	"log"
 	"net/http"
 	"net/url"
@@ -321,7 +332,7 @@ func main() {
 	setupCommandLineArgs(L)
 	
 	// Register HTTP module
-	registerHTTPModule(L)
+	RegisterHTTPModule(L)
 
 	// Register KV module
 	registerKVModule(L)
@@ -809,292 +820,6 @@ func luaNewFlex(L *lua.LState) int {
 	return 1
 }
 
-func registerHTTPModule(L *lua.LState) {
-	L.PreloadModule("http", func(L *lua.LState) int {
-		httpModule := L.NewTable()
-		L.SetField(httpModule, "get", L.NewFunction(httpGet))
-		L.SetField(httpModule, "newServer", L.NewFunction(httpNewServer))
-		L.Push(httpModule)
-		return 1
-	})
-	
-	// Set up server metatable
-	serverMT := L.NewTypeMetatable("HTTPServer")
-	L.SetField(serverMT, "__index", L.NewFunction(serverIndex))
-}
-
-func httpGet(L *lua.LState) int {
-	url := L.CheckString(1)
-	
-	// Optional options table
-	var timeout time.Duration = 30 * time.Second
-	var userAgent string = "LuaX/1.0"
-	
-	if L.GetTop() >= 2 {
-		options := L.CheckTable(2)
-		if timeoutVal := L.GetField(options, "timeout"); timeoutVal != lua.LNil {
-			if timeoutNum, ok := timeoutVal.(lua.LNumber); ok {
-				timeout = time.Duration(float64(timeoutNum)) * time.Second
-			}
-		}
-		if headers := L.GetField(options, "headers"); headers != lua.LNil {
-			if headersTable, ok := headers.(*lua.LTable); ok {
-				if ua := L.GetField(headersTable, "User-Agent"); ua != lua.LNil {
-					if uaStr, ok := ua.(lua.LString); ok {
-						userAgent = string(uaStr)
-					}
-				}
-			}
-		}
-	}
-	
-	client := &http.Client{Timeout: timeout}
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		L.Push(lua.LNil)
-		L.Push(lua.LString(err.Error()))
-		return 2
-	}
-	
-	req.Header.Set("User-Agent", userAgent)
-	
-	resp, err := client.Do(req)
-	if err != nil {
-		L.Push(lua.LNil)
-		L.Push(lua.LString(err.Error()))
-		return 2
-	}
-	defer resp.Body.Close()
-	
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		L.Push(lua.LNil)
-		L.Push(lua.LString(err.Error()))
-		return 2
-	}
-	
-	result := L.NewTable()
-	L.SetField(result, "status", lua.LNumber(resp.StatusCode))
-	L.SetField(result, "body", lua.LString(string(body)))
-	
-	L.Push(result)
-	L.Push(lua.LNil)
-	return 2
-}
-
-type HTTPServer struct {
-	server   *http.Server
-	mux      *http.ServeMux
-	handlers map[string]*lua.LFunction
-	L        *lua.LState  // Main Lua state for registration  
-	mu       sync.RWMutex
-}
-
-func httpNewServer(L *lua.LState) int {
-	server := &HTTPServer{
-		mux:      http.NewServeMux(),
-		handlers: make(map[string]*lua.LFunction),
-		L:        L,
-	}
-	
-	ud := L.NewUserData()
-	ud.Value = server
-	L.SetMetatable(ud, L.GetTypeMetatable("HTTPServer"))
-	L.Push(ud)
-	return 1
-}
-
-func serverIndex(L *lua.LState) int {
-	ud := L.CheckUserData(1)
-	server := ud.Value.(*HTTPServer)
-	method := L.CheckString(2)
-	
-	switch method {
-	case "handle":
-		L.Push(L.NewFunction(func(L *lua.LState) int {
-			path := L.CheckString(2)
-			handler := L.CheckFunction(3)
-			
-			server.mu.Lock()
-			server.handlers[path] = handler
-			server.mu.Unlock()
-			
-			// Register the handler with the mux
-			server.mux.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
-				server.handleRequest(w, r, path)
-			})
-			
-			L.Push(ud)
-			return 1
-		}))
-	case "listen":
-		L.Push(L.NewFunction(func(L *lua.LState) int {
-			port := L.CheckInt(2)
-			addr := fmt.Sprintf(":%d", port)
-			
-			server.server = &http.Server{
-				Addr:         addr,
-				Handler:      server.mux,
-				ReadTimeout:  30 * time.Second,
-				WriteTimeout: 30 * time.Second,
-				IdleTimeout:  120 * time.Second,
-			}
-			
-			// Start server in goroutine
-			go func() {
-				if err := server.server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-					fmt.Printf("Server error: %v\n", err)
-				}
-			}()
-			
-			return 0
-		}))
-	case "stop":
-		L.Push(L.NewFunction(func(L *lua.LState) int {
-			if server.server != nil {
-				ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-				defer cancel()
-				server.server.Shutdown(ctx)
-			}
-			return 0
-		}))
-	}
-	return 1
-}
-
-func (s *HTTPServer) handleRequest(w http.ResponseWriter, r *http.Request, path string) {
-	s.mu.RLock()
-	handler, exists := s.handlers[path]
-	s.mu.RUnlock()
-	
-	if !exists {
-		http.NotFound(w, r)
-		return
-	}
-	
-	// Use a mutex to protect the Lua state from concurrent access
-	// This ensures thread-safety for the shared Lua interpreter
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	
-	// Create request object for Lua
-	reqObj := s.L.NewTable()
-	s.L.SetField(reqObj, "method", lua.LString(r.Method))
-	s.L.SetField(reqObj, "url", lua.LString(r.URL.String()))
-	s.L.SetField(reqObj, "path", lua.LString(r.URL.Path))
-	
-	// Add headers
-	headers := s.L.NewTable()
-	for key, values := range r.Header {
-		s.L.SetField(headers, key, lua.LString(values[0]))
-	}
-	s.L.SetField(reqObj, "headers", headers)
-	
-	// Add query parameters
-	query := s.L.NewTable()
-	for key, values := range r.URL.Query() {
-		s.L.SetField(query, key, lua.LString(values[0]))
-	}
-	s.L.SetField(reqObj, "query", query)
-	
-	// Read body
-	if r.Body != nil {
-		body, _ := io.ReadAll(r.Body)
-		s.L.SetField(reqObj, "body", lua.LString(string(body)))
-	}
-	
-	// Create response object for Lua
-	resObj := s.L.NewTable()
-	responseData := &ResponseWriter{w: w, written: false}
-	
-	s.L.SetField(resObj, "write", s.L.NewFunction(func(L *lua.LState) int {
-		content := L.CheckString(2) // Skip self parameter
-		responseData.w.Write([]byte(content))
-		responseData.written = true
-		return 0
-	}))
-	
-	s.L.SetField(resObj, "json", s.L.NewFunction(func(L *lua.LState) int {
-		data := L.CheckAny(2) // Skip self parameter
-		
-		// Convert Lua value to Go interface
-		var goData interface{}
-		goData = luaValueToGo(L, data)
-		
-		jsonBytes, err := json.Marshal(goData)
-		if err != nil {
-			http.Error(responseData.w, "JSON encoding error", http.StatusInternalServerError)
-			return 0
-		}
-		
-		responseData.w.Header().Set("Content-Type", "application/json")
-		responseData.w.Write(jsonBytes)
-		responseData.written = true
-		return 0
-	}))
-	
-	s.L.SetField(resObj, "status", s.L.NewFunction(func(L *lua.LState) int {
-		code := L.CheckInt(2) // Skip self parameter
-		responseData.w.WriteHeader(code)
-		return 0
-	}))
-	
-	s.L.SetField(resObj, "header", s.L.NewFunction(func(L *lua.LState) int {
-		key := L.CheckString(2) // Skip self parameter
-		value := L.CheckString(3)
-		responseData.w.Header().Set(key, value)
-		return 0
-	}))
-	
-	// Call the Lua handler
-	s.L.Push(handler)
-	s.L.Push(reqObj)
-	s.L.Push(resObj)
-	
-	if err := s.L.PCall(2, 0, nil); err != nil {
-		if !responseData.written {
-			http.Error(w, "Handler error: "+err.Error(), http.StatusInternalServerError)
-		}
-	}
-	
-	// If no response was written, send empty 200
-	if !responseData.written {
-		w.WriteHeader(http.StatusOK)
-	}
-}
-
-type ResponseWriter struct {
-	w       http.ResponseWriter
-	written bool
-}
-
-func luaValueToGo(L *lua.LState, value lua.LValue) interface{} {
-	if value == lua.LNil {
-		return nil
-	}
-	
-	switch v := value.(type) {
-	case lua.LString:
-		return string(v)
-	case lua.LNumber:
-		return float64(v)
-	case lua.LBool:
-		return bool(v)
-	case *lua.LTable:
-		// Check if it's an array or object
-		result := make(map[string]interface{})
-		v.ForEach(func(key, val lua.LValue) {
-			if keyStr, ok := key.(lua.LString); ok {
-				result[string(keyStr)] = luaValueToGo(L, val)
-			}
-		})
-		return result
-	default:
-		return value.String()
-	}
-}
-
-// WebSocket Module
 func registerWebSocketModule(L *lua.LState) {
 	L.PreloadModule("websocket", func(L *lua.LState) int {
 		wsModule := L.NewTable()

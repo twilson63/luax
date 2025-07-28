@@ -59,7 +59,7 @@ func runREPL(simpleMode bool) error {
 	lua.OpenDebug(L)
 
 	// Register all modules
-	registerHTTPModule(L)
+	RegisterHTTPModule(L)
 	registerKVModule(L)
 	registerTUIFunctions(L)
 	registerCryptoModule(L)

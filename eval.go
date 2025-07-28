@@ -2,9 +2,7 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"io"
 	"log"
 	"net/http"
 	"net/url"
@@ -60,7 +58,7 @@ func runScriptWithPlugins(scriptPath string, scriptArgs []string, pluginSpecs []
 	setupCommandLineArgs(L, scriptPath, scriptArgs)
 	
 	// Register built-in modules
-	registerHTTPModule(L)
+	RegisterHTTPModule(L)
 	registerKVModule(L)
 	registerTUIFunctions(L)
 	registerCryptoModule(L)
@@ -568,202 +566,6 @@ func eventIndex(L *lua.LState) int {
 }
 
 // HTTP Module
-func registerHTTPModule(L *lua.LState) {
-	L.PreloadModule("http", func(L *lua.LState) int {
-		httpModule := L.NewTable()
-		L.SetField(httpModule, "get", L.NewFunction(httpGet))
-		L.SetField(httpModule, "newServer", L.NewFunction(httpNewServer))
-		L.Push(httpModule)
-		return 1
-	})
-	
-	// Set up server metatable
-	serverMT := L.NewTypeMetatable("HTTPServer")
-	L.SetField(serverMT, "__index", L.NewFunction(serverIndex))
-}
-
-type HTTPServer struct {
-	server *http.Server
-	mux    *http.ServeMux
-}
-
-func httpGet(L *lua.LState) int {
-	url := L.CheckString(1)
-	
-	// Create HTTP client with timeout
-	client := &http.Client{
-		Timeout: 30 * time.Second,
-	}
-	
-	resp, err := client.Get(url)
-	if err != nil {
-		L.Push(lua.LNil)
-		L.Push(lua.LString(err.Error()))
-		return 2
-	}
-	defer resp.Body.Close()
-	
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		L.Push(lua.LNil)
-		L.Push(lua.LString(err.Error()))
-		return 2
-	}
-	
-	// Create response table
-	responseTable := L.NewTable()
-	L.SetField(responseTable, "status", lua.LNumber(resp.StatusCode))
-	L.SetField(responseTable, "body", lua.LString(string(body)))
-	
-	// Add headers
-	headersTable := L.NewTable()
-	for key, values := range resp.Header {
-		if len(values) > 0 {
-			L.SetField(headersTable, key, lua.LString(values[0]))
-		}
-	}
-	L.SetField(responseTable, "headers", headersTable)
-	
-	L.Push(responseTable)
-	L.Push(lua.LNil)
-	return 2
-}
-
-func httpNewServer(L *lua.LState) int {
-	server := &HTTPServer{
-		mux: http.NewServeMux(),
-	}
-	
-	ud := L.NewUserData()
-	ud.Value = server
-	L.SetMetatable(ud, L.GetTypeMetatable("HTTPServer"))
-	L.Push(ud)
-	return 1
-}
-
-func serverIndex(L *lua.LState) int {
-	ud := L.CheckUserData(1)
-	server := ud.Value.(*HTTPServer)
-	method := L.CheckString(2)
-	
-	switch method {
-	case "handle":
-		L.Push(L.NewFunction(func(L *lua.LState) int {
-			pattern := L.CheckString(2)
-			handlerFunc := L.CheckFunction(3)
-			
-			server.mux.HandleFunc(pattern, func(w http.ResponseWriter, r *http.Request) {
-				// Create request table
-				reqTable := L.NewTable()
-				L.SetField(reqTable, "method", lua.LString(r.Method))
-				L.SetField(reqTable, "url", lua.LString(r.URL.String()))
-				
-				// Read body
-				body, _ := io.ReadAll(r.Body)
-				L.SetField(reqTable, "body", lua.LString(string(body)))
-				
-				// Create response object
-				resUD := L.NewUserData()
-				resUD.Value = w
-				
-				// Set response metatable
-				resMT := L.NewTypeMetatable("HTTPResponse")
-				L.SetField(resMT, "__index", L.NewFunction(responseIndex))
-				L.SetMetatable(resUD, resMT)
-				
-				// Call handler
-				L.Push(handlerFunc)
-				L.Push(reqTable)
-				L.Push(resUD)
-				L.Call(2, 0)
-			})
-			return 0
-		}))
-	case "listen":
-		L.Push(L.NewFunction(func(L *lua.LState) int {
-			port := L.CheckInt(2)
-			
-			server.server = &http.Server{
-				Addr:    fmt.Sprintf(":%d", port),
-				Handler: server.mux,
-			}
-			
-			// Start server in goroutine
-			go func() {
-				if err := server.server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-					fmt.Printf("Server error: %v\n", err)
-				}
-			}()
-			
-			return 0
-		}))
-	case "stop":
-		L.Push(L.NewFunction(func(L *lua.LState) int {
-			if server.server != nil {
-				ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-				defer cancel()
-				server.server.Shutdown(ctx)
-			}
-			return 0
-		}))
-	}
-	
-	return 1
-}
-
-func responseIndex(L *lua.LState) int {
-	ud := L.CheckUserData(1)
-	w := ud.Value.(http.ResponseWriter)
-	method := L.CheckString(2)
-	
-	switch method {
-	case "write":
-		L.Push(L.NewFunction(func(L *lua.LState) int {
-			content := L.CheckString(2)
-			w.Write([]byte(content))
-			return 0
-		}))
-	case "header":
-		L.Push(L.NewFunction(func(L *lua.LState) int {
-			key := L.CheckString(2)
-			value := L.CheckString(3)
-			w.Header().Set(key, value)
-			return 0
-		}))
-	case "json":
-		L.Push(L.NewFunction(func(L *lua.LState) int {
-			data := L.CheckTable(2)
-			
-			// Convert Lua table to Go map
-			goMap := make(map[string]interface{})
-			data.ForEach(func(key, value lua.LValue) {
-				keyStr := key.String()
-				switch v := value.(type) {
-				case lua.LString:
-					goMap[keyStr] = string(v)
-				case lua.LNumber:
-					goMap[keyStr] = float64(v)
-				case lua.LBool:
-					goMap[keyStr] = bool(v)
-				default:
-					goMap[keyStr] = v.String()
-				}
-			})
-			
-			jsonData, err := json.Marshal(goMap)
-			if err != nil {
-				L.Push(lua.LString(err.Error()))
-				return 1
-			}
-			
-			w.Header().Set("Content-Type", "application/json")
-			w.Write(jsonData)
-			return 0
-		}))
-	}
-	
-	return 1
-}
 
 // KV Database Module
 func registerKVModule(L *lua.LState) {
